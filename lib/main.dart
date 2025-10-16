@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ollie/services/auth_api.dart';
 import 'screens/home/homepage.dart';
-import 'services/auth_service.dart';
 import 'providers/auth_provider.dart';
 import 'screens/authentication/modern_auth_screen.dart';
 import 'repositories/appwrite/appwrite_config.dart';
@@ -11,7 +11,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Appwrite (for both auth and repositories)
-  AuthService().init();
+  AuthApi().init();
   AppwriteConfig.init();
 
   runApp(const ProviderScope(child: OllieApp()));

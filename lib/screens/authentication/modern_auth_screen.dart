@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../components/ollie_button.dart';
 import '../../components/ollie_textfield.dart';
 import '../../providers/auth_provider.dart';
-import '../../services/auth_service.dart';
 
 /// Modern email-first authentication flow
 /// Step 1: Enter email → Step 2: System determines login vs signup
@@ -130,7 +129,9 @@ class _ModernAuthScreenState extends ConsumerState<ModernAuthScreen>
   }
 
   bool _isValidEmail(String email) {
-    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+    return RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$',
+    ).hasMatch(email);
   }
 
   @override
