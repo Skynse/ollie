@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ollie/services/auth_api.dart';
 import 'screens/home/homepage.dart';
+import 'screens/board/board_screen.dart';
 import 'providers/auth_provider.dart';
 import 'screens/authentication/modern_auth_screen.dart';
 import 'repositories/appwrite/appwrite_config.dart';
@@ -54,27 +55,10 @@ class OllieApp extends ConsumerWidget {
         ),
         GoRoute(path: '/', builder: (context, state) => const HomePage()),
         GoRoute(
-          path: '/projects/:projectId',
+          path: '/boards/:boardId',
           builder: (context, state) {
-            final projectId = state.pathParameters['projectId']!;
-            return const Placeholder(); // ProjectBoardsScreen
-          },
-        ),
-        GoRoute(
-          path: '/projects/:projectId/boards/:boardId',
-          builder: (context, state) {
-            final projectId = state.pathParameters['projectId']!;
             final boardId = state.pathParameters['boardId']!;
-            return const Placeholder(); // BoardScreen
-          },
-        ),
-        GoRoute(
-          path: '/projects/:projectId/boards/:boardId/cards/:cardId',
-          builder: (context, state) {
-            final projectId = state.pathParameters['projectId']!;
-            final boardId = state.pathParameters['boardId']!;
-            final cardId = state.pathParameters['cardId']!;
-            return const Placeholder(); // CardDetailsScreen
+            return BoardScreen(boardId: boardId);
           },
         ),
       ],

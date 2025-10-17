@@ -2,7 +2,7 @@ class Label {
   final String id;
   final String boardId;
   final String name;
-  final String color;
+  final int color;
 
   Label({
     required this.id,
@@ -20,11 +20,11 @@ class Label {
       id: (json['id'] ?? json['\$id']) as String,
       boardId: json['boardId'] as String,
       name: json['name'] as String,
-      color: json['color'] as String,
+      color: json['color'],
     );
   }
 
-  Label copyWith({String? id, String? boardId, String? name, String? color}) {
+  Label copyWith({String? id, String? boardId, String? name, int? color}) {
     return Label(
       id: id ?? this.id,
       boardId: boardId ?? this.boardId,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../components/ollie_button.dart';
-import '../../components/ollie_textfield.dart';
+import '../../components/ollie_ui/ollie_button.dart';
+import '../../components/ollie_ui/ollie_textfield.dart';
 import '../../providers/auth_provider.dart';
 
 /// Modern email-first authentication flow

@@ -1,9 +1,11 @@
+import 'package:flutter/material.dart';
+
 class BoardColumn {
   final String id;
   final String boardId;
   final String name;
   final int position;
-  final String color;
+  final int color;
   final int? wipLimit;
   final List<String> cardIds;
 
@@ -34,7 +36,7 @@ class BoardColumn {
       boardId: json['boardId'] as String,
       name: json['name'] as String,
       position: json['position'] as int? ?? 0,
-      color: json['color'] as String? ?? '#808080',
+      color: json['color'] as int? ?? Colors.grey.toARGB32(),
       wipLimit: json['wipLimit'] as int?,
       cardIds:
           (json['cardIds'] as List<dynamic>?)
@@ -49,7 +51,7 @@ class BoardColumn {
     String? boardId,
     String? name,
     int? position,
-    String? color,
+    int? color,
     int? wipLimit,
     List<String>? cardIds,
   }) {

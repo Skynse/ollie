@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/boards_provider.dart';
 import '../../models/board.dart';
-import '../../components/ollie_dialog.dart';
-import '../../components/ollie_textfield.dart';
-import '../../components/ollie_button.dart';
+import '../../components/ollie_ui/ollie_dialog.dart';
+import '../../components/ollie_ui/ollie_textfield.dart';
+import '../../components/ollie_ui/ollie_button.dart';
 
 /// Trello-like homepage with sidebar navigation
 class HomePage extends ConsumerStatefulWidget {
@@ -473,7 +474,7 @@ class _BoardCard extends StatelessWidget {
       ),
       child: InkWell(
         onTap: () {
-          // TODO: Navigate to board detail screen
+          context.push('/boards/${board.id}');
         },
         borderRadius: BorderRadius.circular(8),
         child: Padding(
