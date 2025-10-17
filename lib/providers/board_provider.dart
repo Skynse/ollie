@@ -133,12 +133,27 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
 
     try {
       await _repository.deleteColumn(columnId);
-      await refresh();
+      //await refresh();
     } catch (e) {
       final currentState = (state as AsyncData<BoardState>).value;
       state = AsyncValue.data(
         currentState.copyWith(
           errorMessage: 'Failed to delete column: ${e.toString()}',
+        ),
+      );
+    }
+  }
+
+  Future<void> deleteCard(String cardId) async {
+    if (state is! AsyncData<BoardState>) return;
+    try {
+      await _repository.deleteCard(cardId);
+      await refresh();
+    } catch (e) {
+      final currentState = (state as AsyncData<BoardState>).value;
+      state = AsyncValue.data(
+        currentState.copyWith(
+          errorMessage: 'Failed to delete card: ${e.toString()}',
         ),
       );
     }

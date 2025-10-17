@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ollie/providers/board_provider.dart';
 import '../models/card.dart' as model;
 import '../models/priority.dart';
 
 /// A kanban card component displaying task information
-class KanbanCard extends StatelessWidget {
+class KanbanCard extends ConsumerWidget {
   final model.Card card;
+  final String boardId;
 
-  const KanbanCard({super.key, required this.card});
+  const KanbanCard({super.key, required this.card, required this.boardId});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final boardNotifier = ref.read(boardNotifierProvider(boardId).notifier);
+
     return Card(
       margin: EdgeInsets.zero,
       elevation: 0,
@@ -18,8 +23,24 @@ class KanbanCard extends StatelessWidget {
         side: BorderSide(color: Colors.grey.shade200),
       ),
       child: InkWell(
-        onTap: () {
-          // TODO: Navigate to card details
+        onSecondaryTapDown: (details) async {
+          showMenu(
+            context: context,
+            position: RelativeRect.fromRect(
+              details.globalPosition & const Size(40, 40),
+              Offset.zero & MediaQuery.of(context).size,
+            ),
+            items: [
+              PopupMenuItem(value: 'edit', child: Text('Edit Card')),
+              PopupMenuItem(
+                value: 'delete',
+                child: Text('Delete Card'),
+                onTap: () async {
+                  await boardNotifier.deleteCard(card.id);
+                },
+              ),
+            ],
+          );
         },
         borderRadius: BorderRadius.circular(8),
         child: Padding(

@@ -59,7 +59,10 @@ class KanbanColumn extends ConsumerWidget {
                 itemBuilder: (context, index) {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
-                    child: KanbanCard(card: columnCards[index]),
+                    child: KanbanCard(
+                      card: columnCards[index],
+                      boardId: boardId,
+                    ),
                   );
                 },
               ),
