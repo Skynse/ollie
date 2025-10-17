@@ -23,6 +23,7 @@ class OllieTextfield extends StatefulWidget {
   final TextCapitalization textCapitalization;
   final bool autofocus;
   final String? initialValue;
+  final FormFieldValidator? validator;
 
   const OllieTextfield({
     super.key,
@@ -47,6 +48,7 @@ class OllieTextfield extends StatefulWidget {
     this.textCapitalization = TextCapitalization.none,
     this.autofocus = false,
     this.initialValue,
+    this.validator,
   });
 
   // Named constructor for email
@@ -65,6 +67,7 @@ class OllieTextfield extends StatefulWidget {
     this.focusNode,
     this.autofocus = false,
     this.initialValue,
+    this.validator,
   }) : keyboardType = TextInputType.emailAddress,
        obscureText = false,
        maxLines = 1,
@@ -90,6 +93,7 @@ class OllieTextfield extends StatefulWidget {
     this.focusNode,
     this.autofocus = false,
     this.initialValue,
+    this.validator,
   }) : keyboardType = TextInputType.visiblePassword,
        obscureText = true,
        maxLines = 1,
@@ -113,6 +117,7 @@ class OllieTextfield extends StatefulWidget {
     this.focusNode,
     this.autofocus = false,
     this.initialValue,
+    this.validator,
   }) : keyboardType = TextInputType.text,
        obscureText = false,
        readOnly = false,
@@ -142,6 +147,7 @@ class OllieTextfield extends StatefulWidget {
     this.focusNode,
     this.autofocus = false,
     this.initialValue,
+    this.validator,
   }) : keyboardType = TextInputType.multiline,
        obscureText = false,
        prefixIcon = null,
@@ -167,11 +173,13 @@ class OllieTextfield extends StatefulWidget {
     this.focusNode,
     this.autofocus = false,
     this.initialValue,
-  }) : keyboardType = TextInputType.text,
-       obscureText = false,
+    this.validator,
+    this.keyboardType = TextInputType.text,
+    this.inputFormatters,
+  }) : obscureText = false,
        prefixIcon = null,
        suffixIcon = null,
-       inputFormatters = null,
+
        textCapitalization = TextCapitalization.none;
 
   @override

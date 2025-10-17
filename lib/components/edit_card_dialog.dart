@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ollie/components/ollie_ui/ollie_button.dart';
+import 'package:ollie/components/ollie_ui/ollie_dialog.dart';
+import 'package:ollie/components/ollie_ui/ollie_textfield.dart';
 import 'package:ollie/providers/boards_provider.dart';
 import '../models/card.dart' as model;
 import '../models/priority.dart';
@@ -98,8 +101,7 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
       await ref.read(boardRepositoryProvider).updateCard(updatedCard);
 
       // Update sprint cardIds if sprint changed
-      if (_selectedSprintId != null &&
-          _selectedSprintId != widget.card.sprintId) {
+      if (_selectedSprintId != widget.card.sprintId) {
         // Remove from old sprint if exists
         if (widget.card.sprintId != null) {
           await ref
@@ -107,9 +109,11 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
               .removeCardFromSprint(widget.card.sprintId!, widget.card.id);
         }
         // Add to new sprint
-        await ref
-            .read(sprintNotifierProvider(widget.boardId).notifier)
-            .addCardToSprint(_selectedSprintId!, widget.card.id);
+        if (_selectedSprintId != null) {
+          await ref
+              .read(sprintNotifierProvider(widget.boardId).notifier)
+              .addCardToSprint(_selectedSprintId!, widget.card.id);
+        }
       }
 
       if (mounted) {
@@ -133,189 +137,113 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      child: Container(
-        width: 800,
-        constraints: const BoxConstraints(maxHeight: 700),
+    return OllieDialog(
+      title: 'Edit Card',
+      width: 800,
+      actions: [
+        OllieButton.text(
+          text: 'Cancel',
+          onPressed: () => Navigator.of(context).pop(),
+          disabled: _isLoading,
+        ),
+        OllieButton(
+          text: 'Save Changes',
+          onPressed: _saveCard,
+          loading: _isLoading,
+        ),
+      ],
+      content: Form(
+        key: _formKey,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.edit_note, color: Colors.blue.shade700),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'Edit Card',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
-                    style: IconButton.styleFrom(backgroundColor: Colors.white),
-                  ),
-                ],
-              ),
+            // Title
+            OllieTextfield.simple(
+              label: 'Title',
+              controller: _titleController,
+              hint: 'Enter card title',
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Title is required';
+                }
+                return null;
+              },
             ),
+            const SizedBox(height: 20),
 
-            // Content
-            Expanded(
-              child: Form(
-                key: _formKey,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
+            // Description
+            OllieTextfield.multiline(
+              label: 'Description',
+              controller: _descriptionController,
+              hint: 'Add a description...',
+              maxLines: 4,
+            ),
+            const SizedBox(height: 20),
+
+            // Row: Priority and Due Date
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Title
-                      _buildSectionTitle('Title'),
+                      _buildSectionTitle('Priority'),
                       const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _titleController,
-                        decoration: const InputDecoration(
-                          hintText: 'Enter card title',
-                          border: OutlineInputBorder(),
-                          isDense: true,
-                        ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Title is required';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Description
-                      _buildSectionTitle('Description'),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _descriptionController,
-                        decoration: const InputDecoration(
-                          hintText: 'Add a description...',
-                          border: OutlineInputBorder(),
-                          isDense: true,
-                        ),
-                        maxLines: 4,
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Row: Priority and Due Date
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildSectionTitle('Priority'),
-                                const SizedBox(height: 8),
-                                _buildPrioritySelector(),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildSectionTitle('Due Date'),
-                                const SizedBox(height: 8),
-                                _buildDueDateSelector(),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Row: Sprint and Estimated Hours
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildSectionTitle('Sprint'),
-                                const SizedBox(height: 8),
-                                _buildSprintSelector(),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildSectionTitle('Estimated Hours'),
-                                const SizedBox(height: 8),
-                                TextFormField(
-                                  controller: _estimatedHoursController,
-                                  decoration: const InputDecoration(
-                                    hintText: 'e.g., 5.5',
-                                    border: OutlineInputBorder(),
-                                    isDense: true,
-                                    suffixText: 'hours',
-                                  ),
-                                  keyboardType: TextInputType.number,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.allow(
-                                      RegExp(r'^\d+\.?\d{0,2}'),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Assignees
-                      _buildSectionTitle('Assignees'),
-                      const SizedBox(height: 8),
-                      _buildAssigneeSelector(),
+                      _buildPrioritySelector(),
                     ],
                   ),
                 ),
-              ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSectionTitle('Due Date'),
+                      const SizedBox(height: 8),
+                      _buildDueDateSelector(),
+                    ],
+                  ),
+                ),
+              ],
             ),
+            const SizedBox(height: 20),
 
-            // Footer
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                border: Border(top: BorderSide(color: Colors.grey.shade200)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: _isLoading
-                        ? null
-                        : () => Navigator.of(context).pop(),
-                    child: const Text('Cancel'),
+            // Row: Sprint and Estimated Hours
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSectionTitle('Sprint'),
+                      const SizedBox(height: 8),
+                      _buildSprintSelector(),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  FilledButton(
-                    onPressed: _isLoading ? null : _saveCard,
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Save Changes'),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: OllieTextfield.simple(
+                    label: 'Estimated Hours',
+                    controller: _estimatedHoursController,
+                    hint: 'e.g., 5.5',
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d+\.?\d{0,2}'),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
+            const SizedBox(height: 20),
+
+            // Assignees
+            _buildSectionTitle('Assignees'),
+            const SizedBox(height: 8),
+            _buildAssigneeSelector(),
           ],
         ),
       ),
@@ -326,7 +254,7 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
     return Text(
       title,
       style: TextStyle(
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: FontWeight.w600,
         color: Colors.grey.shade700,
       ),
@@ -334,40 +262,32 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
   }
 
   Widget _buildPrioritySelector() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<Priority>(
-          value: _selectedPriority,
-          isExpanded: true,
-          isDense: true,
-          items: Priority.values.map((priority) {
-            final color = _getPriorityColor(priority);
-            return DropdownMenuItem(
-              value: priority,
-              child: Row(
-                children: [
-                  Icon(Icons.flag, size: 16, color: color),
-                  const SizedBox(width: 8),
-                  Text(
-                    priority.toString().split('.').last.toUpperCase(),
-                    style: TextStyle(color: color, fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-          onChanged: (priority) {
-            if (priority != null) {
-              setState(() => _selectedPriority = priority);
-            }
-          },
-        ),
-      ),
+    return Row(
+      children: Priority.values.map((priority) {
+        final isSelected = _selectedPriority == priority;
+        return Padding(
+          padding: const EdgeInsets.only(right: 8.0),
+          child: ChoiceChip(
+            label: Text(priority.name.toUpperCase()),
+            selected: isSelected,
+            onSelected: (selected) {
+              if (selected) {
+                setState(() => _selectedPriority = priority);
+              }
+            },
+            selectedColor: _getPriorityColor(priority),
+            labelStyle: TextStyle(
+              color: isSelected ? Colors.white : Colors.black,
+              fontWeight: FontWeight.bold,
+            ),
+            side: BorderSide(
+              color: isSelected
+                  ? _getPriorityColor(priority)
+                  : Colors.grey.shade300,
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -375,10 +295,11 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
     return InkWell(
       onTap: () => _selectDate(context),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300),
-          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: Colors.grey.shade300, width: 1.5),
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.grey.shade50,
         ),
         child: Row(
           children: [
@@ -389,7 +310,7 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
                   ? '${_selectedDueDate!.month}/${_selectedDueDate!.day}/${_selectedDueDate!.year}'
                   : 'No due date',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 16,
                 color: _selectedDueDate != null
                     ? Colors.black87
                     : Colors.grey.shade500,
@@ -399,7 +320,7 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
             if (_selectedDueDate != null)
               InkWell(
                 onTap: () => setState(() => _selectedDueDate = null),
-                child: Icon(Icons.clear, size: 16, color: Colors.grey.shade600),
+                child: Icon(Icons.clear, size: 18, color: Colors.grey.shade600),
               ),
           ],
         ),
@@ -419,14 +340,14 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: Colors.grey.shade300, width: 1.5),
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.grey.shade50,
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String?>(
               value: _selectedSprintId,
               isExpanded: true,
-              isDense: true,
               hint: const Text('No sprint'),
               items: [
                 const DropdownMenuItem(value: null, child: Text('No sprint')),
