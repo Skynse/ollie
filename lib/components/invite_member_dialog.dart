@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ollie/components/ollie_ui/ollie_textfield.dart';
 import '../providers/boards_provider.dart';
+import '../providers/auth_provider.dart';
 import 'ollie_ui/ollie_dialog.dart';
 import 'ollie_ui/ollie_button.dart';
 
@@ -167,10 +168,34 @@ class _InviteMemberDialogState extends ConsumerState<InviteMemberDialog> {
       final email = _emailController.text.trim().toLowerCase();
       final userRepository = ref.read(userRepositoryProvider);
 
+      // Check if user is trying to invite themselves
+      final currentUser = ref.read(authProvider).user;
+      if (currentUser?.email.toLowerCase() == email) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'You cannot invite yourself to the board';
+        });
+        return;
+      }
+
       // First, check if user already exists
       final existingUser = await userRepository.getUserByEmail(email);
 
       if (existingUser != null) {
+        // Check if user is already a member
+        final board = await ref
+            .read(boardRepositoryProvider)
+            .getBoard(widget.boardId);
+
+        if (board.memberIds.contains(existingUser.id)) {
+          setState(() {
+            _isLoading = false;
+            _errorMessage =
+                '${existingUser.name} is already a member of this board';
+          });
+          return;
+        }
+
         // User exists, add them to the board
         await ref
             .read(boardRepositoryProvider)

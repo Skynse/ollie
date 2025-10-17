@@ -330,8 +330,15 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
 
     return sprintsAsync.when(
       data: (sprints) {
+        // Deduplicate sprints by ID to avoid duplicate dropdown values
+        final seenIds = <String>{};
         final availableSprints = sprints
             .where((s) => s.status != SprintStatus.completed)
+            .where((s) {
+              if (seenIds.contains(s.id)) return false;
+              seenIds.add(s.id);
+              return true;
+            })
             .toList();
 
         return Container(

@@ -223,10 +223,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                       builder: (context) =>
                           CreateSprintDialog(boardId: widget.boardId),
                     );
-                    // Refresh sprint data after dialog closes
-                    await ref
-                        .read(sprintNotifierProvider(widget.boardId).notifier)
-                        .refresh();
+                    // Sprint data is refreshed inside the dialog
                   },
                 ),
 
@@ -889,10 +886,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                 builder: (context) =>
                     CreateSprintDialog(boardId: widget.boardId),
               );
-              // Refresh sprint data after dialog closes
-              await ref
-                  .read(sprintNotifierProvider(widget.boardId).notifier)
-                  .refresh();
+              // Sprint data is refreshed inside the dialog
             } else {
               // Sprint selected - could show sprint details or start it
               final sprint = sprints.firstWhere((s) => s.id == value);

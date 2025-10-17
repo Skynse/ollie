@@ -83,7 +83,9 @@ class _CreateSprintDialogState extends ConsumerState<CreateSprintDialog> {
           );
 
       if (mounted) {
-        ref.refresh(sprintNotifierProvider(widget.boardId));
+        // Refresh both sprint providers to update the UI
+        ref.invalidate(sprintNotifierProvider(widget.boardId));
+        ref.invalidate(boardSprintsProvider(widget.boardId));
         Navigator.of(context).pop();
         OllieToast.success(context, 'Sprint created successfully');
       }
