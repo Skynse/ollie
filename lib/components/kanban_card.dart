@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ollie/providers/board_provider.dart';
 import '../models/card.dart' as model;
 import '../models/priority.dart';
+import '../models/sprint.dart';
 import '../providers/user_provider.dart';
+import '../providers/sprint_provider.dart';
 import 'assign_member_dialog.dart';
 import 'card_timer_widget.dart';
+import 'edit_card_dialog.dart';
 
 /// A kanban card component displaying task information
 class KanbanCard extends ConsumerStatefulWidget {
@@ -137,13 +140,6 @@ class _KanbanCardState extends ConsumerState<KanbanCard>
             items: [
               PopupMenuItem(value: 'edit', child: Text('Edit Card')),
               PopupMenuItem(
-                value: 'delete',
-                child: Text('Delete Card'),
-                onTap: () async {
-                  await boardNotifier.deleteCard(widget.card.id);
-                },
-              ),
-              PopupMenuItem(
                 value: 'change_member',
                 child: Text('Change Members'),
                 onTap: () {
@@ -158,6 +154,22 @@ class _KanbanCardState extends ConsumerState<KanbanCard>
                       ),
                     );
                   });
+                },
+              ),
+              PopupMenuItem(
+                value: 'add_to_sprint',
+                child: Text('Add to Sprint'),
+                onTap: () {
+                  Future.delayed(Duration.zero, () {
+                    _showAddToSprintDialog(context, ref);
+                  });
+                },
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Text('Delete Card'),
+                onTap: () async {
+                  await boardNotifier.deleteCard(widget.card.id);
                 },
               ),
             ],
@@ -385,5 +397,108 @@ class _KanbanCardState extends ConsumerState<KanbanCard>
     if (difference == -1) return 'Yesterday';
     if (difference < 0) return '${-difference}d ago';
     return '${difference}d';
+  }
+
+  void _showAddToSprintDialog(BuildContext context, WidgetRef ref) {
+    final sprintsAsync = ref.read(boardSprintsProvider(widget.boardId));
+
+    sprintsAsync.when(
+      data: (sprints) {
+        // Filter to only show planning and active sprints
+        final availableSprints = sprints
+            .where((s) => s.status != SprintStatus.completed)
+            .toList();
+
+        if (availableSprints.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No available sprints. Create one first!'),
+            ),
+          );
+          return;
+        }
+
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Add to Sprint'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: availableSprints.map((sprint) {
+                final isInSprint = widget.card.sprintId == sprint.id;
+                return ListTile(
+                  leading: Icon(
+                    sprint.status == SprintStatus.active
+                        ? Icons.play_circle
+                        : Icons.schedule,
+                    color: sprint.status == SprintStatus.active
+                        ? Colors.green.shade700
+                        : Colors.grey.shade600,
+                  ),
+                  title: Text(sprint.name),
+                  subtitle: Text(
+                    '${sprint.status.toString().split('.').last} - ${sprint.cardIds.length} cards',
+                  ),
+                  trailing: isInSprint
+                      ? Icon(Icons.check, color: Colors.green.shade700)
+                      : null,
+                  onTap: () async {
+                    Navigator.pop(context);
+                    try {
+                      // Update card with sprintId
+                      await ref
+                          .read(boardNotifierProvider(widget.boardId).notifier)
+                          .updateCard(
+                            cardId: widget.card.id,
+                            sprintId: sprint.id,
+                          );
+
+                      // Add card to sprint's cardIds list
+                      if (!sprint.cardIds.contains(widget.card.id)) {
+                        await ref
+                            .read(
+                              sprintNotifierProvider(widget.boardId).notifier,
+                            )
+                            .addCardToSprint(sprint.id, widget.card.id);
+                      }
+
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Added to ${sprint.name}')),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Failed to add to sprint: $e'),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                );
+              }).toList(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Loading sprints...')));
+      },
+      error: (_, __) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Failed to load sprints')));
+      },
+    );
   }
 }

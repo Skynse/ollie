@@ -30,27 +30,40 @@ class TimeLog {
       'cardId': cardId,
       'userId': userId,
       'startTime': startTime.toIso8601String(),
-      'endTime': endTime?.toIso8601String(),
+      // Use a placeholder far-future date if endTime is null (for active timers)
+      // This is a workaround if Appwrite requires endTime to be non-null
+      'endTime':
+          endTime?.toIso8601String() ??
+          DateTime(2099, 12, 31).toIso8601String(),
       'durationMinutes': durationMinutes,
-      'notes': notes,
+      'notes': notes ?? '',
       'isActive': isActive,
-      'sprintId': sprintId,
+      'sprintId': sprintId ?? '',
     };
   }
 
   factory TimeLog.fromJson(Map<String, dynamic> json) {
+    final endTimeStr = json['endTime'] as String?;
+    DateTime? parsedEndTime;
+
+    if (endTimeStr != null) {
+      final parsed = DateTime.parse(endTimeStr);
+      // Check if it's our placeholder date (year 2099) - treat as null
+      parsedEndTime = parsed.year == 2099 ? null : parsed;
+    }
+
     return TimeLog(
       id: (json['id'] ?? json['\$id']) as String,
       cardId: json['cardId'] as String,
       userId: json['userId'] as String,
       startTime: DateTime.parse(json['startTime'] as String),
-      endTime: json['endTime'] != null
-          ? DateTime.parse(json['endTime'] as String)
-          : null,
+      endTime: parsedEndTime,
       durationMinutes: json['durationMinutes'] as int,
-      notes: json['notes'] as String?,
+      notes: (json['notes'] as String?) == '' ? null : json['notes'] as String?,
       isActive: json['isActive'] as bool,
-      sprintId: json['sprintId'] as String?,
+      sprintId: (json['sprintId'] as String?) == ''
+          ? null
+          : json['sprintId'] as String?,
       createdAt: json['\$createdAt'] != null
           ? DateTime.parse(json['\$createdAt'] as String)
           : DateTime.now(),

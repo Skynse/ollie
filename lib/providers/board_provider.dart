@@ -282,6 +282,39 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
     }
   }
 
+  /// Update a card with new properties
+  Future<void> updateCard({
+    required String cardId,
+    String? title,
+    String? description,
+    String? sprintId,
+    double? estimatedHours,
+  }) async {
+    if (state is! AsyncData<BoardState>) return;
+
+    try {
+      final card = await _repository.getCard(cardId);
+
+      final updatedCard = card.copyWith(
+        title: title ?? card.title,
+        description: description ?? card.description,
+        sprintId: sprintId ?? card.sprintId,
+        estimatedHours: estimatedHours ?? card.estimatedHours,
+        updatedAt: DateTime.now(),
+      );
+
+      await _repository.updateCard(updatedCard);
+      // Real-time listener will handle updating the state
+    } catch (e) {
+      final currentState = (state as AsyncData<BoardState>).value;
+      state = AsyncValue.data(
+        currentState.copyWith(
+          errorMessage: 'Failed to update card: ${e.toString()}',
+        ),
+      );
+    }
+  }
+
   /// Assign a member to a card
   Future<void> assignMemberToCard({
     required String cardId,
