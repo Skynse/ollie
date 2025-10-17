@@ -272,7 +272,15 @@ class _HomePageState extends ConsumerState<HomePage> {
         .toList();
 
     if (sharedBoards.isEmpty) {
-      return _buildEmptyState();
+      return SizedBox(
+        width: double.infinity,
+        child: Center(
+          child: Text(
+            'No boards have been shared with you yet.',
+            style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+          ),
+        ),
+      );
     }
 
     return _buildBoardsGrid(sharedBoards);

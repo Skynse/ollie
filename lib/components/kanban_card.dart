@@ -7,34 +7,116 @@ import '../providers/user_provider.dart';
 import 'assign_member_dialog.dart';
 
 /// A kanban card component displaying task information
-class KanbanCard extends ConsumerWidget {
+class KanbanCard extends ConsumerStatefulWidget {
   final model.Card card;
   final String boardId;
 
   const KanbanCard({super.key, required this.card, required this.boardId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return LongPressDraggable<model.Card>(
-      data: card,
-      feedback: Material(
-        elevation: 8,
-        borderRadius: BorderRadius.circular(8),
-        child: SizedBox(
-          width: 280,
-          child: Opacity(opacity: 0.8, child: _buildCardContent(context, ref)),
+  ConsumerState<KanbanCard> createState() => _KanbanCardState();
+}
+
+class _KanbanCardState extends ConsumerState<KanbanCard>
+    with SingleTickerProviderStateMixin {
+  bool _isLongPressing = false;
+  late AnimationController _scaleController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _scaleController = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.97).animate(
+      CurvedAnimation(parent: _scaleController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _scaleController.dispose();
+    super.dispose();
+  }
+
+  void _onLongPressStart() {
+    setState(() {
+      _isLongPressing = true;
+    });
+    _scaleController.forward();
+  }
+
+  void _onLongPressEnd() {
+    setState(() {
+      _isLongPressing = false;
+    });
+    _scaleController.reverse();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerDown: (_) => _onLongPressStart(),
+      onPointerUp: (_) => _onLongPressEnd(),
+      onPointerCancel: (_) => _onLongPressEnd(),
+      child: LongPressDraggable<model.Card>(
+        data: widget.card,
+        hapticFeedbackOnStart: true,
+        onDragStarted: () {
+          _onLongPressEnd();
+        },
+        onDragEnd: (_) {
+          _onLongPressEnd();
+        },
+        delay: const Duration(milliseconds: 500),
+        feedback: Material(
+          elevation: 8,
+          borderRadius: BorderRadius.circular(8),
+          child: SizedBox(
+            width: 280,
+            child: Opacity(
+              opacity: 0.8,
+              child: _buildCardContent(context, ref),
+            ),
+          ),
+        ),
+        childWhenDragging: Opacity(
+          opacity: 0.3,
+          child: _buildCardContent(context, ref),
+        ),
+        child: AnimatedBuilder(
+          animation: _scaleAnimation,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: _scaleAnimation.value,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: _isLongPressing
+                      ? [
+                          BoxShadow(
+                            color: Colors.blue.withOpacity(0.4),
+                            blurRadius: 12,
+                            spreadRadius: 3,
+                          ),
+                        ]
+                      : [],
+                ),
+                child: _buildCardContent(context, ref),
+              ),
+            );
+          },
         ),
       ),
-      childWhenDragging: Opacity(
-        opacity: 0.3,
-        child: _buildCardContent(context, ref),
-      ),
-      child: _buildCardContent(context, ref),
     );
   }
 
   Widget _buildCardContent(BuildContext context, WidgetRef ref) {
-    final boardNotifier = ref.read(boardNotifierProvider(boardId).notifier);
+    final boardNotifier = ref.read(
+      boardNotifierProvider(widget.boardId).notifier,
+    );
 
     return Card(
       margin: EdgeInsets.zero,
@@ -57,7 +139,7 @@ class KanbanCard extends ConsumerWidget {
                 value: 'delete',
                 child: Text('Delete Card'),
                 onTap: () async {
-                  await boardNotifier.deleteCard(card.id);
+                  await boardNotifier.deleteCard(widget.card.id);
                 },
               ),
               PopupMenuItem(
@@ -69,9 +151,9 @@ class KanbanCard extends ConsumerWidget {
                     showDialog(
                       context: context,
                       builder: (context) => AssignMemberDialog(
-                        boardId: boardId,
-                        cardId: card.id,
-                        currentAssigneeIds: card.assigneeIds,
+                        boardId: widget.boardId,
+                        cardId: widget.card.id,
+                        currentAssigneeIds: widget.card.assigneeIds,
                       ),
                     );
                   });
@@ -88,7 +170,7 @@ class KanbanCard extends ConsumerWidget {
             children: [
               // Card title
               Text(
-                card.title,
+                widget.card.title,
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -98,10 +180,11 @@ class KanbanCard extends ConsumerWidget {
               ),
 
               // Card description (if exists)
-              if (card.description != null && card.description!.isNotEmpty) ...[
+              if (widget.card.description != null &&
+                  widget.card.description!.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Text(
-                  card.description!,
+                  widget.card.description!,
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -125,22 +208,22 @@ class KanbanCard extends ConsumerWidget {
       runSpacing: 6,
       children: [
         // Priority indicator
-        if (card.priority != Priority.low) _buildPriorityChip(),
+        if (widget.card.priority != Priority.low) _buildPriorityChip(),
 
         // Due date
-        if (card.dueDate != null) _buildDueDateChip(),
+        if (widget.card.dueDate != null) _buildDueDateChip(),
 
         // Comment count
-        if (card.commentCount > 0) _buildCommentCount(),
+        if (widget.card.commentCount > 0) _buildCommentCount(),
 
         // Assignees
-        if (card.assigneeIds.isNotEmpty) _buildAssignees(),
+        if (widget.card.assigneeIds.isNotEmpty) _buildAssignees(),
       ],
     );
   }
 
   Widget _buildPriorityChip() {
-    final priorityColor = _getPriorityColor(card.priority);
+    final priorityColor = _getPriorityColor(widget.card.priority);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -153,7 +236,7 @@ class KanbanCard extends ConsumerWidget {
           Icon(Icons.flag, size: 12, color: priorityColor),
           const SizedBox(width: 4),
           Text(
-            card.priority.toString().split('.').last.toUpperCase(),
+            widget.card.priority.toString().split('.').last.toUpperCase(),
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
@@ -166,7 +249,7 @@ class KanbanCard extends ConsumerWidget {
   }
 
   Widget _buildDueDateChip() {
-    final isOverdue = card.dueDate!.isBefore(DateTime.now());
+    final isOverdue = widget.card.dueDate!.isBefore(DateTime.now());
     final color = isOverdue ? Colors.red : Colors.grey.shade700;
 
     return Container(
@@ -181,7 +264,7 @@ class KanbanCard extends ConsumerWidget {
           Icon(Icons.calendar_today, size: 10, color: color),
           const SizedBox(width: 4),
           Text(
-            _formatDueDate(card.dueDate!),
+            _formatDueDate(widget.card.dueDate!),
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
@@ -200,7 +283,7 @@ class KanbanCard extends ConsumerWidget {
         Icon(Icons.chat_bubble_outline, size: 12, color: Colors.grey.shade600),
         const SizedBox(width: 4),
         Text(
-          '${card.commentCount}',
+          '${widget.card.commentCount}',
           style: TextStyle(
             fontSize: 11,
             color: Colors.grey.shade600,
@@ -215,8 +298,8 @@ class KanbanCard extends ConsumerWidget {
     return Consumer(
       builder: (context, ref, child) {
         // Take first 3 assignees
-        final displayedIds = card.assigneeIds.take(3).toList();
-        final remaining = card.assigneeIds.length - displayedIds.length;
+        final displayedIds = widget.card.assigneeIds.take(3).toList();
+        final remaining = widget.card.assigneeIds.length - displayedIds.length;
 
         return Row(
           mainAxisSize: MainAxisSize.min,
