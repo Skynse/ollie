@@ -116,7 +116,6 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
       await refresh();
       return created;
     } catch (e) {
-      print(e);
       state = AsyncValue.data(
         currentState.copyWith(
           isLoading: false,

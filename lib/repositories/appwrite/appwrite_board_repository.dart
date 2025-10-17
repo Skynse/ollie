@@ -194,7 +194,9 @@ class AppwriteBoardRepository implements BoardRepository {
       collectionId: cardsCollection,
       documentId: ID.unique(),
       data: card.toJson(),
+      permissions: [Permission.read(Role.user(card.createdBy))],
     );
+
     return Card.fromJson(doc.data);
   }
 
