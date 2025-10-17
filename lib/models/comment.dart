@@ -16,27 +16,20 @@ class Comment {
   });
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'card_id': cardId,
-      'user_id': userId,
-      'content': content,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt?.toIso8601String(),
-    };
+    return {'cardId': cardId, 'userId': userId, 'content': content};
   }
 
   factory Comment.fromJson(Map<String, dynamic> json) {
     return Comment(
       id: (json['id'] ?? json['\$id']) as String,
-      cardId: json['card_id'] as String,
-      userId: json['user_id'] as String,
+      cardId: json['cardId'] as String,
+      userId: json['userId'] as String,
       content: json['content'] as String,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
+      createdAt: json['\$createdAt'] != null
+          ? DateTime.parse(json['\$createdAt'] as String)
           : DateTime.now(),
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String)
+      updatedAt: json['\$updatedAt'] != null
+          ? DateTime.parse(json['\$updatedAt'] as String)
           : null,
     );
   }

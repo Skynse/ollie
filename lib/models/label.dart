@@ -12,13 +12,13 @@ class Label {
   });
 
   Map<String, dynamic> toJson() {
-    return {'id': id, 'board_id': boardId, 'name': name, 'color': color};
+    return {'boardId': boardId, 'name': name, 'color': color};
   }
 
   factory Label.fromJson(Map<String, dynamic> json) {
     return Label(
       id: (json['id'] ?? json['\$id']) as String,
-      boardId: json['board_id'] as String,
+      boardId: json['boardId'] as String,
       name: json['name'] as String,
       color: json['color'] as String,
     );

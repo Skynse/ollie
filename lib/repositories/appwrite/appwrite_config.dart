@@ -1,7 +1,6 @@
 import 'package:appwrite/appwrite.dart';
 import '../../config/environment.dart';
 import 'appwrite_board_repository.dart';
-import 'appwrite_project_repository.dart';
 import 'appwrite_user_repository.dart';
 
 /// Appwrite configuration and initialization
@@ -59,13 +58,6 @@ class AppwriteConfig {
   // Repository factory methods
   static AppwriteBoardRepository createBoardRepository() {
     return AppwriteBoardRepository(
-      databases: databases,
-      databaseId: databaseId,
-    );
-  }
-
-  static AppwriteProjectRepository createProjectRepository() {
-    return AppwriteProjectRepository(
       databases: databases,
       databaseId: databaseId,
     );

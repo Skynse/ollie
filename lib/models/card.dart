@@ -33,53 +33,50 @@ class Card {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'column_id': columnId,
+      'columnId': columnId,
       'title': title,
       'description': description,
       'position': position,
-      'assignee_ids': assigneeIds,
-      'label_ids': labelIds,
+      'assigneeIds': assigneeIds,
+      'labelIds': labelIds,
       'priority': priority.toJson(),
-      'due_date': dueDate?.toIso8601String(),
-      'comment_count': commentCount,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
-      'created_by': createdBy,
+      'dueDate': dueDate?.toIso8601String(),
+      'commentCount': commentCount,
+      'createdBy': createdBy,
     };
   }
 
   factory Card.fromJson(Map<String, dynamic> json) {
     return Card(
       id: (json['id'] ?? json['\$id']) as String,
-      columnId: json['column_id'] as String,
+      columnId: json['columnId'] as String,
       title: json['title'] as String,
       description: json['description'] as String?,
       position: json['position'] as int? ?? 0,
       assigneeIds:
-          (json['assignee_ids'] as List<dynamic>?)
+          (json['assigneeIds'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],
       labelIds:
-          (json['label_ids'] as List<dynamic>?)
+          (json['labelIds'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],
       priority: json['priority'] != null
           ? Priority.fromJson(json['priority'] as String)
           : Priority.low,
-      dueDate: json['due_date'] != null
-          ? DateTime.parse(json['due_date'] as String)
+      dueDate: json['dueDate'] != null
+          ? DateTime.parse(json['dueDate'] as String)
           : null,
-      commentCount: json['comment_count'] as int? ?? 0,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
+      commentCount: json['commentCount'] as int? ?? 0,
+      createdAt: json['\$createdAt'] != null
+          ? DateTime.parse(json['\$createdAt'] as String)
           : DateTime.now(),
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String)
+      updatedAt: json['\$updatedAt'] != null
+          ? DateTime.parse(json['\$updatedAt'] as String)
           : DateTime.now(),
-      createdBy: json['created_by'] as String,
+      createdBy: json['createdBy'] as String,
     );
   }
 

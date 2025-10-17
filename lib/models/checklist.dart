@@ -15,8 +15,7 @@ class Checklist {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'card_id': cardId,
+      'cardId': cardId,
       'title': title,
       'items': items.map((item) => item.toJson()).toList(),
     };
@@ -25,7 +24,7 @@ class Checklist {
   factory Checklist.fromJson(Map<String, dynamic> json) {
     return Checklist(
       id: (json['id'] ?? json['\$id']) as String,
-      cardId: json['card_id'] as String,
+      cardId: json['cardId'] as String,
       title: json['title'] as String,
       items:
           (json['items'] as List<dynamic>?)

@@ -1,57 +1,34 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:appwrite/models.dart' as models;
-import '../../services/auth_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/boards_provider.dart';
+import '../../models/board.dart';
+import '../../components/ollie_dialog.dart';
+import '../../components/ollie_textfield.dart';
+import '../../components/ollie_button.dart';
 
-/// Trello-like homepage with sidebar navigation (bare minimum UI only)
-class HomePage extends StatefulWidget {
+/// Trello-like homepage with sidebar navigation
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends ConsumerState<HomePage> {
   String _selectedView = 'my-projects';
-  models.User? _currentUser;
-  bool _isLoadingUser = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCurrentUser();
-  }
-
-  Future<void> _loadCurrentUser() async {
-    try {
-      final authService = AuthService();
-      final isAuth = await authService.isAuthenticated();
-      if (isAuth && mounted) {
-        setState(() {
-          _currentUser = authService.currentUser;
-          _isLoadingUser = false;
-        });
-      } else if (mounted) {
-        setState(() {
-          _isLoadingUser = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoadingUser = false;
-        });
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
+    // Read auth state from provider - NO additional fetching
+    final authState = ref.watch(authProvider);
+    final currentUser = authState.user;
+
     return Scaffold(
       body: Row(
         children: [
           // Sidebar
-          _buildSidebar(context),
+          _buildSidebar(context, currentUser, authState.isLoading),
 
           // Main content area
           Expanded(child: _buildMainContent()),
@@ -60,7 +37,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildSidebar(BuildContext context) {
+  Widget _buildSidebar(BuildContext context, dynamic user, bool isLoadingAuth) {
     return Container(
       width: 260,
       decoration: BoxDecoration(
@@ -146,7 +123,7 @@ class _HomePageState extends State<HomePage> {
             onTap: () => _showUserMenu(context),
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: _isLoadingUser
+              child: isLoadingAuth
                   ? const Center(
                       child: SizedBox(
                         width: 20,
@@ -160,8 +137,7 @@ class _HomePageState extends State<HomePage> {
                           backgroundColor: Colors.blue.shade100,
                           radius: 18,
                           child: Text(
-                            _currentUser?.name.substring(0, 1).toUpperCase() ??
-                                'U',
+                            user?.name?.substring(0, 1).toUpperCase() ?? 'U',
                             style: TextStyle(
                               color: Colors.blue.shade700,
                               fontWeight: FontWeight.w600,
@@ -174,7 +150,7 @@ class _HomePageState extends State<HomePage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                _currentUser?.name ?? 'User Name',
+                                user?.name ?? 'User Name',
                                 style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
@@ -182,7 +158,7 @@ class _HomePageState extends State<HomePage> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                               Text(
-                                _currentUser?.email ?? 'user@example.com',
+                                user?.email ?? 'user@example.com',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey.shade600,
@@ -237,9 +213,9 @@ class _HomePageState extends State<HomePage> {
           ),
           const Spacer(),
           OutlinedButton.icon(
-            onPressed: () {},
+            onPressed: () => _showCreateBoardDialog(context),
             icon: const Icon(Icons.add, size: 18),
-            label: const Text('New Project'),
+            label: const Text('New Board'),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             ),
@@ -250,13 +226,71 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildMyProjectsView() {
-    // Just show empty state for now
-    return _buildEmptyState();
+    final boardsState = ref.watch(boardsProvider);
+
+    if (boardsState.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (boardsState.errorMessage != null) {
+      return _buildErrorState(boardsState.errorMessage!);
+    }
+
+    final authState = ref.watch(authProvider);
+    final userId = authState.user?.$id;
+
+    // Filter to boards created by current user
+    final myBoards = boardsState.boards
+        .where((board) => board.createdBy == userId)
+        .toList();
+
+    if (myBoards.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    return _buildBoardsGrid(myBoards);
   }
 
   Widget _buildSharedProjectsView() {
-    // Just show empty state for now
-    return _buildEmptyState();
+    final boardsState = ref.watch(boardsProvider);
+
+    if (boardsState.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (boardsState.errorMessage != null) {
+      return _buildErrorState(boardsState.errorMessage!);
+    }
+
+    final authState = ref.watch(authProvider);
+    final userId = authState.user?.$id;
+
+    // Filter to boards where user is member but not creator
+    final sharedBoards = boardsState.boards
+        .where((board) => board.createdBy != userId)
+        .toList();
+
+    if (sharedBoards.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    return _buildBoardsGrid(sharedBoards);
+  }
+
+  Widget _buildBoardsGrid(List<Board> boards) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(24),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 2.0,
+      ),
+      itemCount: boards.length,
+      itemBuilder: (context, index) {
+        return _BoardCard(board: boards[index]);
+      },
+    );
   }
 
   Widget _buildEmptyState() {
@@ -272,14 +306,14 @@ class _HomePageState extends State<HomePage> {
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(
-              Icons.folder_open,
+              Icons.dashboard_outlined,
               size: 40,
               color: Colors.grey.shade400,
             ),
           ),
           const SizedBox(height: 16),
           Text(
-            'No projects yet',
+            'No boards yet',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -288,16 +322,61 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Create your first project to get started',
+            'Create your first board to get started',
             style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
           ),
           const SizedBox(height: 24),
           FilledButton.icon(
-            onPressed: () {},
+            onPressed: () => _showCreateBoardDialog(context),
             icon: const Icon(Icons.add),
-            label: const Text('Create Project'),
+            label: const Text('Create Board'),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 64, color: Colors.red.shade400),
+          const SizedBox(height: 16),
+          Text(
+            'Something went wrong',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          OutlinedButton(
+            onPressed: () => ref.read(boardsProvider.notifier).fetchBoards(),
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCreateBoardDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => _CreateBoardDialog(
+        onCreateBoard: (name, description) async {
+          final board = await ref
+              .read(boardsProvider.notifier)
+              .createBoard(name: name, description: description);
+          return board != null;
+        },
       ),
     );
   }
@@ -328,7 +407,11 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ],
-    );
+    ).then((value) {
+      if (value == 'logout') {
+        ref.read(authProvider.notifier).logout();
+      }
+    });
   }
 }
 
@@ -370,6 +453,177 @@ class _SidebarItem extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         onTap: onTap,
       ),
+    );
+  }
+}
+
+/// Board card widget - compact Trello-style card
+class _BoardCard extends StatelessWidget {
+  final Board board;
+
+  const _BoardCard({required this.board});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      child: InkWell(
+        onTap: () {
+          // TODO: Navigate to board detail screen
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Board name
+              Text(
+                board.name,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+
+              // Board description (if exists)
+              if (board.description != null && board.description!.isNotEmpty)
+                Text(
+                  board.description!,
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+
+              // Bottom row: member count
+              Row(
+                children: [
+                  Icon(
+                    Icons.people_outline,
+                    size: 16,
+                    color: Colors.grey.shade500,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${board.memberIds.length} ${board.memberIds.length == 1 ? 'member' : 'members'}',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Create board dialog - only triggers API call on button click
+class _CreateBoardDialog extends StatefulWidget {
+  final Future<bool> Function(String name, String? description) onCreateBoard;
+
+  const _CreateBoardDialog({required this.onCreateBoard});
+
+  @override
+  State<_CreateBoardDialog> createState() => _CreateBoardDialogState();
+}
+
+class _CreateBoardDialogState extends State<_CreateBoardDialog> {
+  final _nameController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  bool _isCreating = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleCreate() async {
+    if (_nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a board name')),
+      );
+      return;
+    }
+
+    setState(() => _isCreating = true);
+
+    final success = await widget.onCreateBoard(
+      _nameController.text.trim(),
+      _descriptionController.text.trim().isEmpty
+          ? null
+          : _descriptionController.text.trim(),
+    );
+
+    if (mounted) {
+      setState(() => _isCreating = false);
+      if (success) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Board created!')));
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Failed to create board')));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return OllieDialog(
+      title: 'Create Board',
+      width: 480,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Board name input
+          OllieTextfield.simple(
+            label: 'Board Name',
+            hint: 'e.g., Sprint Planning',
+            controller: _nameController,
+            enabled: !_isCreating,
+          ),
+
+          const SizedBox(height: 20),
+
+          // Description input
+          OllieTextfield.simple(
+            label: 'Description (optional)',
+            hint: 'What will you track in this board?',
+            controller: _descriptionController,
+            enabled: !_isCreating,
+            maxLines: 3,
+          ),
+        ],
+      ),
+      actions: [
+        // Cancel button
+        OllieButton.text(
+          text: 'Cancel',
+          onPressed: () => Navigator.pop(context),
+          disabled: _isCreating,
+          width: null,
+        ),
+
+        // Create button
+        OllieButton(
+          text: 'Create Board',
+          onPressed: _handleCreate,
+          loading: _isCreating,
+          width: null,
+        ),
+      ],
     );
   }
 }

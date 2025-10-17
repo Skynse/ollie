@@ -15,11 +15,10 @@ class ChecklistItem {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'text': text,
-      'is_completed': isCompleted,
-      'completed_at': completedAt?.toIso8601String(),
-      'completed_by': completedBy,
+      'isCompleted': isCompleted,
+      'completedAt': completedAt?.toIso8601String(),
+      'completedBy': completedBy,
     };
   }
 
@@ -27,11 +26,11 @@ class ChecklistItem {
     return ChecklistItem(
       id: json['id'] as String,
       text: json['text'] as String,
-      isCompleted: json['is_completed'] as bool? ?? false,
-      completedAt: json['completed_at'] != null
-          ? DateTime.parse(json['completed_at'] as String)
+      isCompleted: json['isCompleted'] as bool? ?? false,
+      completedAt: json['completedAt'] != null
+          ? DateTime.parse(json['completedAt'] as String)
           : null,
-      completedBy: json['completed_by'] as String?,
+      completedBy: json['completedBy'] as String?,
     );
   }
 

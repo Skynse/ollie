@@ -35,11 +35,11 @@ class AppwriteBoardRepository implements BoardRepository {
   }
 
   @override
-  Future<List<Board>> getBoardsByProject(String projectId) async {
+  Future<List<Board>> getBoardsByUser(String userId) async {
     final docs = await databases.listDocuments(
       databaseId: databaseId,
       collectionId: boardsCollection,
-      queries: [Query.equal('project_id', projectId)],
+      queries: [Query.equal('members', userId)],
     );
     return docs.documents.map((doc) => Board.fromJson(doc.data)).toList();
   }
@@ -75,6 +75,32 @@ class AppwriteBoardRepository implements BoardRepository {
     );
   }
 
+  @override
+  Future<void> addMember(String boardId, String userId) async {
+    final board = await getBoard(boardId);
+    final updatedMemberIds = [...board.memberIds, userId];
+    await databases.updateDocument(
+      databaseId: databaseId,
+      collectionId: boardsCollection,
+      documentId: boardId,
+      data: {'members': updatedMemberIds},
+    );
+  }
+
+  @override
+  Future<void> removeMember(String boardId, String userId) async {
+    final board = await getBoard(boardId);
+    final updatedMemberIds = board.memberIds
+        .where((id) => id != userId)
+        .toList();
+    await databases.updateDocument(
+      databaseId: databaseId,
+      collectionId: boardsCollection,
+      documentId: boardId,
+      data: {'members': updatedMemberIds},
+    );
+  }
+
   // Column operations
   @override
   Future<BoardColumn> getColumn(String columnId) async {
@@ -91,7 +117,7 @@ class AppwriteBoardRepository implements BoardRepository {
     final docs = await databases.listDocuments(
       databaseId: databaseId,
       collectionId: columnsCollection,
-      queries: [Query.equal('board_id', boardId), Query.orderAsc('position')],
+      queries: [Query.equal('boardId', boardId), Query.orderAsc('position')],
     );
     return docs.documents.map((doc) => BoardColumn.fromJson(doc.data)).toList();
   }
@@ -156,7 +182,7 @@ class AppwriteBoardRepository implements BoardRepository {
     final docs = await databases.listDocuments(
       databaseId: databaseId,
       collectionId: cardsCollection,
-      queries: [Query.equal('column_id', columnId), Query.orderAsc('position')],
+      queries: [Query.equal('columnId', columnId), Query.orderAsc('position')],
     );
     return docs.documents.map((doc) => Card.fromJson(doc.data)).toList();
   }
@@ -202,7 +228,7 @@ class AppwriteBoardRepository implements BoardRepository {
       databaseId: databaseId,
       collectionId: cardsCollection,
       documentId: cardId,
-      data: {'column_id': newColumnId, 'position': newPosition},
+      data: {'columnId': newColumnId, 'position': newPosition},
     );
   }
 
@@ -234,7 +260,7 @@ class AppwriteBoardRepository implements BoardRepository {
     final docs = await databases.listDocuments(
       databaseId: databaseId,
       collectionId: labelsCollection,
-      queries: [Query.equal('board_id', boardId)],
+      queries: [Query.equal('boardId', boardId)],
     );
     return docs.documents.map((doc) => Label.fromJson(doc.data)).toList();
   }
@@ -286,7 +312,7 @@ class AppwriteBoardRepository implements BoardRepository {
     final docs = await databases.listDocuments(
       databaseId: databaseId,
       collectionId: commentsCollection,
-      queries: [Query.equal('card_id', cardId), Query.orderDesc('created_at')],
+      queries: [Query.equal('cardId', cardId), Query.orderDesc('\$createdAt')],
     );
     return docs.documents.map((doc) => Comment.fromJson(doc.data)).toList();
   }
@@ -338,7 +364,7 @@ class AppwriteBoardRepository implements BoardRepository {
     final docs = await databases.listDocuments(
       databaseId: databaseId,
       collectionId: checklistsCollection,
-      queries: [Query.equal('card_id', cardId)],
+      queries: [Query.equal('cardId', cardId)],
     );
     return docs.documents.map((doc) => Checklist.fromJson(doc.data)).toList();
   }

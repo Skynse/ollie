@@ -19,26 +19,25 @@ class BoardColumn {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'board_id': boardId,
+      'boardId': boardId,
       'name': name,
       'position': position,
       'color': color,
-      'wip_limit': wipLimit,
-      'card_ids': cardIds,
+      'wipLimit': wipLimit,
+      'cardIds': cardIds,
     };
   }
 
   factory BoardColumn.fromJson(Map<String, dynamic> json) {
     return BoardColumn(
       id: (json['id'] ?? json['\$id']) as String,
-      boardId: json['board_id'] as String,
+      boardId: json['boardId'] as String,
       name: json['name'] as String,
       position: json['position'] as int? ?? 0,
       color: json['color'] as String? ?? '#808080',
-      wipLimit: json['wip_limit'] as int?,
+      wipLimit: json['wipLimit'] as int?,
       cardIds:
-          (json['card_ids'] as List<dynamic>?)
+          (json['cardIds'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],

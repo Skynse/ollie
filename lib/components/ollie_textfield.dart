@@ -149,6 +149,31 @@ class OllieTextfield extends StatefulWidget {
        inputFormatters = null,
        textCapitalization = TextCapitalization.sentences;
 
+  // Named constructor for simple text input (no icons, cleaner for dialogs)
+  const OllieTextfield.simple({
+    super.key,
+    this.label,
+    this.hint,
+    this.errorText,
+    this.controller,
+    this.enabled = true,
+    this.readOnly = false,
+    this.maxLines = 1,
+    this.maxLength,
+    this.helperText,
+    this.onChanged,
+    this.onSubmitted,
+    this.onTap,
+    this.focusNode,
+    this.autofocus = false,
+    this.initialValue,
+  }) : keyboardType = TextInputType.text,
+       obscureText = false,
+       prefixIcon = null,
+       suffixIcon = null,
+       inputFormatters = null,
+       textCapitalization = TextCapitalization.none;
+
   @override
   State<OllieTextfield> createState() => _OllieTextfieldState();
 }
@@ -213,9 +238,9 @@ class _OllieTextfieldState extends State<OllieTextfield> {
           Text(
             widget.label!,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: hasError ? Colors.red.shade700 : Colors.grey.shade800,
+              color: hasError ? Colors.red.shade700 : Colors.grey.shade700,
             ),
           ),
           const SizedBox(height: 8),
