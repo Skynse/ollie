@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/board_column.dart';
+import 'ollie_ui/ollie_toast.dart';
 
 class ManageColumnsDialog extends ConsumerStatefulWidget {
   final List<BoardColumn> columns;
@@ -51,12 +52,7 @@ class _ManageColumnsDialogState extends ConsumerState<ManageColumnsDialog> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to reorder columns: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        OllieToast.error(context, 'Failed to reorder columns: ${e.toString()}');
       }
     }
   }
@@ -189,12 +185,7 @@ class _ManageColumnsDialogState extends ConsumerState<ManageColumnsDialog> {
         });
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to update column: ${e.toString()}'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          OllieToast.error(context, 'Failed to update column: ${e.toString()}');
         }
       }
     }
@@ -230,18 +221,11 @@ class _ManageColumnsDialogState extends ConsumerState<ManageColumnsDialog> {
           _columns.removeWhere((c) => c.id == column.id);
         });
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Column deleted successfully')),
-          );
+          OllieToast.success(context, 'Column deleted successfully');
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to delete column: ${e.toString()}'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          OllieToast.error(context, 'Failed to delete column: ${e.toString()}');
         }
       }
     }
@@ -440,7 +424,7 @@ class _EditColumnDialogState extends State<_EditColumnDialog> {
         ),
         FilledButton(
           onPressed: () {
-            if (_formKey.currentState!.validate()) {
+            if (_formKey.currentState?.validate() ?? false) {
               Navigator.pop(context, {
                 'name': _nameController.text.trim(),
                 'color': _selectedColor,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/board.dart';
+import 'ollie_ui/ollie_toast.dart';
 
 class EditBoardDialog extends ConsumerStatefulWidget {
   final Board board;
@@ -52,23 +53,13 @@ class _EditBoardDialogState extends ConsumerState<EditBoardDialog> {
           Navigator.pop(context);
         } else {
           setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to update board'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          OllieToast.error(context, 'Failed to update board');
         }
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        OllieToast.error(context, 'Error: ${e.toString()}');
       }
     }
   }

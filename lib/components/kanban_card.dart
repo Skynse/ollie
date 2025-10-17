@@ -9,6 +9,7 @@ import '../providers/sprint_provider.dart';
 import 'assign_member_dialog.dart';
 import 'card_timer_widget.dart';
 import 'edit_card_dialog.dart';
+import 'ollie_ui/ollie_toast.dart';
 
 /// A kanban card component displaying task information
 class KanbanCard extends ConsumerStatefulWidget {
@@ -431,11 +432,7 @@ class _KanbanCardState extends ConsumerState<KanbanCard>
             .toList();
 
         if (availableSprints.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No available sprints. Create one first!'),
-            ),
-          );
+          OllieToast.info(context, 'No available sprints. Create one first!');
           return;
         }
 
@@ -484,16 +481,13 @@ class _KanbanCardState extends ConsumerState<KanbanCard>
                       }
 
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Added to ${sprint.name}')),
-                        );
+                        OllieToast.success(context, 'Added to ${sprint.name}');
                       }
                     } catch (e) {
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Failed to add to sprint: $e'),
-                          ),
+                        OllieToast.error(
+                          context,
+                          'Failed to add to sprint: $e',
                         );
                       }
                     }
@@ -511,14 +505,10 @@ class _KanbanCardState extends ConsumerState<KanbanCard>
         );
       },
       loading: () {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Loading sprints...')));
+        OllieToast.info(context, 'Loading sprints...');
       },
       error: (_, __) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Failed to load sprints')));
+        OllieToast.error(context, 'Failed to load sprints');
       },
     );
   }

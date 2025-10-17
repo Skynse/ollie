@@ -7,6 +7,7 @@ import '../../models/board.dart';
 import '../../components/ollie_ui/ollie_dialog.dart';
 import '../../components/ollie_ui/ollie_textfield.dart';
 import '../../components/ollie_ui/ollie_button.dart';
+import '../../components/ollie_ui/ollie_toast.dart';
 
 /// Trello-like homepage with sidebar navigation
 class HomePage extends ConsumerStatefulWidget {
@@ -18,6 +19,7 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   String _selectedView = 'my-projects';
+  bool _isUserMenuOpen = false;
 
   @override
   Widget build(BuildContext context) {
@@ -26,13 +28,40 @@ class _HomePageState extends ConsumerState<HomePage> {
     final currentUser = authState.user;
 
     return Scaffold(
-      body: Row(
+      body: Stack(
         children: [
-          // Sidebar
-          _buildSidebar(context, currentUser, authState.isLoading),
+          Row(
+            children: [
+              // Sidebar
+              _buildSidebar(context, currentUser, authState.isLoading),
 
-          // Main content area
-          Expanded(child: _buildMainContent()),
+              // Main content area
+              Expanded(child: _buildMainContent()),
+            ],
+          ),
+
+          // User menu overlay panel
+          if (_isUserMenuOpen)
+            GestureDetector(
+              onTap: () => setState(() => _isUserMenuOpen = false),
+              child: Container(
+                color: Colors.black38,
+                child: Align(
+                  alignment: Alignment.bottomLeft,
+                  child: GestureDetector(
+                    onTap: () {}, // Prevent closing when tapping panel
+                    child: _UserMenuPanel(
+                      user: currentUser,
+                      onClose: () => setState(() => _isUserMenuOpen = false),
+                      onLogout: () {
+                        ref.read(authProvider.notifier).logout();
+                        setState(() => _isUserMenuOpen = false);
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -98,22 +127,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                   isSelected: _selectedView == 'shared',
                   onTap: () => setState(() => _selectedView = 'shared'),
                 ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Text(
-                    'WORKSPACES',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ),
-                _SidebarItem(
-                  icon: Icons.add,
-                  label: 'Create Workspace',
-                  onTap: () {},
-                ),
               ],
             ),
           ),
@@ -121,7 +134,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           // User menu at bottom
           const Divider(height: 1),
           InkWell(
-            onTap: () => _showUserMenu(context),
+            onTap: () => setState(() => _isUserMenuOpen = !_isUserMenuOpen),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: isLoadingAuth
@@ -389,38 +402,179 @@ class _HomePageState extends ConsumerState<HomePage> {
       ),
     );
   }
+}
 
-  void _showUserMenu(BuildContext context) {
-    showMenu(
-      context: context,
-      position: const RelativeRect.fromLTRB(0, 100, 0, 0),
-      items: [
-        const PopupMenuItem(
-          value: 'settings',
-          child: Row(
-            children: [
-              Icon(Icons.settings_outlined, size: 20),
-              SizedBox(width: 12),
-              Text('Settings'),
-            ],
+/// Modern user menu panel that slides up from bottom-left
+class _UserMenuPanel extends StatelessWidget {
+  final dynamic user;
+  final VoidCallback onClose;
+  final VoidCallback onLogout;
+
+  const _UserMenuPanel({
+    required this.user,
+    required this.onClose,
+    required this.onLogout,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 320,
+      margin: const EdgeInsets.only(left: 8, bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
-        ),
-        const PopupMenuItem(
-          value: 'logout',
-          child: Row(
-            children: [
-              Icon(Icons.logout, size: 20),
-              SizedBox(width: 12),
-              Text('Logout'),
-            ],
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header with user info
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: Colors.blue.shade100,
+                  radius: 24,
+                  child: Text(
+                    user?.name?.substring(0, 1).toUpperCase() ?? 'U',
+                    style: TextStyle(
+                      color: Colors.blue.shade700,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 20,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user?.name ?? 'User Name',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        user?.email ?? 'user@example.com',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
+
+          // Menu items
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              children: [
+                // _UserMenuItem(
+                //   icon: Icons.person_outline,
+                //   label: 'Profile',
+                //   onTap: () {
+                //     onClose();
+                //     // TODO: Navigate to profile
+                //   },
+                // ),
+                // _UserMenuItem(
+                //   icon: Icons.settings_outlined,
+                //   label: 'Settings',
+                //   onTap: () {
+                //     onClose();
+                //     // TODO: Navigate to settings
+                //   },
+                // ),
+                // _UserMenuItem(
+                //   icon: Icons.help_outline,
+                //   label: 'Help & Support',
+                //   onTap: () {
+                //     onClose();
+                //     // TODO: Navigate to help
+                //   },
+                // ),
+                const Divider(height: 1),
+                _UserMenuItem(
+                  icon: Icons.logout,
+                  label: 'Logout',
+                  isDestructive: true,
+                  onTap: onLogout,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Individual menu item in user panel
+class _UserMenuItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool isDestructive;
+
+  const _UserMenuItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.isDestructive = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isDestructive ? Colors.red.shade600 : Colors.grey.shade800;
+    final iconColor = isDestructive
+        ? Colors.red.shade600
+        : Colors.grey.shade600;
+
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: iconColor),
+            const SizedBox(width: 16),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: color,
+              ),
+            ),
+          ],
         ),
-      ],
-    ).then((value) {
-      if (value == 'logout') {
-        ref.read(authProvider.notifier).logout();
-      }
-    });
+      ),
+    );
   }
 }
 
@@ -558,9 +712,7 @@ class _CreateBoardDialogState extends State<_CreateBoardDialog> {
 
   Future<void> _handleCreate() async {
     if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a board name')),
-      );
+      OllieToast.info(context, 'Please enter a board name');
       return;
     }
 
@@ -577,13 +729,9 @@ class _CreateBoardDialogState extends State<_CreateBoardDialog> {
       setState(() => _isCreating = false);
       if (success) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Board created!')));
+        OllieToast.success(context, 'Board created!');
       } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Failed to create board')));
+        OllieToast.error(context, 'Failed to create board');
       }
     }
   }

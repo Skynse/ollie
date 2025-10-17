@@ -5,6 +5,7 @@ import '../models/card.dart' as model;
 import '../providers/sprint_provider.dart';
 import '../providers/user_provider.dart';
 import 'manual_time_log_dialog.dart';
+import 'ollie_ui/ollie_toast.dart';
 
 /// Widget for displaying and controlling time tracking on a card
 class CardTimerWidget extends ConsumerStatefulWidget {
@@ -167,11 +168,9 @@ class _CardTimerWidgetState extends ConsumerState<CardTimerWidget> {
                           .stopTimer(activeTimeLog.id);
                     } else if (activeTimeLog != null) {
                       // There's an active timer on another card
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please stop the active timer first'),
-                          duration: Duration(seconds: 2),
-                        ),
+                      OllieToast.info(
+                        context,
+                        'Please stop the active timer first',
                       );
                     } else {
                       // Start timer

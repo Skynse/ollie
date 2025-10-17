@@ -17,6 +17,7 @@ import '../../components/manage_columns_dialog.dart';
 import '../../components/sprint_management_dialog.dart';
 import '../../components/board_analytics_dialog.dart';
 import '../../components/export_board_dialog.dart';
+import '../../components/ollie_ui/ollie_toast.dart';
 
 /// Main kanban board screen showing columns and cards
 class BoardScreen extends ConsumerStatefulWidget {
@@ -215,13 +216,17 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                   icon: Icons.add_circle,
                   title: 'Create Sprint',
                   subtitle: 'Start a new sprint',
-                  onTap: () {
+                  onTap: () async {
                     Navigator.pop(context);
-                    showDialog(
+                    await showDialog(
                       context: context,
                       builder: (context) =>
                           CreateSprintDialog(boardId: widget.boardId),
                     );
+                    // Refresh sprint data after dialog closes
+                    await ref
+                        .read(sprintNotifierProvider(widget.boardId).notifier)
+                        .refresh();
                   },
                 ),
 
@@ -387,13 +392,10 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
               Navigator.pop(context);
               // Archive functionality would be implemented in repository
               // For now, show a message that this is coming soon
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Archive functionality coming soon. '
-                    'Board archiving will be implemented in the next update.',
-                  ),
-                ),
+              OllieToast.info(
+                context,
+                'Archive functionality coming soon. '
+                'Board archiving will be implemented in the next update.',
               );
             },
             style: FilledButton.styleFrom(backgroundColor: Colors.orange),
@@ -418,6 +420,10 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         onRemoveMember: (userId) async {
           final repository = ref.read(boardRepositoryProvider);
           await repository.removeMember(widget.boardId, userId);
+          // Smoothly refresh just the board data (not the entire page)
+          await ref
+              .read(boardNotifierProvider(widget.boardId).notifier)
+              .refreshBoard();
         },
         onInviteMore: () => _showInviteMemberDialog(),
       ),
@@ -473,13 +479,13 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     );
   }
 
-  void _showSprintManagementDialog() {
+  void _showSprintManagementDialog() async {
     final sprintsAsync = ref.read(boardSprintsProvider(widget.boardId));
     final activeSprint = ref.read(sprintNotifierProvider(widget.boardId));
 
     sprintsAsync.when(
-      data: (sprints) {
-        showDialog(
+      data: (sprints) async {
+        await showDialog(
           context: context,
           builder: (context) => SprintManagementDialog(
             sprints: sprints,
@@ -497,24 +503,25 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             onDeleteSprint: (sprintId) async {
               final repository = ref.read(sprintRepositoryProvider);
               await repository.deleteSprint(sprintId);
-              ref.refresh(boardSprintsProvider(widget.boardId));
-              ref.refresh(sprintNotifierProvider(widget.boardId));
-              setState(() {});
+              // Just refresh the sprint notifier, not the whole board
+              await ref
+                  .read(sprintNotifierProvider(widget.boardId).notifier)
+                  .refresh();
             },
           ),
         );
+        // After dialog closes, refresh sprint data
+        await ref
+            .read(sprintNotifierProvider(widget.boardId).notifier)
+            .refresh();
       },
       loading: () {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Loading sprints...')));
+        OllieToast.info(context, 'Loading sprints...');
       },
       error: (error, _) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to load sprints: ${error.toString()}'),
-            backgroundColor: Colors.red,
-          ),
+        OllieToast.error(
+          context,
+          'Failed to load sprints: ${error.toString()}',
         );
       },
     );
@@ -756,11 +763,15 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     );
   }
 
-  void _showInviteMemberDialog() {
-    showDialog(
+  void _showInviteMemberDialog() async {
+    await showDialog(
       context: context,
       builder: (context) => InviteMemberDialog(boardId: widget.boardId),
     );
+    // Smoothly refresh board data to show new members
+    await ref
+        .read(boardNotifierProvider(widget.boardId).notifier)
+        .refreshBoard();
   }
 
   Widget _buildSprintSelector() {
@@ -873,11 +884,15 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
           ],
           onSelected: (value) async {
             if (value == 'create') {
-              showDialog(
+              await showDialog(
                 context: context,
                 builder: (context) =>
                     CreateSprintDialog(boardId: widget.boardId),
               );
+              // Refresh sprint data after dialog closes
+              await ref
+                  .read(sprintNotifierProvider(widget.boardId).notifier)
+                  .refresh();
             } else {
               // Sprint selected - could show sprint details or start it
               final sprint = sprints.firstWhere((s) => s.id == value);

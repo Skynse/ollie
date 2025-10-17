@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/sprint.dart';
 import 'sprint_details_dialog.dart';
+import 'ollie_ui/ollie_toast.dart';
 
 class SprintManagementDialog extends ConsumerWidget {
   final List<Sprint> sprints;
@@ -152,18 +153,11 @@ class SprintManagementDialog extends ConsumerWidget {
       try {
         await onStartSprint(sprint.id);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Sprint started successfully')),
-          );
+          OllieToast.success(context, 'Sprint started successfully');
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to start sprint: ${e.toString()}'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          OllieToast.error(context, 'Failed to start sprint: ${e.toString()}');
         }
       }
     }
@@ -198,17 +192,13 @@ class SprintManagementDialog extends ConsumerWidget {
       try {
         await onCompleteSprint(sprint.id);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Sprint completed successfully')),
-          );
+          OllieToast.success(context, 'Sprint completed successfully');
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to complete sprint: ${e.toString()}'),
-              backgroundColor: Colors.red,
-            ),
+          OllieToast.error(
+            context,
+            'Failed to complete sprint: ${e.toString()}',
           );
         }
       }
@@ -242,18 +232,11 @@ class SprintManagementDialog extends ConsumerWidget {
       try {
         await onDeleteSprint(sprint.id);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Sprint deleted successfully')),
-          );
+          OllieToast.success(context, 'Sprint deleted successfully');
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to delete sprint: ${e.toString()}'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          OllieToast.error(context, 'Failed to delete sprint: ${e.toString()}');
         }
       }
     }

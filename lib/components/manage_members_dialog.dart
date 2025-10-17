@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/user_provider.dart';
+import 'ollie_ui/ollie_toast.dart';
 
 class ManageMembersDialog extends ConsumerWidget {
   final String boardId;
@@ -162,18 +163,11 @@ class ManageMembersDialog extends ConsumerWidget {
       try {
         await onRemoveMember(memberId);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Member removed successfully')),
-          );
+          OllieToast.success(context, 'Member removed successfully');
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to remove member: ${e.toString()}'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          OllieToast.error(context, 'Failed to remove member: ${e.toString()}');
         }
       }
     }

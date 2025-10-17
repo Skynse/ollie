@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'ollie_ui/ollie_dialog.dart';
 import 'ollie_ui/ollie_textfield.dart';
 import 'ollie_ui/ollie_button.dart';
+import 'ollie_ui/ollie_toast.dart';
 
 /// Dialog for creating a new kanban column
 class AddColumnDialog extends StatefulWidget {
@@ -40,9 +41,7 @@ class _AddColumnDialogState extends State<AddColumnDialog> {
 
   Future<void> _handleCreate() async {
     if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a column name')),
-      );
+      OllieToast.info(context, 'Please enter a column name');
       return;
     }
 
@@ -62,13 +61,9 @@ class _AddColumnDialogState extends State<AddColumnDialog> {
       setState(() => _isCreating = false);
       if (success) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Column created!')));
+        OllieToast.success(context, 'Column created!');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to create column')),
-        );
+        OllieToast.error(context, 'Failed to create column');
       }
     }
   }

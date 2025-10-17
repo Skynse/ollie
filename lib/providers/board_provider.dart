@@ -215,6 +215,19 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
     super.dispose();
   }
 
+  /// Manually refresh board data (for operations that might not trigger real-time updates immediately)
+  Future<void> refreshBoard() async {
+    if (state is! AsyncData<BoardState>) return;
+
+    try {
+      final board = await _repository.getBoard(_boardId);
+      final currentState = (state as AsyncData<BoardState>).value;
+      state = AsyncValue.data(currentState.copyWith(board: board));
+    } catch (e) {
+      // Keep current state on error
+    }
+  }
+
   /// Create a new column
   Future<BoardColumn?> createColumn({
     required String name,

@@ -150,9 +150,14 @@ class SprintNotifier extends StateNotifier<Sprint?> {
     }
   }
 
-  /// Refresh sprint data
+  /// Refresh sprint data (reload active sprint from backend)
   Future<void> refresh() async {
     await _loadActiveSprint();
+  }
+
+  /// Manually set the active sprint state (for immediate UI updates)
+  void setActiveSprint(Sprint? sprint) {
+    state = sprint;
   }
 
   /// Start a timer for a card

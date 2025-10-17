@@ -3,6 +3,7 @@ import '../models/priority.dart';
 import 'ollie_ui/ollie_dialog.dart';
 import 'ollie_ui/ollie_textfield.dart';
 import 'ollie_ui/ollie_button.dart';
+import 'ollie_ui/ollie_toast.dart';
 
 /// Dialog for creating a new card
 class AddCardDialog extends StatefulWidget {
@@ -34,9 +35,7 @@ class _AddCardDialogState extends State<AddCardDialog> {
 
   Future<void> _handleCreate() async {
     if (_titleController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a card title')),
-      );
+      OllieToast.info(context, 'Please enter a card title');
       return;
     }
 
@@ -54,13 +53,9 @@ class _AddCardDialogState extends State<AddCardDialog> {
       setState(() => _isCreating = false);
       if (success) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Card created!')));
+        OllieToast.success(context, 'Card created!');
       } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Failed to create card')));
+        OllieToast.error(context, 'Failed to create card');
       }
     }
   }

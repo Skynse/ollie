@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/sprint_provider.dart';
+import 'ollie_ui/ollie_toast.dart';
 
 /// Dialog for manually entering time log entries
 class ManualTimeLogDialog extends ConsumerStatefulWidget {
@@ -44,9 +45,7 @@ class _ManualTimeLogDialogState extends ConsumerState<ManualTimeLogDialog> {
     final totalMinutes = (hours * 60) + minutes;
 
     if (totalMinutes == 0) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please enter a duration')));
+      OllieToast.info(context, 'Please enter a duration');
       return;
     }
 
@@ -67,15 +66,11 @@ class _ManualTimeLogDialogState extends ConsumerState<ManualTimeLogDialog> {
 
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Time logged successfully')),
-        );
+        OllieToast.success(context, 'Time logged successfully');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to log time: $e')));
+        OllieToast.error(context, 'Failed to log time: $e');
       }
     } finally {
       if (mounted) {

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ollie/components/ollie_ui/ollie_button.dart';
 import 'package:ollie/components/ollie_ui/ollie_dialog.dart';
 import 'package:ollie/components/ollie_ui/ollie_textfield.dart';
+import 'package:ollie/components/ollie_ui/ollie_toast.dart';
 import 'package:ollie/providers/boards_provider.dart';
 import '../models/card.dart' as model;
 import '../models/priority.dart';
@@ -118,15 +119,11 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
 
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Card updated successfully')),
-        );
+        OllieToast.success(context, 'Card updated successfully');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to update card: $e')));
+        OllieToast.error(context, 'Failed to update card: $e');
       }
     } finally {
       if (mounted) {

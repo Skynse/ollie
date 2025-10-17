@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ollie/components/ollie_ui/ollie_textfield.dart';
 import '../providers/boards_provider.dart';
 import 'ollie_ui/ollie_dialog.dart';
 import 'ollie_ui/ollie_button.dart';
@@ -46,17 +47,11 @@ class _InviteMemberDialogState extends ConsumerState<InviteMemberDialog> {
               const SizedBox(height: 16),
 
               // Email input
-              TextFormField(
+              OllieTextfield.email(
+                hint: 'Invite a friend',
                 controller: _emailController,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  hintText: 'user@example.com',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  prefixIcon: const Icon(Icons.email_outlined),
-                ),
-                keyboardType: TextInputType.emailAddress,
+                label: 'Email Address',
+
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter an email';

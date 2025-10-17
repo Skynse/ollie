@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ollie/components/ollie_ui/ollie_dialog.dart';
+import 'package:ollie/components/ollie_ui/ollie_textfield.dart';
 import '../providers/sprint_provider.dart';
+import 'ollie_ui/ollie_toast.dart';
 
 /// Dialog for creating a new sprint
 class CreateSprintDialog extends ConsumerStatefulWidget {
@@ -82,15 +85,11 @@ class _CreateSprintDialogState extends ConsumerState<CreateSprintDialog> {
       if (mounted) {
         ref.refresh(sprintNotifierProvider(widget.boardId));
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sprint created successfully')),
-        );
+        OllieToast.success(context, 'Sprint created successfully');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to create sprint: $e')));
+        OllieToast.error(context, 'Failed to create sprint: $e');
       }
     } finally {
       if (mounted) {
@@ -101,8 +100,8 @@ class _CreateSprintDialogState extends ConsumerState<CreateSprintDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Create Sprint'),
+    return OllieDialog(
+      title: 'Create New Sprint',
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -111,14 +110,9 @@ class _CreateSprintDialogState extends ConsumerState<CreateSprintDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Sprint name
-              TextFormField(
+              OllieTextfield.simple(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Sprint Name',
-                  hintText: 'e.g., Sprint 1',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
+                hint: 'e.g., Sprint 1',
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter a sprint name';
@@ -129,14 +123,9 @@ class _CreateSprintDialogState extends ConsumerState<CreateSprintDialog> {
               const SizedBox(height: 16),
 
               // Sprint goal (optional)
-              TextFormField(
+              OllieTextfield.multiline(
                 controller: _goalController,
-                decoration: const InputDecoration(
-                  labelText: 'Goal (optional)',
-                  hintText: 'What do you want to achieve?',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
+                hint: 'Sprint goal (optional)',
                 maxLines: 2,
               ),
               const SizedBox(height: 16),
@@ -226,14 +215,9 @@ class _CreateSprintDialogState extends ConsumerState<CreateSprintDialog> {
               const SizedBox(height: 16),
 
               // Target hours
-              TextFormField(
+              OllieTextfield.simple(
                 controller: _targetHoursController,
-                decoration: const InputDecoration(
-                  labelText: 'Target Hours',
-                  hintText: 'Total hours for this sprint',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
+                hint: 'Target hours (e.g., 40)',
                 keyboardType: TextInputType.number,
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),

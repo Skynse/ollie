@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/board.dart';
 import '../models/board_column.dart';
 import '../providers/boards_provider.dart';
+import 'ollie_ui/ollie_toast.dart';
 
 enum ExportFormat { json, csv }
 
@@ -46,12 +47,7 @@ class _ExportBoardDialogState extends ConsumerState<ExportBoardDialog> {
     } catch (e) {
       setState(() => _isExporting = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Export failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        OllieToast.error(context, 'Export failed: ${e.toString()}');
       }
     }
   }
@@ -160,9 +156,7 @@ class _ExportBoardDialogState extends ConsumerState<ExportBoardDialog> {
   void _copyToClipboard() {
     if (_exportedData != null) {
       Clipboard.setData(ClipboardData(text: _exportedData!));
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Copied to clipboard')));
+      OllieToast.success(context, 'Copied to clipboard');
     }
   }
 
