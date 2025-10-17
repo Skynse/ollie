@@ -148,11 +148,12 @@ class RealtimeService {
       (response) {
         final event = RealtimeEvent.fromResponse(response);
 
-        // Forward column updates and cards that belong to this column
+        // Forward column updates
         if (event.collection == 'columns' && event.documentId == columnId) {
           controller.add(event);
-        } else if (event.collection == 'cards' &&
-            event.data?['columnId'] == columnId) {
+        }
+        // Forward ALL card events - let the provider refetch to handle moves
+        else if (event.collection == 'cards') {
           controller.add(event);
         }
       },
