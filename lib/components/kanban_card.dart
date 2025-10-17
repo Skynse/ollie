@@ -5,6 +5,7 @@ import '../models/card.dart' as model;
 import '../models/priority.dart';
 import '../providers/user_provider.dart';
 import 'assign_member_dialog.dart';
+import 'card_timer_widget.dart';
 
 /// A kanban card component displaying task information
 class KanbanCard extends ConsumerStatefulWidget {
@@ -207,6 +208,9 @@ class _KanbanCardState extends ConsumerState<KanbanCard>
       spacing: 8,
       runSpacing: 6,
       children: [
+        // Time tracking
+        if (widget.card.sprintId != null) CardTimerWidget(card: widget.card),
+
         // Priority indicator
         if (widget.card.priority != Priority.low) _buildPriorityChip(),
 

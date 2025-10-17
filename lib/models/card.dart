@@ -14,6 +14,8 @@ class Card {
   final DateTime createdAt;
   final DateTime updatedAt;
   final String createdBy;
+  final double? estimatedHours;
+  final String? sprintId;
 
   Card({
     required this.id,
@@ -29,6 +31,8 @@ class Card {
     required this.createdAt,
     required this.updatedAt,
     required this.createdBy,
+    this.estimatedHours,
+    this.sprintId,
   });
 
   Map<String, dynamic> toJson() {
@@ -43,6 +47,8 @@ class Card {
       'dueDate': dueDate?.toIso8601String(),
       'commentCount': commentCount,
       'createdBy': createdBy,
+      'estimatedHours': estimatedHours,
+      'sprintId': sprintId,
     };
   }
 
@@ -77,6 +83,8 @@ class Card {
           ? DateTime.parse(json['\$updatedAt'] as String)
           : DateTime.now(),
       createdBy: json['createdBy'] as String,
+      estimatedHours: (json['estimatedHours'] as num?)?.toDouble(),
+      sprintId: json['sprintId'] as String?,
     );
   }
 
@@ -94,6 +102,8 @@ class Card {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? createdBy,
+    double? estimatedHours,
+    String? sprintId,
   }) {
     return Card(
       id: id ?? this.id,
@@ -109,6 +119,8 @@ class Card {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       createdBy: createdBy ?? this.createdBy,
+      estimatedHours: estimatedHours ?? this.estimatedHours,
+      sprintId: sprintId ?? this.sprintId,
     );
   }
 }

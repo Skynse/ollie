@@ -2,6 +2,7 @@ import 'package:appwrite/appwrite.dart';
 import '../../config/environment.dart';
 import 'appwrite_board_repository.dart';
 import 'appwrite_user_repository.dart';
+import 'appwrite_sprint_repository.dart';
 
 /// Appwrite configuration and initialization
 class AppwriteConfig {
@@ -67,6 +68,13 @@ class AppwriteConfig {
     return AppwriteUserRepository(
       databases: databases,
       account: account,
+      databaseId: databaseId,
+    );
+  }
+
+  static AppwriteSprintRepository createSprintRepository() {
+    return AppwriteSprintRepository(
+      databases: databases,
       databaseId: databaseId,
     );
   }
