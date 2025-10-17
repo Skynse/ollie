@@ -64,4 +64,34 @@ class AppwriteUserRepository implements UserRepository {
     );
     return docs.documents.map((doc) => User.fromJson(doc.data)).toList();
   }
+
+  @override
+  Future<void> inviteUserByEmail(String email, {String? boardId}) async {
+    // TODO: Implement email invitation logic
+    // This would typically:
+    // 1. Create an invitation record in a collection
+    // 2. Send an email via Appwrite Functions or external service
+    // 3. Include the boardId to auto-add them when they sign up
+
+    // For now, throw unimplemented
+    throw UnimplementedError(
+      'Email invitations need to be configured with Appwrite Functions',
+    );
+  }
+
+  @override
+  Future<User?> getUserByEmail(String email) async {
+    try {
+      final docs = await databases.listDocuments(
+        databaseId: databaseId,
+        collectionId: usersCollection,
+        queries: [Query.equal('email', email)],
+      );
+
+      if (docs.documents.isEmpty) return null;
+      return User.fromJson(docs.documents.first.data);
+    } catch (e) {
+      return null;
+    }
+  }
 }

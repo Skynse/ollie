@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/board_provider.dart';
+import '../../providers/user_provider.dart';
 import '../../models/board.dart';
 import '../../components/kanban_column.dart';
 import '../../components/ollie_ui/ollie_button.dart';
 import '../../components/add_column_dialog.dart';
+import '../../components/invite_member_dialog.dart';
 
 /// Main kanban board screen showing columns and cards
 class BoardScreen extends ConsumerStatefulWidget {
@@ -115,35 +117,56 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   }
 
   Widget _buildMembersAvatars(List<String> memberIds) {
+    final displayedIds = memberIds.take(3).toList();
+    final remaining = memberIds.length - displayedIds.length;
+
     return Row(
       children: [
-        ...memberIds
-            .take(3)
-            .map(
-              (memberId) => Padding(
+        ...displayedIds.map((memberId) {
+          return Consumer(
+            builder: (context, ref, child) {
+              final userAsync = ref.watch(userProvider(memberId));
+
+              return Padding(
                 padding: const EdgeInsets.only(left: 4),
-                child: CircleAvatar(
-                  radius: 16,
-                  backgroundColor: Colors.blue.shade100,
-                  child: Text(
-                    'U',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.blue.shade700,
-                      fontWeight: FontWeight.w600,
+                child: userAsync.when(
+                  data: (user) => Tooltip(
+                    message: user.name,
+                    child: CircleAvatar(
+                      radius: 16,
+                      backgroundColor: Colors.blue.shade100,
+                      child: Text(
+                        user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue.shade700,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
+                  loading: () => CircleAvatar(
+                    radius: 16,
+                    backgroundColor: Colors.grey.shade200,
+                  ),
+                  error: (_, __) => CircleAvatar(
+                    radius: 16,
+                    backgroundColor: Colors.red.shade100,
+                    child: Icon(Icons.error, size: 16, color: Colors.red),
+                  ),
                 ),
-              ),
-            ),
-        if (memberIds.length > 3)
+              );
+            },
+          );
+        }),
+        if (remaining > 0)
           Padding(
             padding: const EdgeInsets.only(left: 4),
             child: CircleAvatar(
               radius: 16,
               backgroundColor: Colors.grey.shade300,
               child: Text(
-                '+${memberIds.length - 3}',
+                '+$remaining',
                 style: TextStyle(
                   fontSize: 10,
                   color: Colors.grey.shade700,
@@ -152,7 +175,29 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
               ),
             ),
           ),
+        // Invite button
+        Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: IconButton(
+            onPressed: () => _showInviteMemberDialog(),
+            icon: const Icon(Icons.person_add, size: 20),
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.blue.shade50,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            tooltip: 'Invite member',
+          ),
+        ),
       ],
+    );
+  }
+
+  void _showInviteMemberDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => InviteMemberDialog(boardId: widget.boardId),
     );
   }
 

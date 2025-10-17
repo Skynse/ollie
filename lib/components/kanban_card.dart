@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ollie/providers/board_provider.dart';
 import '../models/card.dart' as model;
 import '../models/priority.dart';
+import '../providers/user_provider.dart';
+import 'assign_member_dialog.dart';
 
 /// A kanban card component displaying task information
 class KanbanCard extends ConsumerWidget {
@@ -42,7 +44,19 @@ class KanbanCard extends ConsumerWidget {
               PopupMenuItem(
                 value: 'change_member',
                 child: Text('Change Members'),
-                onTap: () async {},
+                onTap: () {
+                  // Use Future.delayed to show dialog after menu closes
+                  Future.delayed(Duration.zero, () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AssignMemberDialog(
+                        boardId: boardId,
+                        cardId: card.id,
+                        currentAssigneeIds: card.assigneeIds,
+                      ),
+                    );
+                  });
+                },
               ),
             ],
           );
@@ -179,25 +193,67 @@ class KanbanCard extends ConsumerWidget {
   }
 
   Widget _buildAssignees() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: card.assigneeIds.take(2).map((assigneeId) {
-        return Padding(
-          padding: const EdgeInsets.only(right: 2),
-          child: CircleAvatar(
-            radius: 10,
-            backgroundColor: Colors.blue.shade100,
-            child: Text(
-              'U',
-              style: TextStyle(
-                fontSize: 8,
-                color: Colors.blue.shade700,
-                fontWeight: FontWeight.w600,
+    return Consumer(
+      builder: (context, ref, child) {
+        // Take first 3 assignees
+        final displayedIds = card.assigneeIds.take(3).toList();
+        final remaining = card.assigneeIds.length - displayedIds.length;
+
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ...displayedIds.map((assigneeId) {
+              final userAsync = ref.watch(userProvider(assigneeId));
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 2),
+                child: userAsync.when(
+                  data: (user) => Tooltip(
+                    message: user.name,
+                    child: CircleAvatar(
+                      radius: 10,
+                      backgroundColor: Colors.blue.shade100,
+                      child: Text(
+                        user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                        style: TextStyle(
+                          fontSize: 8,
+                          color: Colors.blue.shade700,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  loading: () => CircleAvatar(
+                    radius: 10,
+                    backgroundColor: Colors.grey.shade200,
+                  ),
+                  error: (_, __) => CircleAvatar(
+                    radius: 10,
+                    backgroundColor: Colors.red.shade100,
+                    child: Icon(Icons.error, size: 10, color: Colors.red),
+                  ),
+                ),
+              );
+            }),
+            if (remaining > 0)
+              Padding(
+                padding: const EdgeInsets.only(left: 2),
+                child: CircleAvatar(
+                  radius: 10,
+                  backgroundColor: Colors.grey.shade300,
+                  child: Text(
+                    '+$remaining',
+                    style: TextStyle(
+                      fontSize: 7,
+                      color: Colors.grey.shade700,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ),
+          ],
         );
-      }).toList(),
+      },
     );
   }
 

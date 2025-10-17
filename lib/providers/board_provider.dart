@@ -282,6 +282,60 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
     }
   }
 
+  /// Assign a member to a card
+  Future<void> assignMemberToCard({
+    required String cardId,
+    required String userId,
+  }) async {
+    if (state is! AsyncData<BoardState>) return;
+
+    try {
+      final card = await _repository.getCard(cardId);
+
+      // Don't add if already assigned
+      if (card.assigneeIds.contains(userId)) return;
+
+      final updatedAssignees = [...card.assigneeIds, userId];
+      final updatedCard = card.copyWith(assigneeIds: updatedAssignees);
+
+      await _repository.updateCard(updatedCard);
+      // Real-time listener will handle updating the state
+    } catch (e) {
+      final currentState = (state as AsyncData<BoardState>).value;
+      state = AsyncValue.data(
+        currentState.copyWith(
+          errorMessage: 'Failed to assign member: ${e.toString()}',
+        ),
+      );
+    }
+  }
+
+  /// Remove a member from a card
+  Future<void> removeMemberFromCard({
+    required String cardId,
+    required String userId,
+  }) async {
+    if (state is! AsyncData<BoardState>) return;
+
+    try {
+      final card = await _repository.getCard(cardId);
+      final updatedAssignees = card.assigneeIds
+          .where((id) => id != userId)
+          .toList();
+      final updatedCard = card.copyWith(assigneeIds: updatedAssignees);
+
+      await _repository.updateCard(updatedCard);
+      // Real-time listener will handle updating the state
+    } catch (e) {
+      final currentState = (state as AsyncData<BoardState>).value;
+      state = AsyncValue.data(
+        currentState.copyWith(
+          errorMessage: 'Failed to remove member: ${e.toString()}',
+        ),
+      );
+    }
+  }
+
   /// Create a new card in a column
   Future<model.Card?> createCard({
     required String columnId,
