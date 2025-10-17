@@ -1,11 +1,5 @@
-import 'dart:async';
-
-import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:ollie/api/auth_api.dart';
-import 'package:ollie/repositories/appwrite/appwrite_config.dart';
-import 'package:ollie/services/auth_api.dart';
 import '../../providers/board_provider.dart';
 import '../../models/board.dart';
 import '../../components/kanban_column.dart';
@@ -24,26 +18,9 @@ class BoardScreen extends ConsumerStatefulWidget {
 
 class _BoardScreenState extends ConsumerState<BoardScreen> {
   final ScrollController _scrollController = ScrollController();
-  final realTime = Realtime(AppwriteConfig.client);
-  late RealtimeSubscription _boardSubscription;
-
-  @override
-  void initState() {
-    super.initState();
-    // _boardSubscription = realTime.subscribe([
-    //   'databases.${AppwriteConfig.databaseId}.collections.cards.documents',
-    // ]);
-
-    // _boardSubscription.stream.listen((response) {
-    //   if (!mounted) return;
-    //   ref.refresh(boardNotifierProvider(widget.boardId));
-    // });
-  }
 
   @override
   void dispose() {
-    _boardSubscription.close();
-
     _scrollController.dispose();
     super.dispose();
   }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import '../models/board.dart';
@@ -5,6 +6,7 @@ import '../models/board_column.dart';
 import '../models/card.dart' as model;
 import '../models/priority.dart';
 import '../repositories/board_repository.dart';
+import '../services/realtime_service.dart';
 import 'boards_provider.dart';
 
 /// State for a single board with its columns
@@ -54,23 +56,55 @@ final boardColumnsProvider = FutureProvider.family<List<BoardColumn>, String>((
   return await repository.getColumnsByBoard(boardId);
 });
 
-/// Provider for fetching cards for a specific column
-final columnCardsProvider = FutureProvider.family<List<model.Card>, String>((
+/// Provider for fetching cards for a specific column with real-time updates
+final columnCardsProvider = StreamProvider.family<List<model.Card>, String>((
   ref,
   columnId,
-) async {
+) {
   final repository = ref.read(boardRepositoryProvider);
-  return await repository.getCardsByColumn(columnId);
+  final realtimeService = ref.read(realtimeServiceProvider);
+
+  return Stream.multi((controller) async {
+    // Initial fetch
+    try {
+      final initialCards = await repository.getCardsByColumn(columnId);
+      controller.add(initialCards);
+    } catch (e) {
+      controller.addError(e);
+    }
+
+    // Subscribe to column updates
+    final subscription = realtimeService.subscribeToColumn(columnId).listen((
+      event,
+    ) async {
+      // Refetch cards whenever there's a change
+      try {
+        final updatedCards = await repository.getCardsByColumn(columnId);
+        controller.add(updatedCards);
+      } catch (e) {
+        controller.addError(e);
+      }
+    }, onError: (error) => controller.addError(error));
+
+    // Cleanup
+    controller.onCancel = () {
+      subscription.cancel();
+      realtimeService.unsubscribeFromColumn(columnId);
+    };
+  });
 });
 
 /// Notifier for managing board state and operations
 class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
   final BoardRepository _repository;
+  final RealtimeService _realtimeService;
   final String _boardId;
+  StreamSubscription<RealtimeEvent>? _realtimeSubscription;
 
-  BoardNotifier(this._repository, this._boardId)
+  BoardNotifier(this._repository, this._realtimeService, this._boardId)
     : super(const AsyncValue.loading()) {
     _loadBoard();
+    _setupRealtimeListener();
   }
 
   Future<void> _loadBoard() async {
@@ -84,9 +118,101 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
     }
   }
 
-  /// Refresh board data
-  Future<void> refresh() async {
-    await _loadBoard();
+  /// Setup real-time listener for board updates
+  void _setupRealtimeListener() {
+    _realtimeSubscription = _realtimeService
+        .subscribeToBoardUpdates(_boardId)
+        .listen(_handleRealtimeEvent);
+  }
+
+  /// Handle real-time events
+  void _handleRealtimeEvent(RealtimeEvent event) async {
+    if (state is! AsyncData<BoardState>) return;
+
+    final currentState = (state as AsyncData<BoardState>).value;
+
+    try {
+      switch (event.collection) {
+        case 'boards':
+          await _handleBoardEvent(event, currentState);
+          break;
+        case 'columns':
+          await _handleColumnEvent(event, currentState);
+          break;
+        case 'cards':
+          await _handleCardEvent(event, currentState);
+          break;
+      }
+    } catch (e) {
+      // Silently handle errors - could add logging here if needed
+    }
+  }
+
+  Future<void> _handleBoardEvent(
+    RealtimeEvent event,
+    BoardState currentState,
+  ) async {
+    if (event.type == RealtimeEventType.update && event.data != null) {
+      final updatedBoard = Board.fromJson(event.data!);
+      state = AsyncValue.data(currentState.copyWith(board: updatedBoard));
+    } else if (event.type == RealtimeEventType.delete) {
+      // Board deleted, could navigate away or show error
+      state = AsyncValue.error('Board deleted', StackTrace.current);
+    }
+  }
+
+  Future<void> _handleColumnEvent(
+    RealtimeEvent event,
+    BoardState currentState,
+  ) async {
+    final columns = List<BoardColumn>.from(currentState.columns);
+
+    switch (event.type) {
+      case RealtimeEventType.create:
+        if (event.data != null && event.data!['boardId'] == _boardId) {
+          final newColumn = BoardColumn.fromJson(event.data!);
+          columns.add(newColumn);
+          columns.sort((a, b) => a.position.compareTo(b.position));
+          state = AsyncValue.data(currentState.copyWith(columns: columns));
+        }
+        break;
+
+      case RealtimeEventType.update:
+        if (event.data != null) {
+          final updatedColumn = BoardColumn.fromJson(event.data!);
+          final index = columns.indexWhere((c) => c.id == updatedColumn.id);
+          if (index != -1) {
+            columns[index] = updatedColumn;
+            columns.sort((a, b) => a.position.compareTo(b.position));
+            state = AsyncValue.data(currentState.copyWith(columns: columns));
+          }
+        }
+        break;
+
+      case RealtimeEventType.delete:
+        columns.removeWhere((c) => c.id == event.documentId);
+        state = AsyncValue.data(currentState.copyWith(columns: columns));
+        break;
+    }
+  }
+
+  Future<void> _handleCardEvent(
+    RealtimeEvent event,
+    BoardState currentState,
+  ) async {
+    // For card events, we just need to invalidate the affected column
+    // The columnCardsProvider will handle fetching the updated cards
+    // This is a simple notification that something changed
+
+    // We could implement an in-memory card cache here if needed
+    // For now, we let the column provider refetch when cards change
+  }
+
+  @override
+  void dispose() {
+    _realtimeSubscription?.cancel();
+    _realtimeService.unsubscribeFromBoard(_boardId);
+    super.dispose();
   }
 
   /// Create a new column
@@ -100,8 +226,6 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
     final currentState = (state as AsyncData<BoardState>).value;
 
     try {
-      state = AsyncValue.data(currentState.copyWith(isLoading: true));
-
       final newColumn = BoardColumn(
         id: '',
         boardId: _boardId,
@@ -113,12 +237,11 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
       );
 
       final created = await _repository.createColumn(newColumn);
-      await refresh();
+      // Real-time listener will handle updating the state
       return created;
     } catch (e) {
       state = AsyncValue.data(
         currentState.copyWith(
-          isLoading: false,
           errorMessage: 'Failed to create column: ${e.toString()}',
         ),
       );
@@ -133,7 +256,7 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
 
     try {
       await _repository.deleteColumn(columnId);
-      //await refresh();
+      // Real-time listener will handle updating the state
     } catch (e) {
       final currentState = (state as AsyncData<BoardState>).value;
       state = AsyncValue.data(
@@ -148,7 +271,7 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
     if (state is! AsyncData<BoardState>) return;
     try {
       await _repository.deleteCard(cardId);
-      await refresh();
+      // Real-time listener will handle updating the state
     } catch (e) {
       final currentState = (state as AsyncData<BoardState>).value;
       state = AsyncValue.data(
@@ -172,8 +295,6 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
     final currentState = (state as AsyncData<BoardState>).value;
 
     try {
-      state = AsyncValue.data(currentState.copyWith(isLoading: true));
-
       final column = currentState.columns.firstWhere((c) => c.id == columnId);
 
       final newCard = model.Card(
@@ -193,12 +314,11 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
       );
 
       final created = await _repository.createCard(newCard);
-      await refresh();
+      // Real-time listener will handle updating the state
       return created;
     } catch (e) {
       state = AsyncValue.data(
         currentState.copyWith(
-          isLoading: false,
           errorMessage: 'Failed to create card: ${e.toString()}',
         ),
       );
@@ -212,6 +332,7 @@ final boardNotifierProvider =
     StateNotifierProvider.family<BoardNotifier, AsyncValue<BoardState>, String>(
       (ref, boardId) {
         final repository = ref.read(boardRepositoryProvider);
-        return BoardNotifier(repository, boardId);
+        final realtimeService = ref.read(realtimeServiceProvider);
+        return BoardNotifier(repository, realtimeService, boardId);
       },
     );

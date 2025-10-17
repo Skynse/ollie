@@ -182,9 +182,7 @@ class KanbanColumn extends ConsumerWidget {
                 priority: priority,
                 createdBy: userId,
               );
-          if (card != null) {
-            ref.invalidate(columnCardsProvider(column.id));
-          }
+          // Real-time updates will handle refreshing the cards automatically
           return card != null;
         },
       ),

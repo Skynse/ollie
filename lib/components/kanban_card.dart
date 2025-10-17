@@ -39,6 +39,11 @@ class KanbanCard extends ConsumerWidget {
                   await boardNotifier.deleteCard(card.id);
                 },
               ),
+              PopupMenuItem(
+                value: 'change_member',
+                child: Text('Change Members'),
+                onTap: () async {},
+              ),
             ],
           );
         },
