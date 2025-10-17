@@ -15,6 +15,25 @@ class KanbanCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    return LongPressDraggable<model.Card>(
+      data: card,
+      feedback: Material(
+        elevation: 8,
+        borderRadius: BorderRadius.circular(8),
+        child: SizedBox(
+          width: 280,
+          child: Opacity(opacity: 0.8, child: _buildCardContent(context, ref)),
+        ),
+      ),
+      childWhenDragging: Opacity(
+        opacity: 0.3,
+        child: _buildCardContent(context, ref),
+      ),
+      child: _buildCardContent(context, ref),
+    );
+  }
+
+  Widget _buildCardContent(BuildContext context, WidgetRef ref) {
     final boardNotifier = ref.read(boardNotifierProvider(boardId).notifier);
 
     return Card(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/board_column.dart';
+import '../models/card.dart' as model;
 import '../providers/board_provider.dart';
 import '../providers/auth_provider.dart';
 import 'kanban_card.dart';
@@ -31,41 +32,74 @@ class KanbanColumn extends ConsumerWidget {
           // Column header
           _buildHeader(context, ref),
 
-          // Cards list
+          // Cards list with drag target
           Flexible(
-            child: cardsAsync.when(
-              loading: () => const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(20.0),
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
-              error: (error, stack) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Text(
-                    'Error loading cards',
-                    style: TextStyle(fontSize: 12, color: Colors.red.shade700),
+            child: DragTarget<model.Card>(
+              onWillAcceptWithDetails: (details) =>
+                  details.data.columnId != column.id,
+              onAcceptWithDetails: (details) async {
+                final draggedCard = details.data;
+                // Don't move if already in this column
+                if (draggedCard.columnId == column.id) return;
+
+                // Move card to this column
+                await ref
+                    .read(boardNotifierProvider(boardId).notifier)
+                    .moveCard(
+                      cardId: draggedCard.id,
+                      targetColumnId: column.id,
+                      targetPosition: 0, // Add to top of column
+                    );
+              },
+              builder: (context, candidateData, rejectedData) {
+                final isHovering = candidateData.isNotEmpty;
+
+                return Container(
+                  decoration: BoxDecoration(
+                    color: isHovering
+                        ? Colors.blue.shade50
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ),
-              ),
-              data: (columnCards) => ListView.builder(
-                shrinkWrap: true,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                itemCount: columnCards.length,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: KanbanCard(
-                      card: columnCards[index],
-                      boardId: boardId,
+                  child: cardsAsync.when(
+                    loading: () => const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20.0),
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
                     ),
-                  );
-                },
-              ),
+                    error: (error, stack) => Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Text(
+                          'Error loading cards',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.red.shade700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    data: (columnCards) => ListView.builder(
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      itemCount: columnCards.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: KanbanCard(
+                            card: columnCards[index],
+                            boardId: boardId,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
             ),
           ),
 
