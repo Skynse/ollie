@@ -130,6 +130,13 @@ class _KanbanCardState extends ConsumerState<KanbanCard>
         side: BorderSide(color: Colors.grey.shade200),
       ),
       child: InkWell(
+        onTap: () {
+          showDialog(
+            context: context,
+            builder: (context) =>
+                EditCardDialog(card: widget.card, boardId: widget.boardId),
+          );
+        },
         onSecondaryTapDown: (details) async {
           showMenu(
             context: context,
@@ -138,7 +145,21 @@ class _KanbanCardState extends ConsumerState<KanbanCard>
               Offset.zero & MediaQuery.of(context).size,
             ),
             items: [
-              PopupMenuItem(value: 'edit', child: Text('Edit Card')),
+              PopupMenuItem(
+                value: 'edit',
+                child: Text('Edit Card'),
+                onTap: () {
+                  Future.delayed(Duration.zero, () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => EditCardDialog(
+                        card: widget.card,
+                        boardId: widget.boardId,
+                      ),
+                    );
+                  });
+                },
+              ),
               PopupMenuItem(
                 value: 'change_member',
                 child: Text('Change Members'),
