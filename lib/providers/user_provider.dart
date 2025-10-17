@@ -1,11 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user.dart';
-import '../repositories/user_repository.dart';
-
-/// Provider for user repository
-final userRepositoryProvider = Provider<UserRepository>((ref) {
-  throw UnimplementedError('userRepositoryProvider must be overridden');
-});
+import 'boards_provider.dart'; // userRepositoryProvider is defined here
 
 /// Cached provider for fetching a single user by ID
 /// This caches user data so we don't have to fetch it repeatedly

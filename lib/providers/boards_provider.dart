@@ -3,11 +3,17 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:ollie/models/board.dart';
 import 'package:ollie/repositories/appwrite/appwrite_config.dart';
 import 'package:ollie/repositories/board_repository.dart';
+import 'package:ollie/repositories/user_repository.dart';
 import 'auth_provider.dart';
 
 /// Repository provider
 final boardRepositoryProvider = Provider<BoardRepository>((ref) {
   return AppwriteConfig.createBoardRepository();
+});
+
+/// User repository provider
+final userRepositoryProvider = Provider<UserRepository>((ref) {
+  return AppwriteConfig.createUserRepository();
 });
 
 /// Boards state - holds the list of boards for current user
