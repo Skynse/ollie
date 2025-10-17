@@ -497,6 +497,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             onDeleteSprint: (sprintId) async {
               final repository = ref.read(sprintRepositoryProvider);
               await repository.deleteSprint(sprintId);
+              ref.refresh(boardSprintsProvider(widget.boardId));
+              ref.refresh(sprintNotifierProvider(widget.boardId));
+              setState(() {});
             },
           ),
         );
@@ -578,13 +581,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
               Text('• Invite team members to your board'),
               Text('• Assign cards to specific people'),
               Text('• Comment and discuss on cards'),
-              SizedBox(height: 16),
-              Text(
-                'Need More Help?',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              SizedBox(height: 8),
-              Text('Check out our documentation or contact support.'),
             ],
           ),
         ),

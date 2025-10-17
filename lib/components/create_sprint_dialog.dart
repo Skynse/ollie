@@ -80,6 +80,7 @@ class _CreateSprintDialogState extends ConsumerState<CreateSprintDialog> {
           );
 
       if (mounted) {
+        ref.refresh(sprintNotifierProvider(widget.boardId));
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Sprint created successfully')),

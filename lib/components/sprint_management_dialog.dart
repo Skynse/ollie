@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/sprint.dart';
+import 'sprint_details_dialog.dart';
 
 class SprintManagementDialog extends ConsumerWidget {
   final List<Sprint> sprints;
@@ -327,6 +328,13 @@ class _SprintTile extends StatelessWidget {
     return '$startStr - $endStr';
   }
 
+  void _showSprintDetails(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => SprintDetailsDialog(sprint: sprint),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final statusColor = _getStatusColor();
@@ -420,6 +428,14 @@ class _SprintTile extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+                  // View Details button (shows burndown chart)
+                  if (sprint.status != SprintStatus.planning)
+                    TextButton.icon(
+                      onPressed: () => _showSprintDetails(context),
+                      icon: const Icon(Icons.show_chart, size: 18),
+                      label: const Text('View Details'),
+                    ),
+                  const Spacer(),
                   if (onStart != null)
                     FilledButton.icon(
                       onPressed: onStart,
