@@ -42,7 +42,7 @@ class _InviteMemberDialogState extends ConsumerState<InviteMemberDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Enter the email address of the person you want to invite',
+                'Enter the email address of an existing user to add them to this board',
                 style: TextStyle(fontSize: 14, color: Colors.grey),
               ),
               const SizedBox(height: 16),
@@ -178,55 +178,47 @@ class _InviteMemberDialogState extends ConsumerState<InviteMemberDialog> {
         return;
       }
 
-      // First, check if user already exists
+      // Check if user exists in the system
       final existingUser = await userRepository.getUserByEmail(email);
 
-      if (existingUser != null) {
-        // Check if user is already a member
-        final board = await ref
-            .read(boardRepositoryProvider)
-            .getBoard(widget.boardId);
-
-        if (board.memberIds.contains(existingUser.id)) {
-          setState(() {
-            _isLoading = false;
-            _errorMessage =
-                '${existingUser.name} is already a member of this board';
-          });
-          return;
-        }
-
-        // User exists, add them to the board
-        await ref
-            .read(boardRepositoryProvider)
-            .addMember(widget.boardId, existingUser.id);
-
+      if (existingUser == null) {
         setState(() {
           _isLoading = false;
-          _successMessage = '${existingUser.name} has been added to the board!';
-          _emailController.clear();
+          _errorMessage =
+              'User with email "$email" not found. They need to create an account first.';
         });
+        return;
+      }
 
-        // Close dialog after 2 seconds
-        await Future.delayed(const Duration(seconds: 2));
-        if (mounted) {
-          Navigator.pop(context);
-        }
-      } else {
-        // User doesn't exist, send invite
-        await userRepository.inviteUserByEmail(email, boardId: widget.boardId);
+      // Check if user is already a member
+      final board = await ref
+          .read(boardRepositoryProvider)
+          .getBoard(widget.boardId);
 
+      if (board.memberIds.contains(existingUser.id)) {
         setState(() {
           _isLoading = false;
-          _successMessage = 'Invitation sent to $email!';
-          _emailController.clear();
+          _errorMessage =
+              '${existingUser.name} is already a member of this board';
         });
+        return;
+      }
 
-        // Close dialog after 2 seconds
-        await Future.delayed(const Duration(seconds: 2));
-        if (mounted) {
-          Navigator.pop(context);
-        }
+      // User exists and isn't a member - add them to the board
+      await ref
+          .read(boardRepositoryProvider)
+          .addMember(widget.boardId, existingUser.id);
+
+      setState(() {
+        _isLoading = false;
+        _successMessage = '${existingUser.name} has been added to the board!';
+        _emailController.clear();
+      });
+
+      // Close dialog after 2 seconds
+      await Future.delayed(const Duration(seconds: 2));
+      if (mounted) {
+        Navigator.pop(context);
       }
     } catch (e) {
       setState(() {

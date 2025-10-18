@@ -1,5 +1,6 @@
 import 'package:appwrite/appwrite.dart';
 import '../../models/user.dart';
+import '../../models/invitation.dart';
 import '../user_repository.dart';
 
 class AppwriteUserRepository implements UserRepository {
@@ -14,6 +15,7 @@ class AppwriteUserRepository implements UserRepository {
   });
 
   static const String usersCollection = 'users';
+  static const String invitationsCollection = 'invitations';
 
   @override
   Future<User> getUser(String userId) async {
@@ -66,17 +68,52 @@ class AppwriteUserRepository implements UserRepository {
   }
 
   @override
-  Future<void> inviteUserByEmail(String email, {String? boardId}) async {
-    // TODO: Implement email invitation logic
-    // This would typically:
-    // 1. Create an invitation record in a collection
-    // 2. Send an email via Appwrite Functions or external service
-    // 3. Include the boardId to auto-add them when they sign up
+  Future<void> inviteUserByEmail(
+    String email, {
+    required String boardId,
+  }) async {
+    try {
+      // Get current user to record who sent the invitation
+      final currentUser = await account.get();
 
-    // For now, throw unimplemented
-    throw UnimplementedError(
-      'Email invitations need to be configured with Appwrite Functions',
-    );
+      // Check if there's already a pending invitation for this email
+      final existingInvites = await databases.listDocuments(
+        databaseId: databaseId,
+        collectionId: invitationsCollection,
+        queries: [
+          Query.equal('email', email),
+          Query.equal('status', 'pending'),
+        ],
+      );
+
+      // If invitation already exists, don't create duplicate
+      if (existingInvites.documents.isNotEmpty) {
+        return;
+      }
+
+      // Create invitation record
+      final invitation = Invitation(
+        id: ID.unique(),
+        email: email.toLowerCase(),
+        boardId: boardId,
+        invitedBy: currentUser.$id,
+        status: InvitationStatus.pending,
+        createdAt: DateTime.now(),
+      );
+
+      await databases.createDocument(
+        databaseId: databaseId,
+        collectionId: invitationsCollection,
+        documentId: invitation.id,
+        data: invitation.toJson(),
+      );
+
+      // TODO: Send email via Appwrite Functions or external service
+      // For now, the invitation is just stored in the database
+      // When the user signs up with this email, they can be auto-added to the board
+    } catch (e) {
+      throw Exception('Failed to create invitation: $e');
+    }
   }
 
   @override
