@@ -1,5 +1,7 @@
+import 'package:appwrite/appwrite.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:ollie/repositories/appwrite/appwrite_config.dart';
 import 'package:ollie/services/auth_api.dart';
 import 'package:ollie/state/auth_state.dart';
 
@@ -41,6 +43,16 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
       final user = await _authApi.register(email, password, name);
+
+      // Create user record in the users collection
+      final databases = Databases(AppwriteConfig.client);
+      await databases.createDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: 'users',
+        documentId: user.$id, // Use Appwrite account ID as document ID
+        data: {'email': email, 'name': name},
+      );
+
       state = AuthState.authenticated(user);
     } catch (e) {
       state = AuthState.error(e.toString());

@@ -75,6 +75,8 @@ class AuthApi {
         password: password,
         name: name,
       );
+      // populate users table with email, blank name, and user id so we can use for email-id lookups
+
       return await login(email, password);
     } catch (e) {
       rethrow;
