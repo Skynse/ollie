@@ -75,7 +75,7 @@ class _KanbanCardState extends ConsumerState<KanbanCard>
         onDragEnd: (_) {
           _onLongPressEnd();
         },
-        delay: const Duration(milliseconds: 500),
+        delay: Duration(milliseconds: 0),
         feedback: Material(
           elevation: 8,
           borderRadius: BorderRadius.circular(8),
