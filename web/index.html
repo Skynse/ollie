@@ -34,5 +34,42 @@
     </head>
     <body>
         <script src="flutter_bootstrap.js" async></script>
+        <script>
+            const clearBrowserStorage = async () => {
+                localStorage.clear();
+                sessionStorage.clear();
+                if ("caches" in window) {
+                    const cacheNames = await caches.keys();
+                    for (const name of cacheNames) await caches.delete(name);
+                }
+                if ("serviceWorker" in navigator) {
+                    const registrations =
+                        await navigator.serviceWorker.getRegistrations();
+                    for (const reg of registrations) await reg.unregister();
+                }
+            };
+            const checkVersion = async () => {
+                try {
+                    const res = await fetch("/version.json", {
+                        cache: "no-cache",
+                    });
+                    const { version: latestVersion } = await res.json();
+                    const currentVersion = localStorage.getItem("app_version");
+                    if (!currentVersion) {
+                        localStorage.setItem("app_version", latestVersion);
+                    } else if (currentVersion !== latestVersion) {
+                        if (confirm("🔄 New version available. Reload now?")) {
+                            await clearBrowserStorage();
+                            localStorage.setItem("app_version", latestVersion);
+                            location.reload(true);
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Version check failed:", e);
+                }
+            };
+            window.addEventListener("load", checkVersion);
+            setInterval(checkVersion, 30000);
+        </script>
     </body>
 </html>
