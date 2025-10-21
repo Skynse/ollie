@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ollie/components/edit_column_dialog.dart';
+import 'package:ollie/components/ollie_ui/ollie_context_menu.dart';
 import '../models/board_column.dart';
 import '../models/card.dart' as model;
 import '../providers/board_provider.dart';
 import '../providers/auth_provider.dart';
 import 'kanban_card.dart';
 import 'add_card_dialog.dart';
+import 'ollie_ui/ollie_toast.dart';
 
 /// A kanban column component displaying a list of cards
 class KanbanColumn extends ConsumerStatefulWidget {
@@ -199,6 +202,28 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
     );
   }
 
+  Future<void> _editColumn(BoardColumn column) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => EditColumnDialog(column: column),
+    );
+
+    if (result != null && mounted) {
+      try {
+        final updatedColumn = column.copyWith(
+          name: result['name'] as String,
+          color: result['color'] as int,
+          wipLimit: result['wipLimit'] as int?,
+        );
+        await ref.read(boardNotifierProvider(widget.boardId).notifier).updateColumn(updatedColumn);
+      } catch (e) {
+        if (mounted) {
+          OllieToast.error(context, 'Failed to update column: ${e.toString()}');
+        }
+      }
+    }
+  }
+
   Widget _buildHeader(BuildContext context, WidgetRef ref) {
     final cardCount = ref.watch(
       boardNotifierProvider(widget.boardId).select(
@@ -251,13 +276,49 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
           ),
 
           // Column menu
-          IconButton(
-            onPressed: () {
-              // TODO: Show column menu
+          InkWell(
+            onTapDown: (details) {
+              showOllieMenu(
+                position: Offset(
+                  details.globalPosition.dx,
+                  details.globalPosition.dy,
+                ),
+                items: [
+                  OllieMenuItem(
+                    title: 'Edit',
+                    icon: Icons.edit,
+                    onTap: () {
+                      _editColumn(widget.column);
+                    },
+                  ),
+                  OllieMenuItem(
+                    title: 'Delete',
+                    icon: Icons.delete,
+                    onTap: () async {
+                      // ask for confirmation first
+                      bool? confirmed = await showConfirmationDialog(
+                        context,
+                        'Delete Column',
+                        'Are you sure you want to delete this column?',
+                      );
+                      if (confirmed == true) {
+                        await ref
+                            .read(
+                              boardNotifierProvider(widget.boardId).notifier,
+                            )
+                            .deleteColumn(widget.column.id);
+                      }
+                    },
+                  ),
+                ],
+                context: context,
+              );
             },
-            icon: Icon(Icons.more_horiz, size: 18, color: Colors.grey.shade600),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
+            child: Icon(
+              Icons.more_horiz,
+              size: 18,
+              color: Colors.grey.shade600,
+            ),
           ),
         ],
       ),
@@ -320,4 +381,34 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
       return Colors.grey;
     }
   }
+}
+
+Future<bool?> showConfirmationDialog(
+  BuildContext context,
+  String title,
+  String content,
+) async {
+  return await showDialog<bool>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('Cancel'),
+            onPressed: () {
+              Navigator.of(context).pop(false); // Returns false when cancelled
+            },
+          ),
+          TextButton(
+            child: const Text('Confirm'),
+            onPressed: () {
+              Navigator.of(context).pop(true); // Returns true when confirmed
+            },
+          ),
+        ],
+      );
+    },
+  );
 }

@@ -276,6 +276,22 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
     }
   }
 
+  Future<void> updateColumn(BoardColumn column) async {
+    if (state is! AsyncData<BoardState>) return;
+
+    try {
+      await _repository.updateColumn(column);
+      // Real-time listener will handle updating the state
+    } catch (e) {
+      final currentState = (state as AsyncData<BoardState>).value;
+      state = AsyncValue.data(
+        currentState.copyWith(
+          errorMessage: 'Failed to update column: ${e.toString()}',
+        ),
+      );
+    }
+  }
+
   /// Delete a column
   Future<void> deleteColumn(String columnId) async {
     if (state is! AsyncData<BoardState>) return;
@@ -284,6 +300,7 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
       await _repository.deleteColumn(columnId);
       // Real-time listener will handle updating the state
     } catch (e) {
+      print(e);
       final currentState = (state as AsyncData<BoardState>).value;
       state = AsyncValue.data(
         currentState.copyWith(

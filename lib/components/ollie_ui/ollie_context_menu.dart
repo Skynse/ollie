@@ -2,6 +2,30 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 // --- Data Model for Menu Items ---
+void showOllieMenu({
+  required BuildContext context,
+  required List<OllieMenuItem> items,
+  required Offset position,
+  double menuWidth = 220.0,
+}) {
+  final overlay = Overlay.of(context);
+  OverlayEntry? overlayEntry;
+
+  overlayEntry = OverlayEntry(
+    builder: (context) {
+      return _ContextMenuOverlay(
+        items: items,
+        position: position,
+        menuWidth: menuWidth,
+        onClose: () {
+          overlayEntry?.remove();
+        },
+      );
+    },
+  );
+
+  overlay.insert(overlayEntry);
+}
 
 /// Represents a single item in the custom context menu.
 class OllieMenuItem {
