@@ -55,11 +55,16 @@ class BoardsNotifier extends StateNotifier<BoardsState> {
 
   /// Fetch boards for current user - called ONCE on init
   Future<void> fetchBoards() async {
+    if (!mounted) return;
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
       final boards = await _repository.getBoardsByUser(_userId!);
+
+      if (!mounted) return; // Check again after await
+
       state = state.copyWith(boards: boards, isLoading: false);
     } catch (e) {
+      if (!mounted) return; // Check in catch block as well
       state = state.copyWith(
         isLoading: false,
         errorMessage: 'Failed to load boards: ${e.toString()}',

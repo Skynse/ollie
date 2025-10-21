@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ollie/functions/getUserByEmail.dart';
 import '../../components/ollie_ui/ollie_button.dart';
 import '../../components/ollie_ui/ollie_textfield.dart';
 import '../../providers/auth_provider.dart';
@@ -73,11 +74,14 @@ class _ModernAuthScreenState extends ConsumerState<ModernAuthScreen>
     });
 
     try {
-      // Check if email exists in Appwrite
-      // Note: Appwrite doesn't have a direct "check email" endpoint
-      // So we'll just move to next step and handle errors there
-      await Future.delayed(const Duration(milliseconds: 500)); // Simulate check
+      // check db to see if email exists somewhere in users directory
+      bool exists = await checkUserByEmail(email);
 
+      if (exists) {
+        setState(() {
+          _isExistingUser = true;
+        });
+      }
       setState(() {
         _emailSubmitted = true;
         _isCheckingEmail = false;
