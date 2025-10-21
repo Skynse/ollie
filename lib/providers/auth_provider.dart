@@ -1,5 +1,4 @@
 import 'package:appwrite/appwrite.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:ollie/repositories/appwrite/appwrite_config.dart';
 import 'package:ollie/state/auth_state.dart';

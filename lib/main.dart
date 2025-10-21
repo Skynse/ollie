@@ -22,46 +22,7 @@ class OllieApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authProvider);
-
-    final router = GoRouter(
-      initialLocation: '/',
-      redirect: (context, state) {
-        final isAuthenticated = authState.isAuthenticated;
-        final isLoading = authState.isLoading;
-        final isLoginRoute = state.matchedLocation == '/login';
-
-        // Still loading, stay put
-        if (isLoading) return null;
-
-        // Not authenticated, redirect to login
-        if (!isAuthenticated && !isLoginRoute) {
-          return '/login';
-        }
-
-        // Authenticated but on login page, redirect to home
-        if (isAuthenticated && isLoginRoute) {
-          return '/';
-        }
-
-        // All good, continue
-        return null;
-      },
-      routes: [
-        GoRoute(
-          path: '/login',
-          builder: (context, state) => const ModernAuthScreen(),
-        ),
-        GoRoute(path: '/', builder: (context, state) => const HomePage()),
-        GoRoute(
-          path: '/boards/:boardId',
-          builder: (context, state) {
-            final boardId = state.pathParameters['boardId']!;
-            return BoardScreen(boardId: boardId);
-          },
-        ),
-      ],
-    );
+    final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
       title: 'Ollie - Kanban Board',
@@ -76,3 +37,45 @@ class OllieApp extends ConsumerWidget {
     );
   }
 }
+
+final routerProvider = Provider<GoRouter>((ref) {
+  final authState = ref.watch(authProvider);
+  return GoRouter(
+    initialLocation: '/',
+    redirect: (context, state) {
+      final isAuthenticated = authState.isAuthenticated;
+      final isLoading = authState.isLoading;
+      final isLoginRoute = state.matchedLocation == '/login';
+
+      // Still loading, stay put
+      if (isLoading) return null;
+
+      // Not authenticated, redirect to login
+      if (!isAuthenticated && !isLoginRoute) {
+        return '/login';
+      }
+
+      // Authenticated but on login page, redirect to home
+      if (isAuthenticated && isLoginRoute) {
+        return '/';
+      }
+
+      // All good, continue
+      return null;
+    },
+    routes: [
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => const ModernAuthScreen(),
+      ),
+      GoRoute(path: '/', builder: (context, state) => const HomePage()),
+      GoRoute(
+        path: '/boards/:boardId',
+        builder: (context, state) {
+          final boardId = state.pathParameters['boardId']!;
+          return BoardScreen(boardId: boardId);
+        },
+      ),
+    ],
+  );
+});

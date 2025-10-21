@@ -385,16 +385,29 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
   /// Move a card to a different column
   Future<void> moveCard({
     required String cardId,
+    required String sourceColumnId,
     required String targetColumnId,
     required int targetPosition,
   }) async {
     if (state is! AsyncData<BoardState>) return;
+    final currentState = (state as AsyncData<BoardState>).value;
 
     try {
-      await _repository.moveCard(cardId, targetColumnId, targetPosition);
-      // Real-time listener will handle updating the state
+      // Get the card to find its original column
+      final card = await _repository.getCard(cardId);
+      final sourceColumnId = card.columnId;
+
+      // Call the repository to perform the database operations
+      await _repository.moveCard(
+        cardId: cardId,
+        sourceColumnId: sourceColumnId,
+        targetColumnId: targetColumnId,
+        targetPosition: targetPosition,
+      );
+
+      // The repository now handles the complex logic.
+      // The real-time listener will trigger a UI update automatically.
     } catch (e) {
-      final currentState = (state as AsyncData<BoardState>).value;
       state = AsyncValue.data(
         currentState.copyWith(
           errorMessage: 'Failed to move card: ${e.toString()}',
@@ -423,7 +436,7 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
         columnId: columnId,
         title: title,
         description: description,
-        position: column.cardIds.length,
+        position: 0,
         assigneeIds: [],
         labelIds: [],
         priority: priority,
