@@ -171,7 +171,7 @@ class _KanbanCardState extends ConsumerState<KanbanCard>
                       context: context,
                       builder: (context) => AssignMemberDialog(
                         boardId: widget.boardId,
-                        cardId: widget.card.id,
+                        card: widget.card,
                         currentAssigneeIds: widget.card.assigneeIds,
                       ),
                     );
@@ -464,12 +464,12 @@ class _KanbanCardState extends ConsumerState<KanbanCard>
                     Navigator.pop(context);
                     try {
                       // Update card with sprintId
+                      var updatedCard = widget.card.copyWith(
+                        sprintId: sprint.id,
+                      );
                       await ref
                           .read(boardNotifierProvider(widget.boardId).notifier)
-                          .updateCard(
-                            cardId: widget.card.id,
-                            sprintId: sprint.id,
-                          );
+                          .updateCard(updatedCard: updatedCard);
 
                       // Add card to sprint's cardIds list
                       if (!sprint.cardIds.contains(widget.card.id)) {

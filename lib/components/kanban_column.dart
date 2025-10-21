@@ -169,7 +169,7 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
         await ref
             .read(boardNotifierProvider(widget.boardId).notifier)
             .moveCard(
-              cardId: draggedCard.id,
+              card: draggedCard,
 
               targetColumnId: widget.column.id,
               targetPosition: position,

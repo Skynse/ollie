@@ -500,10 +500,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             onDeleteSprint: (sprintId) async {
               final repository = ref.read(sprintRepositoryProvider);
               await repository.deleteSprint(sprintId);
-              // Just refresh the sprint notifier, not the whole board
-              await ref
-                  .read(sprintNotifierProvider(widget.boardId).notifier)
-                  .refresh();
+              ref.invalidate(boardSprintsProvider(widget.boardId));
             },
           ),
         );

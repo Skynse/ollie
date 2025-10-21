@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ollie/models/card.dart' as model;
 import '../models/user.dart';
 import '../providers/board_provider.dart';
 import '../providers/user_provider.dart';
@@ -9,13 +10,13 @@ import 'ollie_ui/ollie_button.dart';
 /// Dialog for assigning/removing members from a card
 class AssignMemberDialog extends ConsumerStatefulWidget {
   final String boardId;
-  final String cardId;
+  final model.Card card;
   final List<String> currentAssigneeIds;
 
   const AssignMemberDialog({
     super.key,
     required this.boardId,
-    required this.cardId,
+    required this.card,
     required this.currentAssigneeIds,
   });
 
@@ -152,16 +153,15 @@ class _AssignMemberDialogState extends ConsumerState<AssignMemberDialog> {
 
     // Add new members
     for (final userId in toAdd) {
-      await notifier.assignMemberToCard(cardId: widget.cardId, userId: userId);
+      widget.card.assigneeIds.add(userId);
     }
 
     // Remove members
     for (final userId in toRemove) {
-      await notifier.removeMemberFromCard(
-        cardId: widget.cardId,
-        userId: userId,
-      );
+      widget.card.assigneeIds.remove(userId);
     }
+    await notifier.updateCard(updatedCard: widget.card);
+    //
 
     if (mounted) {
       Navigator.pop(context);
