@@ -85,8 +85,8 @@ class BoardsNotifier extends StateNotifier<BoardsState> {
         id: '', // Appwrite generates this
         name: name,
         description: description,
-        createdBy: _userId!,
-        memberIds: [_userId!],
+        createdBy: _userId,
+        memberIds: [_userId],
         columnIds: [],
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),

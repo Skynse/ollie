@@ -1,11 +1,8 @@
 import 'dart:convert';
-
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/enums.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:ollie/functions/getUserByEmail.dart';
-import 'package:ollie/providers/appwrite_providers.dart';
 import 'package:ollie/repositories/appwrite/appwrite_config.dart';
 import '../../components/ollie_ui/ollie_button.dart';
 import '../../components/ollie_ui/ollie_textfield.dart';

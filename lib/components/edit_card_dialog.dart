@@ -99,7 +99,9 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
         updatedAt: DateTime.now(),
       );
 
-      await ref.read(boardRepositoryProvider).updateCard(updatedCard);
+      await ref
+          .read(boardNotifierProvider(widget.boardId).notifier)
+          .updateCard(updatedCard: updatedCard);
 
       // Update sprint cardIds if sprint changed
       if (_selectedSprintId != widget.card.sprintId) {

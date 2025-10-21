@@ -31,7 +31,12 @@ abstract class BoardRepository {
   Future<Card> createCard(Card card);
   Future<Card> updateCard(Card card);
   Future<void> deleteCard(String cardId);
-  Future<void> moveCard(String cardId, String newColumnId, int newPosition);
+  Future<void> moveCard({
+    required String cardId,
+    required String sourceColumnId,
+    required String targetColumnId,
+    required int targetPosition,
+  });
   Future<void> reorderCards(String columnId, List<String> cardIds);
 
   // Label operations

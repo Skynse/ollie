@@ -8,97 +8,91 @@ import 'kanban_card.dart';
 import 'add_card_dialog.dart';
 
 /// A kanban column component displaying a list of cards
-class KanbanColumn extends ConsumerWidget {
+class KanbanColumn extends ConsumerStatefulWidget {
   final BoardColumn column;
   final String boardId;
 
   const KanbanColumn({super.key, required this.column, required this.boardId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final cardsAsync = ref.watch(columnCardsProvider(column.id));
+  ConsumerState<KanbanColumn> createState() => _KanbanColumnState();
+}
 
-    return Container(
-      width: 300,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
+class _KanbanColumnState extends ConsumerState<KanbanColumn>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.02).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final boardStateAsync = ref.watch(boardNotifierProvider(widget.boardId));
+
+    return AnimatedBuilder(
+      animation: _scaleAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: Container(
+            width: 300,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+              boxShadow:
+                  _animationController.isAnimating ||
+                      _animationController.value > 0
+                  ? [
+                      BoxShadow(
+                        color: Colors.blue.withOpacity(0.2),
+                        blurRadius: 10,
+                        spreadRadius: 2,
+                      ),
+                    ]
+                  : [],
+            ),
+            child: child,
+          ),
+        );
+      },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
           // Column header
           _buildHeader(context, ref),
 
-          // Cards list with drag target
+          // Cards list
           Flexible(
-            child: DragTarget<model.Card>(
-              onWillAcceptWithDetails: (details) =>
-                  details.data.columnId != column.id,
-              onAcceptWithDetails: (details) async {
-                final draggedCard = details.data;
-                // Don't move if already in this column
-                if (draggedCard.columnId == column.id) return;
-
-                // Move card to this column
-                await ref
-                    .read(boardNotifierProvider(boardId).notifier)
-                    .moveCard(
-                      cardId: draggedCard.id,
-                      targetColumnId: column.id,
-                      targetPosition: 0, // Add to top of column
-                    );
-              },
-              builder: (context, candidateData, rejectedData) {
-                final isHovering = candidateData.isNotEmpty;
-
-                return Container(
-                  decoration: BoxDecoration(
-                    color: isHovering
-                        ? Colors.blue.shade50
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: cardsAsync.when(
-                    loading: () => const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(20.0),
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                    error: (error, stack) => Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: Text(
-                          'Error loading cards',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.red.shade700,
-                          ),
-                        ),
-                      ),
-                    ),
-                    data: (columnCards) => ListView.builder(
-                      shrinkWrap: true,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      itemCount: columnCards.length,
-                      itemBuilder: (context, index) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: KanbanCard(
-                            card: columnCards[index],
-                            boardId: boardId,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                );
+            // Use the new boardStateAsync value
+            child: boardStateAsync.when(
+              // The main loading/error state is now handled at the screen level,
+              // but we can still show a small indicator here.
+              loading: () => const Center(
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              error: (err, st) => Center(child: Text('Error')),
+              data: (boardState) {
+                // Get the cards for THIS specific column from the map
+                final columnCards =
+                    boardState.columnCards[widget.column.id] ?? [];
+                return _buildCardList(columnCards);
               },
             ),
           ),
@@ -110,11 +104,107 @@ class KanbanColumn extends ConsumerWidget {
     );
   }
 
+  Widget _buildCardList(List<model.Card> cards) {
+    // We build a list of widgets that includes cards and drop zones between them
+    return ListView.builder(
+      shrinkWrap: true,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      // We have N cards and N+1 drop zones
+      itemCount: cards.length * 2 + 1,
+      itemBuilder: (context, index) {
+        // Even indices are drop zones
+        if (index.isEven) {
+          final dropPosition = index ~/ 2;
+          return _buildDropZone(
+            cards: cards,
+            position: dropPosition,
+            isTop: index == 0,
+            isBottom: index == cards.length * 2,
+          );
+        }
+        // Odd indices are the cards themselves
+        else {
+          final cardIndex = (index - 1) ~/ 2;
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: KanbanCard(card: cards[cardIndex], boardId: widget.boardId),
+          );
+        }
+      },
+    );
+  }
+
+  void _onDragEnter() {
+    _animationController.forward();
+  }
+
+  void _onDragLeave() {
+    _animationController.reverse();
+  }
+
+  Widget _buildDropZone({
+    required List<model.Card> cards,
+    required int position,
+    bool isTop = false,
+    bool isBottom = false,
+  }) {
+    return DragTarget<model.Card>(
+      onWillAcceptWithDetails: (details) {
+        final draggedCard = details.data;
+        // Don't allow dropping in the same position in the same column
+        if (draggedCard.columnId == widget.column.id) {
+          final originalIndex = cards.indexWhere((c) => c.id == draggedCard.id);
+          if (originalIndex == position || originalIndex + 1 == position) {
+            return false;
+          }
+        }
+        _onDragEnter(); // Trigger column animation
+        return true;
+      },
+      onLeave: (_) => _onDragLeave(), // Stop column animation
+      onAcceptWithDetails: (details) async {
+        _onDragLeave();
+        final draggedCard = details.data;
+
+        await ref
+            .read(boardNotifierProvider(widget.boardId).notifier)
+            .moveCard(
+              card: draggedCard,
+
+              targetColumnId: widget.column.id,
+              targetPosition: position,
+            );
+      },
+      builder: (context, candidateData, rejectedData) {
+        final isHovering = candidateData.isNotEmpty;
+        if (isHovering) {
+          // Show a placeholder when a card is being dragged over
+          return Container(
+            height: 80, // Height of the placeholder
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50.withOpacity(0.7),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.shade200, width: 2),
+            ),
+            child: Center(child: Icon(Icons.add, color: Colors.blue.shade400)),
+          );
+        } else {
+          // Empty space when not hovering
+          return SizedBox(
+            height: isTop || isBottom ? 4 : 8,
+          ); // Smaller gap between cards
+        }
+      },
+    );
+  }
+
   Widget _buildHeader(BuildContext context, WidgetRef ref) {
-    final cardsAsync = ref.watch(columnCardsProvider(column.id));
-    final cardCount = cardsAsync.maybeWhen(
-      data: (cards) => cards.length,
-      orElse: () => 0,
+    final cardCount = ref.watch(
+      boardNotifierProvider(widget.boardId).select(
+        (asyncState) =>
+            asyncState.value?.columnCards[widget.column.id]?.length ?? 0,
+      ),
     );
 
     return Container(
@@ -129,7 +219,7 @@ class KanbanColumn extends ConsumerWidget {
             width: 4,
             height: 20,
             decoration: BoxDecoration(
-              color: _parseColor(column.color),
+              color: _parseColor(widget.column.color),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -138,7 +228,7 @@ class KanbanColumn extends ConsumerWidget {
           // Column name
           Expanded(
             child: Text(
-              column.name,
+              widget.column.name,
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
             ),
           ),
@@ -208,9 +298,9 @@ class KanbanColumn extends ConsumerWidget {
       builder: (context) => AddCardDialog(
         onCreateCard: ({required title, description, required priority}) async {
           final card = await ref
-              .read(boardNotifierProvider(boardId).notifier)
+              .read(boardNotifierProvider(widget.boardId).notifier)
               .createCard(
-                columnId: column.id,
+                columnId: widget.column.id,
                 title: title,
                 description: description,
                 priority: priority,

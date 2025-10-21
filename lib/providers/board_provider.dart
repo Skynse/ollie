@@ -13,12 +13,14 @@ import 'boards_provider.dart';
 class BoardState {
   final Board board;
   final List<BoardColumn> columns;
+  final Map<String, List<model.Card>> columnCards;
   final bool isLoading;
   final String? errorMessage;
 
   const BoardState({
     required this.board,
     this.columns = const [],
+    this.columnCards = const {},
     this.isLoading = false,
     this.errorMessage,
   });
@@ -26,12 +28,14 @@ class BoardState {
   BoardState copyWith({
     Board? board,
     List<BoardColumn>? columns,
+    Map<String, List<model.Card>>? columnCards,
     bool? isLoading,
     String? errorMessage,
   }) {
     return BoardState(
       board: board ?? this.board,
       columns: columns ?? this.columns,
+      columnCards: columnCards ?? this.columnCards,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
     );
@@ -108,11 +112,20 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
   }
 
   Future<void> _loadBoard() async {
+    state = const AsyncValue.loading();
     try {
       final board = await _repository.getBoard(_boardId);
       final columns = await _repository.getColumnsByBoard(_boardId);
 
-      state = AsyncValue.data(BoardState(board: board, columns: columns));
+      // Fetch cards for each column
+      final Map<String, List<model.Card>> columnCards = {};
+      for (final column in columns) {
+        columnCards[column.id] = await _repository.getCardsByColumn(column.id);
+      }
+
+      state = AsyncValue.data(
+        BoardState(board: board, columns: columns, columnCards: columnCards),
+      );
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
     }
@@ -282,124 +295,141 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
 
   Future<void> deleteCard(String cardId) async {
     if (state is! AsyncData<BoardState>) return;
+    final originalState = state.asData!.value;
+
+    // Find which column the card is in.
+    String? sourceColumnId;
+    originalState.columnCards.forEach((colId, cards) {
+      if (cards.any((c) => c.id == cardId)) {
+        sourceColumnId = colId;
+      }
+    });
+
+    if (sourceColumnId == null) {
+      print("Card not found in local state, cannot delete.");
+      return; // Card not found
+    }
+
+    // --- Optimistic Update ---
+    final newCardsByColumn = Map<String, List<model.Card>>.from(
+      originalState.columnCards,
+    );
+    final sourceList = List<model.Card>.from(newCardsByColumn[sourceColumnId]!);
+    sourceList.removeWhere((c) => c.id == cardId);
+    newCardsByColumn[sourceColumnId!] = sourceList;
+
+    state = AsyncValue.data(
+      originalState.copyWith(columnCards: newCardsByColumn),
+    );
+
+    // --- Sync with Server ---
     try {
       await _repository.deleteCard(cardId);
-      // Real-time listener will handle updating the state
     } catch (e) {
-      final currentState = (state as AsyncData<BoardState>).value;
-      state = AsyncValue.data(
-        currentState.copyWith(
-          errorMessage: 'Failed to delete card: ${e.toString()}',
-        ),
-      );
+      // On failure, roll back to the original state.
+      state = AsyncValue.data(originalState);
+      print("Failed to delete card, rolling back. Error: $e");
     }
   }
 
-  /// Update a card with new properties
-  Future<void> updateCard({
-    required String cardId,
-    String? title,
-    String? description,
-    String? sprintId,
-    double? estimatedHours,
-  }) async {
+  /// Update a card with new properties using a more scalable approach.
+  Future<void> updateCard({required model.Card updatedCard}) async {
     if (state is! AsyncData<BoardState>) return;
+    final originalState = state.asData!.value;
 
-    try {
-      final card = await _repository.getCard(cardId);
+    final columnId = updatedCard.columnId;
 
-      final updatedCard = card.copyWith(
-        title: title ?? card.title,
-        description: description ?? card.description,
-        sprintId: sprintId ?? card.sprintId,
-        estimatedHours: estimatedHours ?? card.estimatedHours,
-        updatedAt: DateTime.now(),
-      );
+    // Find the index of the card to be updated.
+    final cardList = List<model.Card>.from(
+      originalState.columnCards[columnId] ?? [],
+    );
+    final cardIndex = cardList.indexWhere((c) => c.id == updatedCard.id);
 
-      await _repository.updateCard(updatedCard);
-      // Real-time listener will handle updating the state
-    } catch (e) {
-      final currentState = (state as AsyncData<BoardState>).value;
-      state = AsyncValue.data(
-        currentState.copyWith(
-          errorMessage: 'Failed to update card: ${e.toString()}',
-        ),
-      );
+    if (cardIndex == -1) {
+      print("Card to update not found in local state.");
+      return; // Card not found
     }
-  }
 
-  /// Assign a member to a card
-  Future<void> assignMemberToCard({
-    required String cardId,
-    required String userId,
-  }) async {
-    if (state is! AsyncData<BoardState>) return;
+    // --- Optimistic Update ---
+    final newCardsByColumn = Map<String, List<model.Card>>.from(
+      originalState.columnCards,
+    );
+    final newCardList = List<model.Card>.from(newCardsByColumn[columnId]!);
 
+    // Replace the old card with the updated card.
+    newCardList[cardIndex] = updatedCard;
+    newCardsByColumn[columnId] = newCardList;
+
+    // Update the UI immediately.
+    state = AsyncValue.data(
+      originalState.copyWith(columnCards: newCardsByColumn),
+    );
+
+    // --- Sync with Server ---
     try {
-      final card = await _repository.getCard(cardId);
-
-      // Don't add if already assigned
-      if (card.assigneeIds.contains(userId)) return;
-
-      final updatedAssignees = [...card.assigneeIds, userId];
-      final updatedCard = card.copyWith(assigneeIds: updatedAssignees);
-
       await _repository.updateCard(updatedCard);
-      // Real-time listener will handle updating the state
     } catch (e) {
-      final currentState = (state as AsyncData<BoardState>).value;
-      state = AsyncValue.data(
-        currentState.copyWith(
-          errorMessage: 'Failed to assign member: ${e.toString()}',
-        ),
-      );
-    }
-  }
-
-  /// Remove a member from a card
-  Future<void> removeMemberFromCard({
-    required String cardId,
-    required String userId,
-  }) async {
-    if (state is! AsyncData<BoardState>) return;
-
-    try {
-      final card = await _repository.getCard(cardId);
-      final updatedAssignees = card.assigneeIds
-          .where((id) => id != userId)
-          .toList();
-      final updatedCard = card.copyWith(assigneeIds: updatedAssignees);
-
-      await _repository.updateCard(updatedCard);
-      // Real-time listener will handle updating the state
-    } catch (e) {
-      final currentState = (state as AsyncData<BoardState>).value;
-      state = AsyncValue.data(
-        currentState.copyWith(
-          errorMessage: 'Failed to remove member: ${e.toString()}',
-        ),
-      );
+      // On failure, roll back to the original state.
+      state = AsyncValue.data(originalState);
+      print("Failed to update card, rolling back. Error: $e");
     }
   }
 
   /// Move a card to a different column
   Future<void> moveCard({
-    required String cardId,
+    required model.Card card,
     required String targetColumnId,
     required int targetPosition,
   }) async {
     if (state is! AsyncData<BoardState>) return;
+    final originalState = state.asData!.value;
+
+    String sourceColumnId = '';
+    model.Card? cardToMove;
+
+    originalState.columnCards.forEach((colId, cards) {
+      final _card = cards.firstWhere(
+        (c) => c.id == card.id,
+        orElse: () => model.Card.empty(),
+      );
+      if (_card.id.isNotEmpty) {
+        sourceColumnId = colId;
+        cardToMove = card;
+      }
+    });
+
+    if (cardToMove == null) return;
+
+    final newCardsByColumn = Map<String, List<model.Card>>.from(
+      originalState.columnCards,
+    );
+    final sourceList = List<model.Card>.from(newCardsByColumn[sourceColumnId]!);
+    final targetList = sourceColumnId == targetColumnId
+        ? sourceList
+        : List<model.Card>.from(newCardsByColumn[targetColumnId]!);
+
+    sourceList.removeWhere((c) => c.id == card.id);
+
+    final adjustedPosition = targetPosition.clamp(0, targetList.length);
+    targetList.insert(adjustedPosition, card);
+
+    newCardsByColumn[sourceColumnId] = sourceList;
+    newCardsByColumn[targetColumnId] = targetList;
+
+    state = AsyncValue.data(
+      originalState.copyWith(columnCards: newCardsByColumn),
+    );
 
     try {
-      await _repository.moveCard(cardId, targetColumnId, targetPosition);
-      // Real-time listener will handle updating the state
-    } catch (e) {
-      final currentState = (state as AsyncData<BoardState>).value;
-      state = AsyncValue.data(
-        currentState.copyWith(
-          errorMessage: 'Failed to move card: ${e.toString()}',
-        ),
+      await _repository.moveCard(
+        cardId: card.id,
+        sourceColumnId: sourceColumnId,
+        targetColumnId: targetColumnId,
+        targetPosition: adjustedPosition,
       );
+    } catch (e) {
+      state = AsyncValue.data(originalState);
+      print("Failed to move card, rolling back UI. Error: $e");
     }
   }
 
@@ -412,34 +442,46 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
     required String createdBy,
   }) async {
     if (state is! AsyncData<BoardState>) return null;
+    final originalState = state.asData!.value;
 
-    final currentState = (state as AsyncData<BoardState>).value;
+    final newCardData = model.Card(
+      id: '',
+      columnId: columnId,
+      title: title,
+      description: description,
+      position: 0,
+      assigneeIds: [],
+      labelIds: [],
+      priority: priority,
+      dueDate: null,
+      commentCount: 0,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      createdBy: createdBy,
+    );
 
     try {
-      final column = currentState.columns.firstWhere((c) => c.id == columnId);
+      final createdCard = await _repository.createCard(newCardData);
+      if (createdCard == null) return null;
 
-      final newCard = model.Card(
-        id: '',
-        columnId: columnId,
-        title: title,
-        description: description,
-        position: column.cardIds.length,
-        assigneeIds: [],
-        labelIds: [],
-        priority: priority,
-        dueDate: null,
-        commentCount: 0,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        createdBy: createdBy,
+      final newCardsByColumn = Map<String, List<model.Card>>.from(
+        originalState.columnCards,
+      );
+      final targetList = List<model.Card>.from(
+        newCardsByColumn[columnId] ?? [],
       );
 
-      final created = await _repository.createCard(newCard);
-      // Real-time listener will handle updating the state
-      return created;
+      targetList.insert(0, createdCard);
+      newCardsByColumn[columnId] = targetList;
+
+      state = AsyncValue.data(
+        originalState.copyWith(columnCards: newCardsByColumn),
+      );
+
+      return createdCard;
     } catch (e) {
       state = AsyncValue.data(
-        currentState.copyWith(
+        originalState.copyWith(
           errorMessage: 'Failed to create card: ${e.toString()}',
         ),
       );

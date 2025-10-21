@@ -34,6 +34,11 @@
     </head>
     <body>
         <script src="flutter_bootstrap.js" async></script>
+        <script nonce="">
+            document.body.addEventListener("contextmenu", function (event) {
+                event.preventDefault();
+            });
+        </script>
         <script>
             const clearBrowserStorage = async () => {
                 localStorage.clear();
