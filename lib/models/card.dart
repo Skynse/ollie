@@ -88,6 +88,26 @@ class Card {
     );
   }
 
+  factory Card.empty() {
+    return Card(
+      id: '',
+      columnId: '',
+      title: '',
+      description: '',
+      position: 0,
+      assigneeIds: [],
+      labelIds: [],
+      priority: Priority.low,
+      dueDate: null,
+      commentCount: 0,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      createdBy: '',
+      estimatedHours: 0.0,
+      sprintId: '',
+    );
+  }
+
   Card copyWith({
     String? id,
     String? columnId,

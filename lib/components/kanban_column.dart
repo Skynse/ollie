@@ -43,7 +43,7 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
 
   @override
   Widget build(BuildContext context) {
-    final cardsAsync = ref.watch(columnCardsProvider(widget.column.id));
+    final boardStateAsync = ref.watch(boardNotifierProvider(widget.boardId));
 
     return AnimatedBuilder(
       animation: _scaleAnimation,
@@ -80,23 +80,20 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
 
           // Cards list
           Flexible(
-            child: cardsAsync.when(
+            // Use the new boardStateAsync value
+            child: boardStateAsync.when(
+              // The main loading/error state is now handled at the screen level,
+              // but we can still show a small indicator here.
               loading: () => const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(20.0),
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
+                child: CircularProgressIndicator(strokeWidth: 2),
               ),
-              error: (error, stack) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Text(
-                    'Error loading cards',
-                    style: TextStyle(fontSize: 12, color: Colors.red.shade700),
-                  ),
-                ),
-              ),
-              data: (columnCards) => _buildCardList(columnCards),
+              error: (err, st) => Center(child: Text('Error')),
+              data: (boardState) {
+                // Get the cards for THIS specific column from the map
+                final columnCards =
+                    boardState.columnCards[widget.column.id] ?? [];
+                return _buildCardList(columnCards);
+              },
             ),
           ),
 
@@ -173,7 +170,7 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
             .read(boardNotifierProvider(widget.boardId).notifier)
             .moveCard(
               cardId: draggedCard.id,
-              sourceColumnId: draggedCard.columnId,
+
               targetColumnId: widget.column.id,
               targetPosition: position,
             );
@@ -203,10 +200,11 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
   }
 
   Widget _buildHeader(BuildContext context, WidgetRef ref) {
-    final cardsAsync = ref.watch(columnCardsProvider(widget.column.id));
-    final cardCount = cardsAsync.maybeWhen(
-      data: (cards) => cards.length,
-      orElse: () => 0,
+    final cardCount = ref.watch(
+      boardNotifierProvider(widget.boardId).select(
+        (asyncState) =>
+            asyncState.value?.columnCards[widget.column.id]?.length ?? 0,
+      ),
     );
 
     return Container(

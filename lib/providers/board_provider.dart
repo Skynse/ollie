@@ -13,12 +13,14 @@ import 'boards_provider.dart';
 class BoardState {
   final Board board;
   final List<BoardColumn> columns;
+  final Map<String, List<model.Card>> columnCards;
   final bool isLoading;
   final String? errorMessage;
 
   const BoardState({
     required this.board,
     this.columns = const [],
+    this.columnCards = const {},
     this.isLoading = false,
     this.errorMessage,
   });
@@ -26,12 +28,14 @@ class BoardState {
   BoardState copyWith({
     Board? board,
     List<BoardColumn>? columns,
+    Map<String, List<model.Card>>? columnCards,
     bool? isLoading,
     String? errorMessage,
   }) {
     return BoardState(
       board: board ?? this.board,
       columns: columns ?? this.columns,
+      columnCards: columnCards ?? this.columnCards,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
     );
@@ -108,11 +112,20 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
   }
 
   Future<void> _loadBoard() async {
+    state = const AsyncValue.loading();
     try {
       final board = await _repository.getBoard(_boardId);
       final columns = await _repository.getColumnsByBoard(_boardId);
 
-      state = AsyncValue.data(BoardState(board: board, columns: columns));
+      // Fetch cards for each column
+      final Map<String, List<model.Card>> columnCards = {};
+      for (final column in columns) {
+        columnCards[column.id] = await _repository.getCardsByColumn(column.id);
+      }
+
+      state = AsyncValue.data(
+        BoardState(board: board, columns: columns, columnCards: columnCards),
+      );
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
     }
@@ -385,34 +398,67 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
   /// Move a card to a different column
   Future<void> moveCard({
     required String cardId,
-    required String sourceColumnId,
     required String targetColumnId,
     required int targetPosition,
   }) async {
-    if (state is! AsyncData<BoardState>) return;
-    final currentState = (state as AsyncData<BoardState>).value;
+    // 1. Get the original state so we can roll back on failure
+    final originalState = state.value!;
 
+    // 2. Find the card and its source column
+    String sourceColumnId = '';
+    model.Card? cardToMove;
+
+    originalState.columnCards.forEach((colId, cards) {
+      final card = cards.firstWhere(
+        (c) => c.id == cardId,
+        orElse: () => model.Card.empty(),
+      );
+      if (card.id.isNotEmpty) {
+        sourceColumnId = colId;
+        cardToMove = card;
+      }
+    });
+
+    if (cardToMove == null) return; // Card not found
+
+    // 3. Create new, updated card lists in memory
+    final newCardsByColumn = Map<String, List<model.Card>>.from(
+      originalState.columnCards,
+    );
+
+    final sourceList = List<model.Card>.from(newCardsByColumn[sourceColumnId]!);
+    final targetList = sourceColumnId == targetColumnId
+        ? sourceList
+        : List<model.Card>.from(newCardsByColumn[targetColumnId]!);
+
+    sourceList.removeWhere((c) => c.id == cardId);
+
+    final adjustedPosition = targetPosition.clamp(0, targetList.length);
+    targetList.insert(adjustedPosition, cardToMove!);
+
+    newCardsByColumn[sourceColumnId] = sourceList;
+    newCardsByColumn[targetColumnId] = targetList;
+
+    // 4. Update the UI IMMEDIATELY with the new local state
+    state = AsyncValue.data(
+      originalState.copyWith(columnCards: newCardsByColumn),
+    );
+
+    // 5. Perform the network request in the background
     try {
-      // Get the card to find its original column
-      final card = await _repository.getCard(cardId);
-      final sourceColumnId = card.columnId;
-
-      // Call the repository to perform the database operations
       await _repository.moveCard(
         cardId: cardId,
         sourceColumnId: sourceColumnId,
         targetColumnId: targetColumnId,
-        targetPosition: targetPosition,
+        targetPosition: adjustedPosition,
       );
-
-      // The repository now handles the complex logic.
-      // The real-time listener will trigger a UI update automatically.
+      // On success, do nothing. Our state is already correct.
+      // The real-time update will eventually arrive and confirm our state.
     } catch (e) {
-      state = AsyncValue.data(
-        currentState.copyWith(
-          errorMessage: 'Failed to move card: ${e.toString()}',
-        ),
-      );
+      // 6. ON FAILURE: Roll back to the original state
+      state = AsyncValue.data(originalState);
+      // Optionally, show an error message to the user
+      print("Failed to move card, rolling back UI. Error: $e");
     }
   }
 
