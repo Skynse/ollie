@@ -59,7 +59,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
 
   Widget _buildBoardDrawer() {
     final boardState = ref.watch(boardNotifierProvider(widget.boardId));
-    final board = boardState?.value?.board;
+    final board = boardState.value?.board;
 
     return Drawer(
       child: Column(

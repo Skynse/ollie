@@ -302,8 +302,9 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget _buildBoardsGrid(List<Board> boards) {
     return GridView.builder(
       padding: const EdgeInsets.all(24),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 400,
+
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
         childAspectRatio: 2.0,
