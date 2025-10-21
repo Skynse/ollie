@@ -26,6 +26,15 @@ class AppwriteConfig {
     _account = Account(_client!);
   }
 
+  static void refreshClient() {
+    _client = Client()
+        .setEndpoint(Environment.appwritePublicEndpoint)
+        .setProject(Environment.appwriteProjectId);
+
+    _databases = Databases(_client!);
+    _account = Account(_client!);
+  }
+
   /// Get Databases instance
   static Databases get databases {
     if (_databases == null) {
