@@ -6,18 +6,7 @@ import '../../providers/user_provider.dart';
 import '../../providers/sprint_provider.dart';
 import '../../models/board.dart';
 import '../../models/sprint.dart';
-import '../../components/kanban_column.dart';
-import '../../components/ollie_ui/ollie_button.dart';
-import '../../components/add_column_dialog.dart';
-import '../../components/invite_member_dialog.dart';
-import '../../components/create_sprint_dialog.dart';
-import '../../components/edit_board_dialog.dart';
-import '../../components/manage_members_dialog.dart';
-import '../../components/manage_columns_dialog.dart';
-import '../../components/sprint_management_dialog.dart';
-import '../../components/board_analytics_dialog.dart';
-import '../../components/export_board_dialog.dart';
-import '../../components/ollie_ui/ollie_toast.dart';
+import '../../components/components.dart';
 
 /// Main kanban board screen showing columns and cards
 class BoardScreen extends ConsumerStatefulWidget {
@@ -695,18 +684,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                 child: userAsync.when(
                   data: (user) => Tooltip(
                     message: user.name,
-                    child: CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Colors.blue.shade100,
-                      child: Text(
-                        user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.blue.shade700,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+                    child: HoverAnimatedAvatar(user: user),
                   ),
                   loading: () => CircleAvatar(
                     radius: 16,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ollie/components/ollie_ui/ollie_context_menu.dart';
 import 'package:ollie/providers/board_provider.dart';
 import '../models/card.dart' as model;
 import '../models/priority.dart';
@@ -62,57 +63,107 @@ class _KanbanCardState extends ConsumerState<KanbanCard>
 
   @override
   Widget build(BuildContext context) {
-    return Listener(
-      onPointerDown: (_) => _onLongPressStart(),
-      onPointerUp: (_) => _onLongPressEnd(),
-      onPointerCancel: (_) => _onLongPressEnd(),
-      child: LongPressDraggable<model.Card>(
-        data: widget.card,
-        hapticFeedbackOnStart: true,
-        onDragStarted: () {
-          _onLongPressEnd();
-        },
-        onDragEnd: (_) {
-          _onLongPressEnd();
-        },
-        delay: Duration(milliseconds: 100),
-        feedback: Material(
-          elevation: 8,
-          borderRadius: BorderRadius.circular(8),
-          child: SizedBox(
-            width: 280,
-            child: Opacity(
-              opacity: 0.8,
-              child: _buildCardContent(context, ref),
-            ),
-          ),
+    return OllieContextMenu(
+      items: [
+        OllieMenuItem(
+          title: 'Edit Card',
+          icon: Icons.edit_outlined,
+          onTap: () {
+            // Using Future.delayed is good practice to show the dialog after the menu closes.
+            Future.delayed(Duration.zero, () {
+              showDialog(
+                context: context,
+                builder: (context) =>
+                    EditCardDialog(card: widget.card, boardId: widget.boardId),
+              );
+            });
+          },
         ),
-        childWhenDragging: Opacity(
-          opacity: 0.3,
-          child: _buildCardContent(context, ref),
-        ),
-        child: AnimatedBuilder(
-          animation: _scaleAnimation,
-          builder: (context, child) {
-            return Transform.scale(
-              scale: _scaleAnimation.value,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: _isLongPressing
-                      ? [
-                          BoxShadow(
-                            color: Colors.blue.withOpacity(0.4),
-                            blurRadius: 12,
-                            spreadRadius: 3,
-                          ),
-                        ]
-                      : [],
+        OllieMenuItem(
+          title: 'Change Members',
+          icon: Icons.group_outlined,
+          onTap: () {
+            Future.delayed(Duration.zero, () {
+              showDialog(
+                context: context,
+                builder: (context) => AssignMemberDialog(
+                  boardId: widget.boardId,
+                  card: widget.card,
+                  currentAssigneeIds: widget.card.assigneeIds,
                 ),
+              );
+            });
+          },
+        ),
+        OllieMenuItem(
+          title: 'Add to Sprint',
+          icon: Icons.timer_outlined,
+          onTap: () {
+            Future.delayed(Duration.zero, () {
+              _showAddToSprintDialog(context, ref);
+            });
+          },
+        ),
+        OllieMenuItem(
+          title: 'Delete Card',
+          icon: Icons.delete_outline_rounded,
+          onTap: () async {
+            final boardNotifier = ref.read(
+              boardNotifierProvider(widget.boardId).notifier,
+            );
+            await boardNotifier.deleteCard(widget.card.id);
+          },
+        ),
+      ],
+      child: Listener(
+        child: LongPressDraggable<model.Card>(
+          data: widget.card,
+          hapticFeedbackOnStart: true,
+          onDragStarted: () {
+            _onLongPressEnd();
+          },
+          onDragEnd: (_) {
+            _onLongPressEnd();
+          },
+          delay: Duration(milliseconds: 100),
+          feedback: Material(
+            elevation: 8,
+            borderRadius: BorderRadius.circular(8),
+            child: SizedBox(
+              width: 280,
+              child: Opacity(
+                opacity: 0.8,
                 child: _buildCardContent(context, ref),
               ),
-            );
-          },
+            ),
+          ),
+          childWhenDragging: Opacity(
+            opacity: 0.3,
+            child: _buildCardContent(context, ref),
+          ),
+          child: AnimatedBuilder(
+            animation: _scaleAnimation,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: _scaleAnimation.value,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: _isLongPressing
+                        ? [
+                            BoxShadow(
+                              color: Colors.blue.withOpacity(0.4),
+                              blurRadius: 12,
+                              spreadRadius: 3,
+                            ),
+                          ]
+                        : [],
+                  ),
+                  child: _buildCardContent(context, ref),
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -138,65 +189,7 @@ class _KanbanCardState extends ConsumerState<KanbanCard>
                 EditCardDialog(card: widget.card, boardId: widget.boardId),
           );
         },
-        onSecondaryTapDown: (details) async {
-          showMenu(
-            context: context,
-            position: RelativeRect.fromRect(
-              details.globalPosition & const Size(40, 40),
-              Offset.zero & MediaQuery.of(context).size,
-            ),
-            items: [
-              PopupMenuItem(
-                value: 'edit',
-                child: Text('Edit Card'),
-                onTap: () {
-                  Future.delayed(Duration.zero, () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => EditCardDialog(
-                        card: widget.card,
-                        boardId: widget.boardId,
-                      ),
-                    );
-                  });
-                },
-              ),
-              PopupMenuItem(
-                value: 'change_member',
-                child: Text('Change Members'),
-                onTap: () {
-                  // Use Future.delayed to show dialog after menu closes
-                  Future.delayed(Duration.zero, () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AssignMemberDialog(
-                        boardId: widget.boardId,
-                        card: widget.card,
-                        currentAssigneeIds: widget.card.assigneeIds,
-                      ),
-                    );
-                  });
-                },
-              ),
-              PopupMenuItem(
-                value: 'add_to_sprint',
-                child: Text('Add to Sprint'),
-                onTap: () {
-                  Future.delayed(Duration.zero, () {
-                    _showAddToSprintDialog(context, ref);
-                  });
-                },
-              ),
-              PopupMenuItem(
-                value: 'delete',
-                child: Text('Delete Card'),
-                onTap: () async {
-                  await boardNotifier.deleteCard(widget.card.id);
-                },
-              ),
-            ],
-          );
-        },
+
         borderRadius: BorderRadius.circular(8),
         child: Padding(
           padding: const EdgeInsets.all(12),
