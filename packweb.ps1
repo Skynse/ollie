@@ -15,3 +15,4 @@ Rename-Item -Path flutter_bootstrap.js -NewName flutter_bootstrap.$HASH.js
 $timestamp = Get-Date -UFormat %s
 Set-Content -Path version.json -Value "{\""version\"": \""$timestamp\""}"
 vercel deploy --prod
+cd ../../

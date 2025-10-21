@@ -41,6 +41,7 @@ class AppwriteBoardRepository implements BoardRepository {
       collectionId: boardsCollection,
       queries: [Query.equal('members', userId)],
     );
+
     return docs.documents.map((doc) => Board.fromJson(doc.data)).toList();
   }
 

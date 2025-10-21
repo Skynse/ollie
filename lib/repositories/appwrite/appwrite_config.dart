@@ -1,4 +1,5 @@
 import 'package:appwrite/appwrite.dart';
+import 'package:appwrite/models.dart' as models;
 import '../../config/environment.dart';
 import 'appwrite_board_repository.dart';
 import 'appwrite_user_repository.dart';
@@ -9,6 +10,7 @@ class AppwriteConfig {
   static Client? _client;
   static Databases? _databases;
   static Account? _account;
+  static models.User? _currentUser;
 
   // Database ID - create this in your Appwrite console
   static const String databaseId =
@@ -18,15 +20,6 @@ class AppwriteConfig {
   static void init() {
     if (_client != null) return; // Already initialized
 
-    _client = Client()
-        .setEndpoint(Environment.appwritePublicEndpoint)
-        .setProject(Environment.appwriteProjectId);
-
-    _databases = Databases(_client!);
-    _account = Account(_client!);
-  }
-
-  static void refreshClient() {
     _client = Client()
         .setEndpoint(Environment.appwritePublicEndpoint)
         .setProject(Environment.appwriteProjectId);
@@ -86,5 +79,80 @@ class AppwriteConfig {
       databases: databases,
       databaseId: databaseId,
     );
+  }
+
+  // Auth methods
+  static Future<models.User?> isAuthenticated() async {
+    try {
+      _currentUser = await account.get();
+      return _currentUser;
+    } catch (e) {
+      _currentUser = null;
+      return null;
+    }
+  }
+
+  static models.User? get currentUser => _currentUser;
+
+  static Future<models.User> login(String email, String password) async {
+    try {
+      await account.createEmailPasswordSession(
+        email: email,
+        password: password,
+      );
+      _currentUser = await account.get();
+      return _currentUser!;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  static Future<models.User> register(
+    String email,
+    String password,
+    String name,
+  ) async {
+    try {
+      await account.create(
+        userId: ID.unique(),
+        email: email,
+        password: password,
+        name: name,
+      );
+      // populate users table with email, blank name, and user id so we can use for email-id lookups
+
+      return await login(email, password);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  static Future<void> logout() async {
+    try {
+      await account.deleteSession(sessionId: 'current');
+      _currentUser = null;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  static Future<void> logoutAll() async {
+    try {
+      await account.deleteSessions();
+      _currentUser = null;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  static Future<void> resetPassword(String email) async {
+    try {
+      await account.createRecovery(
+        email: email,
+        url: '${Environment.appwritePublicEndpoint}/reset-password',
+      );
+    } catch (e) {
+      rethrow;
+    }
   }
 }

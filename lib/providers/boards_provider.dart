@@ -57,9 +57,9 @@ class BoardsNotifier extends StateNotifier<BoardsState> {
   Future<void> fetchBoards() async {
     if (!mounted) return;
     state = state.copyWith(isLoading: true, errorMessage: null);
+
     try {
       final boards = await _repository.getBoardsByUser(_userId!);
-
       if (!mounted) return; // Check again after await
 
       state = state.copyWith(boards: boards, isLoading: false);
