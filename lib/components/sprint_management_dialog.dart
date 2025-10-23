@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/sprint.dart';
 import 'sprint_details_dialog.dart';
 import 'ollie_ui/ollie_toast.dart';
+import 'ollie_ui/theme_extensions.dart';
 
-class SprintManagementDialog extends ConsumerWidget {
+class SprintManagementDialog extends ConsumerStatefulWidget {
   final List<Sprint> sprints;
   final Sprint? activeSprint;
   final Future<void> Function(String sprintId) onStartSprint;
@@ -23,8 +24,15 @@ class SprintManagementDialog extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sortedSprints = List<Sprint>.from(sprints)
+  ConsumerState<SprintManagementDialog> createState() =>
+      _SprintManagementDialogState();
+}
+
+class _SprintManagementDialogState
+    extends ConsumerState<SprintManagementDialog> {
+  @override
+  Widget build(BuildContext context) {
+    final sortedSprints = List<Sprint>.from(widget.sprints)
       ..sort((a, b) {
         // Active first, then planning, then completed
         if (a.status == SprintStatus.active) return -1;
@@ -50,12 +58,12 @@ class SprintManagementDialog extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                color: context.successColor.withOpacity(0.1),
+                border: Border(bottom: BorderSide(color: context.borderColor)),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.timer, color: Colors.green.shade700),
+                  Icon(Icons.timer, color: context.successColor),
                   const SizedBox(width: 12),
                   const Text(
                     'Sprint Management',
@@ -63,7 +71,7 @@ class SprintManagementDialog extends ConsumerWidget {
                   ),
                   const Spacer(),
                   IconButton(
-                    onPressed: onRefresh,
+                    onPressed: widget.onRefresh,
                     icon: const Icon(Icons.refresh),
                     tooltip: 'Refresh',
                   ),
@@ -78,7 +86,7 @@ class SprintManagementDialog extends ConsumerWidget {
 
             // Sprint list
             Expanded(
-              child: sprints.isEmpty
+              child: widget.sprints.isEmpty
                   ? _buildEmptyState()
                   : ListView.builder(
                       padding: const EdgeInsets.all(16),
@@ -88,7 +96,7 @@ class SprintManagementDialog extends ConsumerWidget {
                         return _SprintTile(
                           key: ValueKey(sprint.id),
                           sprint: sprint,
-                          isActive: sprint.id == activeSprint?.id,
+                          isActive: sprint.id == widget.activeSprint?.id,
                           onStart: sprint.status == SprintStatus.planning
                               ? () => _confirmStartSprint(context, sprint)
                               : null,
@@ -113,20 +121,24 @@ class SprintManagementDialog extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.timer_outlined, size: 64, color: Colors.grey.shade400),
+          Icon(
+            Icons.timer_outlined,
+            size: 64,
+            color: context.secondaryTextColor,
+          ),
           const SizedBox(height: 16),
           Text(
             'No sprints yet',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
+              color: context.secondaryTextColor,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'Create a sprint to start organizing your work',
-            style: TextStyle(color: Colors.grey.shade600),
+            style: TextStyle(color: context.secondaryTextColor),
           ),
         ],
       ),
@@ -158,10 +170,10 @@ class SprintManagementDialog extends ConsumerWidget {
 
     if (confirmed == true && context.mounted) {
       try {
-        await onStartSprint(sprint.id);
+        await widget.onStartSprint(sprint.id);
         if (context.mounted) {
           OllieToast.success(context, 'Sprint started successfully');
-          onRefresh();
+          widget.onRefresh();
         }
       } catch (e) {
         if (context.mounted) {
@@ -198,10 +210,10 @@ class SprintManagementDialog extends ConsumerWidget {
 
     if (confirmed == true && context.mounted) {
       try {
-        await onCompleteSprint(sprint.id);
+        await widget.onCompleteSprint(sprint.id);
         if (context.mounted) {
           OllieToast.success(context, 'Sprint completed successfully');
-          onRefresh();
+          widget.onRefresh();
         }
       } catch (e) {
         if (context.mounted) {
@@ -239,10 +251,10 @@ class SprintManagementDialog extends ConsumerWidget {
 
     if (confirmed == true && context.mounted) {
       try {
-        await onDeleteSprint(sprint.id);
+        await widget.onDeleteSprint(sprint.id);
         if (context.mounted) {
           OllieToast.success(context, 'Sprint deleted successfully');
-          onRefresh();
+          widget.onRefresh();
         }
       } catch (e) {
         if (context.mounted) {
@@ -394,26 +406,43 @@ class _SprintTile extends StatelessWidget {
                   Icon(
                     Icons.calendar_today,
                     size: 16,
-                    color: Colors.grey.shade600,
+                    color: context.secondaryTextColor,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     _getDateRange(),
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: context.secondaryTextColor,
+                    ),
                   ),
                   const SizedBox(width: 16),
-                  Icon(Icons.timer, size: 16, color: Colors.grey.shade600),
+                  Icon(
+                    Icons.timer,
+                    size: 16,
+                    color: context.secondaryTextColor,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     '${sprint.durationDays} day(s)',
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: context.secondaryTextColor,
+                    ),
                   ),
                   const SizedBox(width: 16),
-                  Icon(Icons.style, size: 16, color: Colors.grey.shade600),
+                  Icon(
+                    Icons.style,
+                    size: 16,
+                    color: context.secondaryTextColor,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     '${sprint.cardIds.length} card(s)',
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: context.secondaryTextColor,
+                    ),
                   ),
                 ],
               ),
@@ -453,7 +482,7 @@ class _SprintTile extends StatelessWidget {
                     const SizedBox(width: 8),
                     IconButton(
                       onPressed: onDelete,
-                      icon: Icon(Icons.delete, color: Colors.red.shade400),
+                      icon: Icon(Icons.delete, color: context.dangerColor),
                       tooltip: 'Delete sprint',
                     ),
                   ],

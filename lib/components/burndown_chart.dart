@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'ollie_ui/theme_extensions.dart';
 
 /// Data point for the burndown chart
 class BurndownDataPoint {
@@ -15,7 +16,7 @@ class BurndownDataPoint {
 }
 
 /// Burndown chart widget showing ideal vs actual progress
-class BurndownChart extends StatelessWidget {
+class BurndownChart extends StatefulWidget {
   final List<BurndownDataPoint> dataPoints;
   final double targetHours;
   final DateTime startDate;
@@ -36,8 +37,13 @@ class BurndownChart extends StatelessWidget {
   });
 
   @override
+  State<BurndownChart> createState() => _BurndownChartState();
+}
+
+class _BurndownChartState extends State<BurndownChart> {
+  @override
   Widget build(BuildContext context) {
-    if (dataPoints.isEmpty) {
+    if (widget.dataPoints.isEmpty) {
       return _buildEmptyState();
     }
 
@@ -50,7 +56,7 @@ class BurndownChart extends StatelessWidget {
           child: Row(
             children: [
               Text(
-                title,
+                widget.title,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -85,18 +91,25 @@ class BurndownChart extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _LegendItem(color: idealLineColor, label: 'Ideal', isDashed: true),
+        _LegendItem(
+          color: widget.idealLineColor,
+          label: 'Ideal',
+          isDashed: true,
+        ),
         const SizedBox(width: 16),
-        _LegendItem(color: actualLineColor, label: 'Actual'),
+        _LegendItem(color: widget.actualLineColor, label: 'Actual'),
       ],
     );
   }
 
   Widget _buildStats() {
-    final latestPoint = dataPoints.lastOrNull;
-    final remaining = latestPoint?.actualHours ?? targetHours;
-    final completed = targetHours - remaining;
-    final percentComplete = (completed / targetHours * 100).clamp(0, 100);
+    final latestPoint = widget.dataPoints.lastOrNull;
+    final remaining = latestPoint?.actualHours ?? widget.targetHours;
+    final completed = widget.targetHours - remaining;
+    final percentComplete = (completed / widget.targetHours * 100).clamp(
+      0,
+      100,
+    );
 
     return Card(
       child: Padding(
@@ -106,8 +119,8 @@ class BurndownChart extends StatelessWidget {
             Expanded(
               child: _StatItem(
                 label: 'Target Hours',
-                value: targetHours.toStringAsFixed(1),
-                color: Colors.blue,
+                value: widget.targetHours.toStringAsFixed(1),
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
             Expanded(
@@ -128,7 +141,7 @@ class BurndownChart extends StatelessWidget {
               child: _StatItem(
                 label: 'Progress',
                 value: '${percentComplete.toInt()}%',
-                color: Colors.purple,
+                color: Theme.of(context).colorScheme.secondary,
               ),
             ),
           ],
@@ -138,7 +151,7 @@ class BurndownChart extends StatelessWidget {
   }
 
   LineChartData _buildChartData() {
-    final durationDays = endDate.difference(startDate).inDays;
+    final durationDays = widget.endDate.difference(widget.startDate).inDays;
     final idealPoints = _generateIdealLine(durationDays);
     final actualPoints = _generateActualLine();
 
@@ -146,13 +159,19 @@ class BurndownChart extends StatelessWidget {
       gridData: FlGridData(
         show: true,
         drawVerticalLine: true,
-        horizontalInterval: targetHours / 5,
+        horizontalInterval: widget.targetHours / 5,
         verticalInterval: durationDays / 7,
         getDrawingHorizontalLine: (value) {
-          return FlLine(color: Colors.grey.shade300, strokeWidth: 1);
+          return FlLine(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            strokeWidth: 1,
+          );
         },
         getDrawingVerticalLine: (value) {
-          return FlLine(color: Colors.grey.shade300, strokeWidth: 1);
+          return FlLine(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            strokeWidth: 1,
+          );
         },
       ),
       titlesData: FlTitlesData(
@@ -164,11 +183,14 @@ class BurndownChart extends StatelessWidget {
           sideTitles: SideTitles(
             showTitles: true,
             reservedSize: 50,
-            interval: targetHours / 5,
+            interval: widget.targetHours / 5,
             getTitlesWidget: (value, meta) {
               return Text(
                 value.toInt().toString(),
-                style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 12,
+                ),
               );
             },
           ),
@@ -191,7 +213,10 @@ class BurndownChart extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
                   'Day ${value.toInt()}',
-                  style: TextStyle(color: Colors.grey.shade700, fontSize: 11),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 11,
+                  ),
                 ),
               );
             },
@@ -200,14 +225,16 @@ class BurndownChart extends StatelessWidget {
       ),
       borderData: FlBorderData(
         show: true,
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+        ),
       ),
       lineBarsData: [
         // Ideal line
         LineChartBarData(
           spots: idealPoints,
           isCurved: false,
-          color: idealLineColor,
+          color: widget.idealLineColor,
           barWidth: 2,
           isStrokeCapRound: true,
           dotData: const FlDotData(show: false),
@@ -219,7 +246,7 @@ class BurndownChart extends StatelessWidget {
           LineChartBarData(
             spots: actualPoints,
             isCurved: true,
-            color: actualLineColor,
+            color: widget.actualLineColor,
             barWidth: 3,
             isStrokeCapRound: true,
             dotData: FlDotData(
@@ -227,7 +254,7 @@ class BurndownChart extends StatelessWidget {
               getDotPainter: (spot, percent, barData, index) {
                 return FlDotCirclePainter(
                   radius: 4,
-                  color: actualLineColor,
+                  color: widget.actualLineColor,
                   strokeWidth: 2,
                   strokeColor: Colors.white,
                 );
@@ -235,19 +262,19 @@ class BurndownChart extends StatelessWidget {
             ),
             belowBarData: BarAreaData(
               show: true,
-              color: actualLineColor.withOpacity(0.1),
+              color: widget.actualLineColor.withOpacity(0.1),
             ),
           ),
       ],
       minX: 0,
       maxX: durationDays.toDouble(),
       minY: 0,
-      maxY: targetHours * 1.1,
+      maxY: widget.targetHours * 1.1,
       lineTouchData: LineTouchData(
         touchTooltipData: LineTouchTooltipData(
           getTooltipItems: (touchedSpots) {
             return touchedSpots.map((spot) {
-              final date = startDate.add(Duration(days: spot.x.toInt()));
+              final date = widget.startDate.add(Duration(days: spot.x.toInt()));
               final dateStr = '${date.month}/${date.day}/${date.year}';
               return LineTooltipItem(
                 '$dateStr\n${spot.y.toStringAsFixed(1)}h',
@@ -265,13 +292,16 @@ class BurndownChart extends StatelessWidget {
 
   List<FlSpot> _generateIdealLine(int durationDays) {
     final spots = <FlSpot>[];
-    final decrementPerDay = targetHours / durationDays;
+    final decrementPerDay = widget.targetHours / durationDays;
 
     for (int i = 0; i <= durationDays; i++) {
       spots.add(
         FlSpot(
           i.toDouble(),
-          (targetHours - (i * decrementPerDay)).clamp(0, targetHours),
+          (widget.targetHours - (i * decrementPerDay)).clamp(
+            0,
+            widget.targetHours,
+          ),
         ),
       );
     }
@@ -282,9 +312,12 @@ class BurndownChart extends StatelessWidget {
   List<FlSpot> _generateActualLine() {
     final spots = <FlSpot>[];
 
-    for (final point in dataPoints) {
+    for (final point in widget.dataPoints) {
       if (point.actualHours != null) {
-        final dayIndex = point.date.difference(startDate).inDays.toDouble();
+        final dayIndex = point.date
+            .difference(widget.startDate)
+            .inDays
+            .toDouble();
         spots.add(FlSpot(dayIndex, point.actualHours!));
       }
     }
@@ -297,16 +330,26 @@ class BurndownChart extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.show_chart, size: 64, color: Colors.grey.shade400),
+          Icon(
+            Icons.show_chart,
+            size: 64,
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
           const SizedBox(height: 16),
           Text(
             'No burndown data available',
-            style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+            style: TextStyle(
+              fontSize: 16,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             'Start logging time to see the burndown chart',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+            style: TextStyle(
+              fontSize: 14,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -401,7 +444,10 @@ class _StatItem extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 4),

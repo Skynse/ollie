@@ -5,6 +5,7 @@ import '../providers/boards_provider.dart';
 import '../providers/auth_provider.dart';
 import 'ollie_ui/ollie_dialog.dart';
 import 'ollie_ui/ollie_button.dart';
+import 'ollie_ui/theme_extensions.dart';
 
 /// Dialog for inviting members to a board by email
 class InviteMemberDialog extends ConsumerStatefulWidget {
@@ -72,15 +73,17 @@ class _InviteMemberDialogState extends ConsumerState<InviteMemberDialog> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade50,
+                    color: context.dangerColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.shade200),
+                    border: Border.all(
+                      color: context.dangerColor.withOpacity(0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         Icons.error_outline,
-                        color: Colors.red.shade700,
+                        color: context.dangerColor,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
@@ -88,7 +91,7 @@ class _InviteMemberDialogState extends ConsumerState<InviteMemberDialog> {
                         child: Text(
                           _errorMessage!,
                           style: TextStyle(
-                            color: Colors.red.shade700,
+                            color: context.dangerColor,
                             fontSize: 13,
                           ),
                         ),
@@ -102,15 +105,17 @@ class _InviteMemberDialogState extends ConsumerState<InviteMemberDialog> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade50,
+                    color: context.successColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.green.shade200),
+                    border: Border.all(
+                      color: context.successColor.withOpacity(0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         Icons.check_circle_outline,
-                        color: Colors.green.shade700,
+                        color: context.successColor,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
@@ -118,7 +123,7 @@ class _InviteMemberDialogState extends ConsumerState<InviteMemberDialog> {
                         child: Text(
                           _successMessage!,
                           style: TextStyle(
-                            color: Colors.green.shade700,
+                            color: context.successColor,
                             fontSize: 13,
                           ),
                         ),

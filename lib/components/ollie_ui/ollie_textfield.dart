@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'theme_constants.dart';
 
 class OllieTextfield extends StatefulWidget {
   final String? label;
@@ -221,14 +222,19 @@ class _OllieTextfieldState extends State<OllieTextfield> {
   Widget? _buildSuffixIcon() {
     if (widget.obscureText) {
       // Password toggle icon
-      return IconButton(
-        icon: Icon(
-          _obscureText
-              ? Icons.visibility_outlined
-              : Icons.visibility_off_outlined,
-          color: Colors.grey.shade600,
-        ),
-        onPressed: _togglePasswordVisibility,
+      return Builder(
+        builder: (context) {
+          final brightness = Theme.of(context).brightness;
+          return IconButton(
+            icon: Icon(
+              _obscureText
+                  ? Icons.visibility_outlined
+                  : Icons.visibility_off_outlined,
+              color: OllieThemeConstants.getSecondaryTextColor(brightness),
+            ),
+            onPressed: _togglePasswordVisibility,
+          );
+        },
       );
     }
     return widget.suffixIcon;
@@ -237,6 +243,42 @@ class _OllieTextfieldState extends State<OllieTextfield> {
   @override
   Widget build(BuildContext context) {
     final hasError = widget.errorText != null && widget.errorText!.isNotEmpty;
+    final brightness = Theme.of(context).brightness;
+    final isDark = brightness == Brightness.dark;
+
+    // Theme-aware colors
+    final labelColor = hasError
+        ? (isDark
+              ? OllieThemeConstants.darkDanger
+              : OllieThemeConstants.lightDanger)
+        : OllieThemeConstants.getSecondaryTextColor(brightness);
+
+    final textColor = widget.enabled
+        ? OllieThemeConstants.getTextColor(brightness)
+        : OllieThemeConstants.getSecondaryTextColor(brightness);
+
+    final hintColor = isDark
+        ? OllieThemeConstants.darkTextSecondary
+        : OllieThemeConstants.lightTextSecondary;
+
+    final borderColor = OllieThemeConstants.getBorderColor(brightness);
+    final focusColor = OllieThemeConstants.getPrimaryColor(brightness);
+    final errorColor = isDark
+        ? OllieThemeConstants.darkDanger
+        : OllieThemeConstants.lightDanger;
+
+    final fillColor = widget.enabled
+        ? (hasError
+              ? (isDark ? Color(0xFF3D1F1F) : Color(0xFFFFEBEE))
+              : _focusNode.hasFocus
+              ? (isDark ? Color(0xFF1A2A3D) : Color(0xFFE3F2FD))
+              : (isDark
+                    ? OllieThemeConstants
+                          .darkSurfaceContainerLowest // fill color of text field
+                    : OllieThemeConstants.lightSurfaceVariant))
+        : (isDark
+              ? OllieThemeConstants.darkDisabled
+              : OllieThemeConstants.lightDisabled);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,12 +288,12 @@ class _OllieTextfieldState extends State<OllieTextfield> {
           Text(
             widget.label!,
             style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: hasError ? Colors.red.shade700 : Colors.grey.shade700,
+              fontSize: OllieThemeConstants.fontSizeSmall,
+              fontWeight: OllieThemeConstants.fontWeightSemiBold,
+              color: labelColor,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: OllieThemeConstants.spacingSmall),
         ],
         TextFormField(
           controller: widget.controller,
@@ -270,101 +312,121 @@ class _OllieTextfieldState extends State<OllieTextfield> {
           onFieldSubmitted: widget.onSubmitted,
           onTap: widget.onTap,
           style: TextStyle(
-            fontSize: 16,
-            color: widget.enabled ? Colors.black87 : Colors.grey.shade500,
+            fontSize: OllieThemeConstants.fontSizeBody,
+            color: textColor,
           ),
           decoration: InputDecoration(
             hintText: widget.hint,
-            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 16),
+            hintStyle: TextStyle(
+              color: hintColor,
+              fontSize: OllieThemeConstants.fontSizeBody,
+            ),
             prefixIcon: widget.prefixIcon != null
                 ? Icon(
                     widget.prefixIcon,
                     color: hasError
-                        ? Colors.red.shade700
+                        ? errorColor
                         : _focusNode.hasFocus
-                        ? Colors.blue
-                        : Colors.grey.shade600,
+                        ? focusColor
+                        : hintColor,
                   )
                 : null,
             suffixIcon: _buildSuffixIcon(),
             filled: true,
-            fillColor: widget.enabled
-                ? (hasError
-                      ? Colors.red.shade50
-                      : _focusNode.hasFocus
-                      ? Colors.blue.shade50
-                      : Colors.grey.shade50)
-                : Colors.grey.shade100,
+            fillColor: fillColor,
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
+              horizontal: OllieThemeConstants.spacingMedium,
+              vertical: OllieThemeConstants.spacingMedium,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+              borderRadius: BorderRadius.circular(
+                OllieThemeConstants.borderRadiusMedium,
+              ),
+              borderSide: BorderSide(color: borderColor, width: 1.5),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(
+                OllieThemeConstants.borderRadiusMedium,
+              ),
               borderSide: BorderSide(
-                color: hasError ? Colors.red.shade300 : Colors.grey.shade300,
+                color: hasError ? errorColor : borderColor,
                 width: 1.5,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(
+                OllieThemeConstants.borderRadiusMedium,
+              ),
               borderSide: BorderSide(
-                color: hasError ? Colors.red.shade700 : Colors.blue,
+                color: hasError ? errorColor : focusColor,
                 width: 2,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.red.shade700, width: 1.5),
+              borderRadius: BorderRadius.circular(
+                OllieThemeConstants.borderRadiusMedium,
+              ),
+              borderSide: BorderSide(color: errorColor, width: 1.5),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.red.shade700, width: 2),
+              borderRadius: BorderRadius.circular(
+                OllieThemeConstants.borderRadiusMedium,
+              ),
+              borderSide: BorderSide(color: errorColor, width: 2),
             ),
             disabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
+              borderRadius: BorderRadius.circular(
+                OllieThemeConstants.borderRadiusMedium,
+              ),
+              borderSide: BorderSide(
+                color: isDark
+                    ? OllieThemeConstants.darkDisabled
+                    : OllieThemeConstants.lightDisabled,
+                width: 1.5,
+              ),
             ),
             errorText: null, // Handle manually below
             counterText: '', // Hide default counter
           ),
         ),
         if (hasError) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: OllieThemeConstants.spacingSmall),
           Row(
             children: [
-              Icon(Icons.error_outline, size: 16, color: Colors.red.shade700),
-              const SizedBox(width: 6),
+              Icon(Icons.error_outline, size: 16, color: errorColor),
+              const SizedBox(width: OllieThemeConstants.spacingSmall),
               Expanded(
                 child: Text(
                   widget.errorText!,
                   style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.red.shade700,
-                    fontWeight: FontWeight.w500,
+                    fontSize: OllieThemeConstants.fontSizeSmall,
+                    color: errorColor,
+                    fontWeight: OllieThemeConstants.fontWeightMedium,
                   ),
                 ),
               ),
             ],
           ),
         ] else if (widget.helperText != null) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: OllieThemeConstants.spacingSmall),
           Text(
             widget.helperText!,
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+            style: TextStyle(
+              fontSize: OllieThemeConstants.fontSizeSmall,
+              color: OllieThemeConstants.getSecondaryTextColor(brightness),
+            ),
           ),
         ],
         if (widget.maxLength != null) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: OllieThemeConstants.spacingSmall),
           Align(
             alignment: Alignment.centerRight,
             child: Text(
               '${widget.controller?.text.length ?? 0}/${widget.maxLength}',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: TextStyle(
+                fontSize: OllieThemeConstants.fontSizeSmall,
+                color: OllieThemeConstants.getSecondaryTextColor(brightness),
+              ),
             ),
           ),
         ],

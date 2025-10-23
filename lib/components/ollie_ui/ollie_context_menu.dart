@@ -165,7 +165,7 @@ class _MenuPanel extends StatelessWidget {
       child: Container(
         width: menuWidth,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(8.0),
           boxShadow: [
             BoxShadow(
@@ -278,7 +278,9 @@ class _MenuItemWidgetState extends State<_MenuItemWidget> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: _isHovered ? Colors.grey.shade100 : Colors.transparent,
+            color: _isHovered
+                ? Theme.of(context).hoverColor
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(6.0),
           ),
           child: Row(

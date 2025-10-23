@@ -3,6 +3,7 @@ import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/enums.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ollie/components/ollie_ui/theme_extensions.dart';
 import 'package:ollie/repositories/appwrite/appwrite_config.dart';
 import '../../components/ollie_ui/ollie_button.dart';
 import '../../components/ollie_ui/ollie_textfield.dart';
@@ -176,7 +177,7 @@ class _ModernAuthScreenState extends ConsumerState<ModernAuthScreen>
     final authState = ref.watch(authProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -228,14 +229,25 @@ class _ModernAuthScreenState extends ConsumerState<ModernAuthScreen>
           height: 80,
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.blue.shade600, Colors.blue.shade400],
+              colors: [
+                context.primaryColor,
+                context.primaryColor.withValues(
+                  green: 0.8,
+                  blue: 0.9,
+                  alpha: 1.0,
+                ),
+              ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.blue.withOpacity(0.3),
+                color: context.primaryColor.withValues(
+                  green: 0.8,
+                  blue: 0.9,
+                  alpha: 0.3,
+                ),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -248,12 +260,13 @@ class _ModernAuthScreenState extends ConsumerState<ModernAuthScreen>
           ),
         ),
         const SizedBox(height: 24),
-        const Text(
+        Text(
           'Ollie',
           style: TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.bold,
             letterSpacing: -0.5,
+            color: context.primaryColor,
           ),
         ),
         const SizedBox(height: 8),
@@ -262,11 +275,7 @@ class _ModernAuthScreenState extends ConsumerState<ModernAuthScreen>
               ? (_isExistingUser ? 'Welcome back!' : 'Create your account')
               : 'Your team\'s kanban board',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey.shade600,
-            height: 1.5,
-          ),
+          style: TextStyle(fontSize: 16, color: context.textColor, height: 1.5),
         ),
       ],
     );
@@ -308,7 +317,7 @@ class _ModernAuthScreenState extends ConsumerState<ModernAuthScreen>
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.grey.shade200),
               ),
@@ -504,8 +513,12 @@ class _ModernAuthScreenState extends ConsumerState<ModernAuthScreen>
       icon: Icon(icon, size: 24),
       label: Text(label),
       style: OutlinedButton.styleFrom(
+        backgroundColor: context.surfaceColor,
         padding: const EdgeInsets.symmetric(vertical: 14),
-        side: BorderSide(color: Colors.grey.shade300, width: 1.5),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.primary,
+          width: 1.5,
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/card.dart' as model;
+import 'ollie_ui/theme_extensions.dart';
 
 /// Enhanced drop zone with better visual feedback
-class EnhancedDropZone extends StatelessWidget {
+class EnhancedDropZone extends StatefulWidget {
   final List<model.Card> cards;
   final int position;
   final bool isTop;
@@ -26,25 +27,33 @@ class EnhancedDropZone extends StatelessWidget {
   });
 
   @override
+  State<EnhancedDropZone> createState() => _EnhancedDropZoneState();
+}
+
+class _EnhancedDropZoneState extends State<EnhancedDropZone> {
+  @override
   Widget build(BuildContext context) {
     return DragTarget<model.Card>(
       onWillAcceptWithDetails: (details) {
         final draggedCard = details.data;
         // Don't allow dropping in the same position in the same column
-        if (draggedCard.columnId == columnId) {
-          final originalIndex = cards.indexWhere((c) => c.id == draggedCard.id);
-          if (originalIndex == position || originalIndex + 1 == position) {
+        if (draggedCard.columnId == widget.columnId) {
+          final originalIndex = widget.cards.indexWhere(
+            (c) => c.id == draggedCard.id,
+          );
+          if (originalIndex == widget.position ||
+              originalIndex + 1 == widget.position) {
             return false;
           }
         }
-        onDragEnter();
+        widget.onDragEnter();
         return true;
       },
-      onLeave: (_) => onDragLeave(),
+      onLeave: (_) => widget.onDragLeave(),
       onAcceptWithDetails: (details) async {
-        onDragLeave();
+        widget.onDragLeave();
         final draggedCard = details.data;
-        await onAccept(draggedCard, columnId, position);
+        await widget.onAccept(draggedCard, widget.columnId, widget.position);
       },
       builder: (context, candidateData, rejectedData) {
         final isHovering = candidateData.isNotEmpty;
@@ -67,13 +76,19 @@ class EnhancedDropZone extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Colors.blue.shade50, Colors.blue.shade100.withOpacity(0.5)],
+          colors: [
+            context.primaryColor.withOpacity(0.1),
+            context.primaryColor.withOpacity(0.05),
+          ],
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.shade300, width: 2),
+        border: Border.all(
+          color: context.primaryColor.withOpacity(0.5),
+          width: 2,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.2),
+            color: context.primaryColor.withOpacity(0.2),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -86,12 +101,12 @@ class EnhancedDropZone extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.blue.shade100,
+                color: context.primaryColor.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.add_rounded,
-                color: Colors.blue.shade700,
+                color: context.primaryColor,
                 size: 24,
               ),
             ),
@@ -101,12 +116,15 @@ class EnhancedDropZone extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: Colors.blue.shade700,
+                color: context.primaryColor,
               ),
             ),
             Text(
-              'Position ${position + 1}',
-              style: TextStyle(fontSize: 11, color: Colors.blue.shade600),
+              'Position ${widget.position + 1}',
+              style: TextStyle(
+                fontSize: 11,
+                color: context.primaryColor.withOpacity(0.8),
+              ),
             ),
           ],
         ),
@@ -117,7 +135,7 @@ class EnhancedDropZone extends StatelessWidget {
   Widget _buildEmptyState() {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      height: isTop || isBottom ? 4 : 8,
+      height: widget.isTop || widget.isBottom ? 4 : 8,
     );
   }
 }

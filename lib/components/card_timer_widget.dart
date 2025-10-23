@@ -7,6 +7,7 @@ import '../providers/user_provider.dart';
 import 'manual_time_log_dialog.dart';
 import 'ollie_ui/ollie_toast.dart';
 import 'enhanced_manual_time_log_dialog.dart';
+import 'ollie_ui/theme_extensions.dart';
 
 /// Widget for displaying and controlling time tracking on a card
 class CardTimerWidget extends ConsumerStatefulWidget {
@@ -95,12 +96,12 @@ class _CardTimerWidgetState extends ConsumerState<CardTimerWidget> {
           decoration: BoxDecoration(
             color: isActiveOnThisCard
                 ? Colors.green.shade50
-                : Colors.grey.shade50,
+                : Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: isActiveOnThisCard
                   ? Colors.green.shade200
-                  : Colors.grey.shade200,
+                  : Theme.of(context).colorScheme.outline.withOpacity(0.3),
               width: 1.5,
             ),
           ),
@@ -134,7 +135,7 @@ class _CardTimerWidgetState extends ConsumerState<CardTimerWidget> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: Colors.grey.shade700,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     if (widget.card.estimatedHours != null)
@@ -143,7 +144,7 @@ class _CardTimerWidgetState extends ConsumerState<CardTimerWidget> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                   ],
@@ -151,7 +152,11 @@ class _CardTimerWidgetState extends ConsumerState<CardTimerWidget> {
               const SizedBox(width: 8),
 
               // Divider
-              Container(width: 1, height: 20, color: Colors.grey.shade300),
+              Container(
+                width: 1,
+                height: 20,
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+              ),
               const SizedBox(width: 8),
 
               // Timer control button
@@ -243,13 +248,13 @@ class _CardTimerWidgetState extends ConsumerState<CardTimerWidget> {
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
+                      color: Theme.of(context).colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Icon(
                       Icons.add,
                       size: 18,
-                      color: Colors.grey.shade700,
+                      color: Theme.of(context).colorScheme.onSecondaryContainer,
                     ),
                   ),
                 ),

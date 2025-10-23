@@ -8,6 +8,7 @@ import 'burndown_editor_dialog.dart';
 import 'ollie_ui/ollie_dialog.dart';
 import 'ollie_ui/ollie_button.dart';
 import 'ollie_ui/ollie_toast.dart';
+import 'ollie_ui/theme_extensions.dart';
 
 /// Dialog for completing a sprint with burndown review and adjustments
 class SprintCompletionDialog extends ConsumerStatefulWidget {
@@ -46,12 +47,20 @@ class _SprintCompletionDialogState
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Colors.blue.shade50,
-                      Colors.blue.shade100.withOpacity(0.5),
+                      Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer.withOpacity(0.3),
+                      Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer.withOpacity(0.5),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.blue.shade200),
+                  border: Border.all(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withOpacity(0.3),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,7 +69,7 @@ class _SprintCompletionDialogState
                       children: [
                         Icon(
                           Icons.event,
-                          color: Colors.blue.shade700,
+                          color: Theme.of(context).colorScheme.primary,
                           size: 24,
                         ),
                         const SizedBox(width: 12),
@@ -73,7 +82,9 @@ class _SprintCompletionDialogState
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w700,
-                                  color: Colors.blue.shade900,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                 ),
                               ),
                               if (widget.sprint.goal != null) ...[
@@ -82,7 +93,9 @@ class _SprintCompletionDialogState
                                   widget.sprint.goal!,
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: Colors.blue.shade700,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                               ],
@@ -115,12 +128,12 @@ class _SprintCompletionDialogState
                 data: (stats) => Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Sprint Statistics',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF1F2937),
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -185,12 +198,12 @@ class _SprintCompletionDialogState
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Burndown Chart',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF1F2937),
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       OutlinedButton.icon(
@@ -213,9 +226,6 @@ class _SprintCompletionDialogState
                         },
                         icon: const Icon(Icons.edit, size: 16),
                         label: const Text('Edit Burndown Data'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.blue.shade700,
-                        ),
                       ),
                     ],
                   ),
@@ -227,13 +237,23 @@ class _SprintCompletionDialogState
                           height: 250,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey.shade200),
+                            border: Border.all(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.outline.withOpacity(0.3),
+                            ),
                           ),
                           child: Text(
                             'Sprint hasn\'t started yet',
-                            style: TextStyle(color: Colors.grey.shade600),
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         );
                       }
@@ -241,9 +261,13 @@ class _SprintCompletionDialogState
                         height: 250,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade200),
+                          border: Border.all(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.outline.withOpacity(0.3),
+                          ),
                         ),
                         child: BurndownChart(
                           dataPoints: dataPoints,
@@ -272,20 +296,31 @@ class _SprintCompletionDialogState
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.amber.shade50,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.tertiaryContainer.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.amber.shade200),
+                  border: Border.all(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.tertiary.withOpacity(0.3),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, color: Colors.amber.shade700),
+                    Icon(
+                      Icons.info_outline,
+                      color: Theme.of(context).colorScheme.tertiary,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Completing this sprint will mark it as done and remove it from the active sprint list. You can still view historical data and burndown charts.',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.amber.shade900,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onTertiaryContainer,
                         ),
                       ),
                     ),
@@ -317,20 +352,20 @@ class _SprintCompletionDialogState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.7),
+        color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: Colors.blue.shade700),
+          Icon(icon, size: 14, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 6),
           Text(
             text,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Colors.blue.shade700,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
         ],
@@ -348,9 +383,11 @@ class _SprintCompletionDialogState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+        ),
       ),
       child: Column(
         children: [
@@ -369,7 +406,7 @@ class _SprintCompletionDialogState
             label,
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,

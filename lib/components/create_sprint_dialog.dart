@@ -5,6 +5,7 @@ import 'package:ollie/components/ollie_ui/ollie_dialog.dart';
 import 'package:ollie/components/ollie_ui/ollie_textfield.dart';
 import '../providers/sprint_provider.dart';
 import 'ollie_ui/ollie_toast.dart';
+import 'ollie_ui/theme_extensions.dart';
 
 /// Dialog for creating a new sprint
 class CreateSprintDialog extends ConsumerStatefulWidget {
@@ -143,7 +144,7 @@ class _CreateSprintDialogState extends ConsumerState<CreateSprintDialog> {
                           'Start Date',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade700,
+                            color: context.secondaryTextColor,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -155,7 +156,7 @@ class _CreateSprintDialogState extends ConsumerState<CreateSprintDialog> {
                               vertical: 12,
                             ),
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade300),
+                              border: Border.all(color: context.borderColor),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Row(
@@ -182,7 +183,7 @@ class _CreateSprintDialogState extends ConsumerState<CreateSprintDialog> {
                           'End Date',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade700,
+                            color: context.secondaryTextColor,
                           ),
                         ),
                         const SizedBox(height: 4),

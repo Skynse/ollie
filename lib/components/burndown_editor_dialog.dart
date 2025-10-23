@@ -8,6 +8,7 @@ import '../providers/burndown_provider.dart';
 import 'ollie_ui/ollie_dialog.dart';
 import 'ollie_ui/ollie_button.dart';
 import 'ollie_ui/ollie_toast.dart';
+import 'ollie_ui/theme_extensions.dart';
 
 /// Dialog for editing burndown data at sprint completion
 class BurndownEditorDialog extends ConsumerStatefulWidget {
@@ -111,20 +112,27 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: Theme.of(
+                  context,
+                ).colorScheme.primaryContainer.withOpacity(0.5),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue.shade200),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                ),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.blue.shade700),
+                  Icon(
+                    Icons.info_outline,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'Adjust the actual hours remaining for each day. This is useful for correcting estimates or accounting for scope changes.',
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.blue.shade700,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
                       ),
                     ),
                   ),
@@ -140,12 +148,18 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.grey.shade50,
-                      Colors.grey.shade100.withOpacity(0.5),
+                      Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                      Theme.of(context).colorScheme.surfaceContainerHighest,
                     ],
                   ),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withOpacity(0.3),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -208,7 +222,11 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
   Widget _buildStatItem(String label, String value, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: Colors.grey.shade700),
+        Icon(
+          icon,
+          size: 18,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
         const SizedBox(width: 8),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,16 +235,16 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
               label,
               style: TextStyle(
                 fontSize: 11,
-                color: Colors.grey.shade600,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
               ),
             ),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF1F2937),
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],
@@ -243,10 +261,14 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isToday ? Colors.blue.shade50 : Colors.white,
+        color: isToday
+            ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
+            : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isToday ? Colors.blue.shade200 : Colors.grey.shade200,
+          color: isToday
+              ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+              : Theme.of(context).colorScheme.outline.withOpacity(0.3),
         ),
       ),
       child: Row(
@@ -256,7 +278,9 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
             width: 50,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isToday ? Colors.blue.shade600 : Colors.grey.shade100,
+              color: isToday
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -265,7 +289,9 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: isToday ? Colors.white : Colors.grey.shade700,
+                color: isToday
+                    ? Theme.of(context).colorScheme.onPrimary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -279,15 +305,18 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
               children: [
                 Text(
                   _formatDate(entry.date),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1F2937),
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 Text(
                   isToday ? 'Today' : _getRelativeDate(entry.date),
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -300,7 +329,10 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
               children: [
                 Text(
                   'Ideal',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -308,7 +340,7 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -323,7 +355,10 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
               children: [
                 Text(
                   'Actual Remaining',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 TextField(
@@ -343,7 +378,9 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     filled: true,
-                    fillColor: Colors.grey.shade50,
+                    fillColor: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 8,

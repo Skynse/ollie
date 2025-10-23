@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/board_column.dart';
 import 'ollie_ui/ollie_toast.dart';
 import 'edit_column_dialog.dart';
+import 'ollie_ui/theme_extensions.dart';
 
 class ManageColumnsDialog extends ConsumerStatefulWidget {
   final List<BoardColumn> columns;
@@ -70,12 +71,12 @@ class _ManageColumnsDialogState extends ConsumerState<ManageColumnsDialog> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                color: context.primaryColor.withOpacity(0.1),
+                border: Border(bottom: BorderSide(color: context.borderColor)),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.view_column, color: Colors.blue.shade700),
+                  Icon(Icons.view_column, color: context.primaryColor),
                   const SizedBox(width: 12),
                   const Text(
                     'Manage Columns',
@@ -100,15 +101,15 @@ class _ManageColumnsDialogState extends ConsumerState<ManageColumnsDialog> {
             // Instructions
             Container(
               padding: const EdgeInsets.all(16),
-              color: Colors.amber.shade50,
+              color: context.primaryColor.withOpacity(0.05),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.amber.shade900),
+                  Icon(Icons.info_outline, color: context.secondaryTextColor),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'Drag columns to reorder them. Click edit to change name, color, or WIP limit.',
-                      style: TextStyle(color: Colors.amber.shade900),
+                      style: TextStyle(color: context.secondaryTextColor),
                     ),
                   ),
                 ],
@@ -148,7 +149,7 @@ class _ManageColumnsDialogState extends ConsumerState<ManageColumnsDialog> {
           Icon(
             Icons.view_column_outlined,
             size: 64,
-            color: Colors.grey.shade400,
+            color: context.secondaryTextColor,
           ),
           const SizedBox(height: 16),
           Text(
@@ -156,7 +157,7 @@ class _ManageColumnsDialogState extends ConsumerState<ManageColumnsDialog> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
+              color: context.secondaryTextColor,
             ),
           ),
         ],
@@ -253,7 +254,7 @@ class _ColumnTile extends StatelessWidget {
         leading: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.drag_handle, color: Colors.grey.shade600),
+            Icon(Icons.drag_handle, color: context.secondaryTextColor),
             const SizedBox(width: 8),
             Container(
               width: 32,
@@ -279,12 +280,12 @@ class _ColumnTile extends StatelessWidget {
           children: [
             IconButton(
               onPressed: onEdit,
-              icon: Icon(Icons.edit, color: Colors.blue.shade600),
+              icon: Icon(Icons.edit, color: context.primaryColor),
               tooltip: 'Edit column',
             ),
             IconButton(
               onPressed: onDelete,
-              icon: Icon(Icons.delete, color: Colors.red.shade400),
+              icon: Icon(Icons.delete, color: context.dangerColor),
               tooltip: 'Delete column',
             ),
           ],

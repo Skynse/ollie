@@ -4,14 +4,15 @@ import 'package:go_router/go_router.dart';
 import 'screens/home/homepage.dart';
 import 'screens/board/board_screen.dart';
 import 'providers/auth_provider.dart';
+import 'providers/theme_provider.dart';
 import 'screens/authentication/modern_auth_screen.dart';
 import 'repositories/appwrite/appwrite_config.dart';
+import 'components/ollie_ui/theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Appwrite (for both auth and repositories)
-
   AppwriteConfig.init();
 
   runApp(const ProviderScope(child: OllieApp()));
@@ -23,16 +24,16 @@ class OllieApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
       title: 'Ollie - Kanban Board',
       debugShowCheckedModeBanner: false,
+      theme: OllieTheme.lightTheme,
 
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-      ),
+      darkTheme: OllieTheme.darkTheme,
+      themeMode: themeMode,
+
       routerConfig: router,
     );
   }

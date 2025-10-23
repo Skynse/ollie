@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ollie/models/user.dart';
+import 'ollie_ui/theme_extensions.dart';
 
 class HoverAnimatedAvatar extends ConsumerStatefulWidget {
   final User user;
@@ -48,14 +49,14 @@ class _HoverAnimatedAvatarState extends ConsumerState<HoverAnimatedAvatar>
           message: widget.user.name,
           child: CircleAvatar(
             radius: 16,
-            backgroundColor: Colors.blue.shade100,
+            backgroundColor: context.primaryColor.withOpacity(0.2),
             child: Text(
               widget.user.name.isNotEmpty
                   ? widget.user.name[0].toUpperCase()
                   : '?',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.blue.shade700,
+                color: context.primaryColor,
                 fontWeight: FontWeight.w600,
               ),
             ),

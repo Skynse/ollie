@@ -3,9 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/board_column.dart';
 import '../providers/board_provider.dart';
 import 'ollie_ui/ollie_context_menu.dart';
+import 'ollie_ui/theme_extensions.dart';
 
 /// Enhanced column header with WIP limit indicators and better styling
-class EnhancedColumnHeader extends ConsumerWidget {
+class EnhancedColumnHeader extends ConsumerStatefulWidget {
   final BoardColumn column;
   final String boardId;
   final VoidCallback onEdit;
@@ -20,18 +21,25 @@ class EnhancedColumnHeader extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<EnhancedColumnHeader> createState() =>
+      _EnhancedColumnHeaderState();
+}
+
+class _EnhancedColumnHeaderState extends ConsumerState<EnhancedColumnHeader> {
+  @override
+  Widget build(BuildContext context) {
     final cardCount = ref.watch(
-      boardNotifierProvider(boardId).select(
-        (asyncState) => asyncState.value?.columnCards[column.id]?.length ?? 0,
+      boardNotifierProvider(widget.boardId).select(
+        (asyncState) =>
+            asyncState.value?.columnCards[widget.column.id]?.length ?? 0,
       ),
     );
 
-    final wipLimit = column.wipLimit;
+    final wipLimit = widget.column.wipLimit;
     final isNearLimit =
         wipLimit != null && cardCount >= (wipLimit * 0.8).floor();
     final isOverLimit = wipLimit != null && cardCount > wipLimit;
-    final columnColor = _parseColor(column.color);
+    final columnColor = _parseColor(widget.column.color);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -78,12 +86,12 @@ class EnhancedColumnHeader extends ConsumerWidget {
               // Column name
               Expanded(
                 child: Text(
-                  column.name,
-                  style: const TextStyle(
+                  widget.column.name,
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.2,
-                    color: Color(0xFF1F2937),
+                    color: context.textColor,
                   ),
                 ),
               ),
@@ -111,12 +119,12 @@ class EnhancedColumnHeader extends ConsumerWidget {
                       OllieMenuItem(
                         title: 'Edit Column',
                         icon: Icons.edit_outlined,
-                        onTap: onEdit,
+                        onTap: widget.onEdit,
                       ),
                       OllieMenuItem(
                         title: 'Delete Column',
                         icon: Icons.delete_outline,
-                        onTap: onDelete,
+                        onTap: widget.onDelete,
                       ),
                     ],
                     context: context,
@@ -128,7 +136,7 @@ class EnhancedColumnHeader extends ConsumerWidget {
                   child: Icon(
                     Icons.more_horiz,
                     size: 20,
-                    color: Colors.grey.shade600,
+                    color: context.secondaryTextColor,
                   ),
                 ),
               ),
@@ -236,7 +244,7 @@ class EnhancedColumnHeader extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade600,
+                color: context.secondaryTextColor,
               ),
             ),
             Text(
@@ -261,7 +269,7 @@ class EnhancedColumnHeader extends ConsumerWidget {
               Container(
                 height: 6,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
+                  color: context.borderColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),

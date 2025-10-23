@@ -6,6 +6,7 @@ import '../providers/board_provider.dart';
 import '../providers/user_provider.dart';
 import 'ollie_ui/ollie_dialog.dart';
 import 'ollie_ui/ollie_button.dart';
+import 'ollie_ui/theme_extensions.dart';
 
 /// Dialog for assigning/removing members from a card
 class AssignMemberDialog extends ConsumerStatefulWidget {
@@ -74,9 +75,12 @@ class _AssignMemberDialogState extends ConsumerState<AssignMemberDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Select members to assign to this card',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -104,13 +108,13 @@ class _AssignMemberDialogState extends ConsumerState<AssignMemberDialog> {
                     title: Text(member.name),
                     subtitle: Text(member.email),
                     secondary: CircleAvatar(
-                      backgroundColor: Colors.blue.shade100,
+                      backgroundColor: context.primaryColor.withOpacity(0.2),
                       child: Text(
                         member.name.isNotEmpty
                             ? member.name[0].toUpperCase()
                             : '?',
                         style: TextStyle(
-                          color: Colors.blue.shade700,
+                          color: context.primaryColor,
                           fontWeight: FontWeight.w600,
                         ),
                       ),

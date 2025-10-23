@@ -12,6 +12,7 @@ import 'card_timer_widget.dart';
 import 'edit_card_dialog.dart';
 import 'enhanced_card_content.dart';
 import 'ollie_ui/ollie_toast.dart';
+import 'ollie_ui/theme_extensions.dart';
 
 /// A kanban card component displaying task information
 class KanbanCard extends ConsumerStatefulWidget {
@@ -153,7 +154,7 @@ class _KanbanCardState extends ConsumerState<KanbanCard>
                     boxShadow: _isLongPressing
                         ? [
                             BoxShadow(
-                              color: Colors.blue.withOpacity(0.4),
+                              color: context.primaryColor.withOpacity(0.4),
                               blurRadius: 12,
                               spreadRadius: 3,
                             ),
@@ -212,15 +213,15 @@ class _KanbanCardState extends ConsumerState<KanbanCard>
                         ? Icons.play_circle
                         : Icons.schedule,
                     color: sprint.status == SprintStatus.active
-                        ? Colors.green.shade700
-                        : Colors.grey.shade600,
+                        ? context.successColor
+                        : context.secondaryTextColor,
                   ),
                   title: Text(sprint.name),
                   subtitle: Text(
                     '${sprint.status.toString().split('.').last} - ${sprint.cardIds.length} cards',
                   ),
                   trailing: isInSprint
-                      ? Icon(Icons.check, color: Colors.green.shade700)
+                      ? Icon(Icons.check, color: context.successColor)
                       : null,
                   onTap: () async {
                     Navigator.pop(context);

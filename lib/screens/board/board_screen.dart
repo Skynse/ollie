@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ollie/components/ollie_ui/theme_extensions.dart';
 import '../../providers/board_provider.dart';
 import '../../providers/boards_provider.dart';
 import '../../providers/user_provider.dart';
@@ -35,9 +36,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
 
     return Scaffold(
       key: _scaffoldKey,
-
       endDrawer: Drawer(child: _buildBoardDrawer()),
-      backgroundColor: Colors.grey.shade100,
       body: boardState.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => _buildErrorState(error.toString()),
@@ -52,7 +51,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     final activeSprint = ref.watch(sprintNotifierProvider(widget.boardId));
 
     return Drawer(
-      backgroundColor: Colors.grey.shade50,
       child: Column(
         children: [
           // Drawer Header - Simplified
@@ -60,9 +58,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(20, 48, 20, 20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.surfaceColor,
               border: Border(
-                bottom: BorderSide(color: Colors.grey.shade200, width: 1),
+                bottom: BorderSide(color: context.borderColor, width: 1),
               ),
             ),
             child: Column(
@@ -70,17 +68,20 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
               children: [
                 Text(
                   board?.name ?? 'Board Settings',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF1F2937),
+                    color: context.textColor,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Board Management',
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: context.secondaryTextColor,
+                  ),
                 ),
               ],
             ),
@@ -92,9 +93,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.surfaceColor,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(color: context.borderColor),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,13 +109,13 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                         ),
                         decoration: BoxDecoration(
                           color: activeSprint.status == SprintStatus.active
-                              ? Colors.green.shade50
-                              : Colors.blue.shade50,
+                              ? context.successColor.withOpacity(0.1)
+                              : context.primaryColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(4),
                           border: Border.all(
                             color: activeSprint.status == SprintStatus.active
-                                ? Colors.green.shade200
-                                : Colors.blue.shade200,
+                                ? context.successColor.withOpacity(0.3)
+                                : context.primaryColor.withOpacity(0.3),
                           ),
                         ),
                         child: Text(
@@ -125,8 +126,8 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: activeSprint.status == SprintStatus.active
-                                ? Colors.green.shade700
-                                : Colors.blue.shade700,
+                                ? context.successColor
+                                : context.primaryColor,
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -136,10 +137,10 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                   const SizedBox(height: 12),
                   Text(
                     activeSprint.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1F2937),
+                      color: context.textColor,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -148,14 +149,14 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                       Icon(
                         Icons.calendar_today,
                         size: 14,
-                        color: Colors.grey.shade600,
+                        color: context.secondaryTextColor,
                       ),
                       const SizedBox(width: 6),
                       Text(
                         '${activeSprint.daysRemaining} days remaining',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: context.secondaryTextColor,
                         ),
                       ),
                     ],
@@ -166,14 +167,14 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                       Icon(
                         Icons.assignment,
                         size: 14,
-                        color: Colors.grey.shade600,
+                        color: context.secondaryTextColor,
                       ),
                       const SizedBox(width: 6),
                       Text(
                         '${activeSprint.cardIds.length} cards',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: context.secondaryTextColor,
                         ),
                       ),
                     ],
@@ -296,7 +297,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          color: Colors.grey.shade500,
+          color: context.secondaryTextColor,
           letterSpacing: 1,
         ),
       ),
@@ -313,24 +314,31 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(6),
       ),
       child: ListTile(
         dense: true,
-        leading: Icon(icon, color: iconColor ?? Colors.grey.shade700, size: 20),
+        leading: Icon(
+          icon,
+          color: iconColor ?? Theme.of(context).listTileTheme.textColor,
+          size: 20,
+        ),
         title: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF1F2937),
+            color: Theme.of(context).listTileTheme.textColor,
           ),
         ),
         subtitle: subtitle != null
             ? Text(
                 subtitle,
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).listTileTheme.textColor,
+                ),
               )
             : null,
         onTap: onTap,
@@ -634,8 +642,10 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+        color: Theme.of(context).scaffoldBackgroundColor,
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).dividerColor),
+        ),
       ),
       child: Row(
         children: [
@@ -644,7 +654,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.arrow_back),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.grey.shade100,
+              backgroundColor: Theme.of(context).cardColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -667,7 +677,10 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                 if (board.description != null && board.description!.isNotEmpty)
                   Text(
                     board.description!,
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).textTheme.bodyMedium!.color,
+                    ),
                   ),
               ],
             ),
@@ -691,7 +704,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             },
             icon: const Icon(Icons.more_horiz),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.grey.shade100,
+              backgroundColor: Theme.of(context).drawerTheme.backgroundColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -757,7 +770,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             onPressed: () => _showInviteMemberDialog(),
             icon: const Icon(Icons.person_add, size: 20),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.blue.shade50,
+              backgroundColor: Theme.of(context).cardColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -792,12 +805,12 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: activeSprint != null
-                  ? Colors.green.shade50
-                  : Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(8),
+                  ? Theme.of(context).colorScheme.onInverseSurface
+                  : Theme.of(context).disabledColor,
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: activeSprint != null
-                    ? Colors.green.shade200
+                    ? Colors.green.shade900
                     : Colors.grey.shade300,
               ),
             ),
@@ -807,9 +820,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                 Icon(
                   Icons.timer,
                   size: 18,
-                  color: activeSprint != null
-                      ? Colors.green.shade700
-                      : Colors.grey.shade700,
+                  color: Theme.of(context).iconTheme.color,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -818,7 +829,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: activeSprint != null
-                        ? Colors.green.shade700
+                        ? Theme.brightnessOf(context) == Brightness.light
+                              ? Colors.black
+                              : Colors.white
                         : Colors.grey.shade700,
                   ),
                 ),
@@ -826,9 +839,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                 Icon(
                   Icons.arrow_drop_down,
                   size: 20,
-                  color: activeSprint != null
-                      ? Colors.green.shade700
-                      : Colors.grey.shade700,
+                  color: Theme.of(context).iconTheme.color,
                 ),
               ],
             ),
@@ -856,9 +867,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                     Icon(
                       isActive ? Icons.play_circle : Icons.schedule,
                       size: 18,
-                      color: isActive
-                          ? Colors.green.shade700
-                          : Colors.grey.shade600,
+                      color: Theme.of(context).iconTheme.color,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -877,7 +886,15 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                             '${sprint.status.toString().split('.').last} - ${sprint.cardIds.length} cards',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.grey.shade600,
+                              color: isActive
+                                  ? Theme.of(context).brightness ==
+                                            Brightness.light
+                                        ? Theme.of(context).primaryColor
+                                        : Colors.white
+                                  : Theme.of(context).brightness ==
+                                        Brightness.light
+                                  ? Colors.grey.shade600
+                                  : Colors.grey.shade400,
                             ),
                           ),
                         ],

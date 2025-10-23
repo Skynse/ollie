@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ollie/components/ollie_ui/theme_toggle.dart';
+import 'package:ollie/components/ollie_ui/theme_extensions.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/boards_provider.dart';
 import '../../models/board.dart';
@@ -100,17 +102,9 @@ class _HomePageState extends ConsumerState<HomePage>
     return Container(
       width: 260,
       decoration: BoxDecoration(
-        color: const Color(0xFFFAFAFA),
-        border: Border(
-          right: BorderSide(color: Colors.grey.shade200, width: 1),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(2, 0),
-          ),
-        ],
+        color: context.surfaceVariantColor,
+        border: Border(right: BorderSide(color: context.borderColor, width: 1)),
+        boxShadow: context.shadowSmall,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,22 +119,29 @@ class _HomePageState extends ConsumerState<HomePage>
                   height: 36,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Colors.blue.shade600, Colors.blue.shade400],
+                      colors: [
+                        context.primaryColor,
+                        context.primaryColor.withOpacity(0.7),
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.dashboard_rounded,
-                    color: Colors.white,
+                    color: context.surfaceColor,
                     size: 20,
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Text(
+                Text(
                   'Ollie',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: context.textColor,
+                  ),
                 ),
               ],
             ),
@@ -188,12 +189,14 @@ class _HomePageState extends ConsumerState<HomePage>
                   : Row(
                       children: [
                         CircleAvatar(
-                          backgroundColor: Colors.blue.shade100,
+                          backgroundColor: context.primaryColor.withOpacity(
+                            0.2,
+                          ),
                           radius: 18,
                           child: Text(
                             user?.name?.substring(0, 1).toUpperCase() ?? 'U',
                             style: TextStyle(
-                              color: Colors.blue.shade700,
+                              color: context.primaryColor,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -205,9 +208,10 @@ class _HomePageState extends ConsumerState<HomePage>
                             children: [
                               Text(
                                 user?.name ?? 'User Name',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
+                                  color: context.textColor,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -215,14 +219,17 @@ class _HomePageState extends ConsumerState<HomePage>
                                 user?.email ?? 'user@example.com',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Colors.grey.shade600,
+                                  color: context.secondaryTextColor,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
                         ),
-                        Icon(Icons.more_horiz, color: Colors.grey.shade600),
+                        Icon(
+                          Icons.more_horiz,
+                          color: context.secondaryTextColor,
+                        ),
                       ],
                     ),
             ),
@@ -238,7 +245,7 @@ class _HomePageState extends ConsumerState<HomePage>
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [const Color(0xFFF8F9FA), Colors.white],
+          colors: [context.surfaceVariantColor, context.backgroundColor],
           stops: const [0.0, 0.3],
         ),
       ),
@@ -263,25 +270,20 @@ class _HomePageState extends ConsumerState<HomePage>
       height: 80,
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.95),
-        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: context.surfaceColor.withOpacity(0.95),
+        border: Border(bottom: BorderSide(color: context.borderColor)),
+        boxShadow: context.shadowSmall,
       ),
       child: Row(
         children: [
           // Title
           Text(
             _selectedView == 'my-projects' ? 'My Projects' : 'Shared with Me',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.5,
+              color: context.textColor,
             ),
           ),
           const SizedBox(width: 24),
@@ -297,19 +299,19 @@ class _HomePageState extends ConsumerState<HomePage>
                 decoration: InputDecoration(
                   hintText: 'Search boards...',
                   hintStyle: TextStyle(
-                    color: Colors.grey.shade400,
+                    color: context.secondaryTextColor.withOpacity(0.6),
                     fontSize: 14,
                   ),
                   prefixIcon: Icon(
                     Icons.search,
-                    color: Colors.grey.shade400,
+                    color: context.secondaryTextColor.withOpacity(0.6),
                     size: 20,
                   ),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
                           icon: Icon(
                             Icons.close,
-                            color: Colors.grey.shade400,
+                            color: context.secondaryTextColor.withOpacity(0.6),
                             size: 18,
                           ),
                           onPressed: () {
@@ -319,7 +321,7 @@ class _HomePageState extends ConsumerState<HomePage>
                         )
                       : null,
                   filled: true,
-                  fillColor: Colors.grey.shade50,
+                  fillColor: context.surfaceVariantColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -338,7 +340,7 @@ class _HomePageState extends ConsumerState<HomePage>
           // View toggle
           Container(
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: context.surfaceVariantColor,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
@@ -369,52 +371,62 @@ class _HomePageState extends ConsumerState<HomePage>
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'updated',
-                child: Row(
-                  children: [
-                    Icon(Icons.update, size: 18, color: Colors.grey.shade700),
-                    const SizedBox(width: 12),
-                    const Text('Last Updated'),
-                  ],
+                child: Builder(
+                  builder: (context) => Row(
+                    children: [
+                      Icon(
+                        Icons.update,
+                        size: 18,
+                        color: context.secondaryTextColor,
+                      ),
+                      const SizedBox(width: 12),
+                      const Text('Last Updated'),
+                    ],
+                  ),
                 ),
               ),
               PopupMenuItem(
                 value: 'created',
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_today,
-                      size: 18,
-                      color: Colors.grey.shade700,
-                    ),
-                    const SizedBox(width: 12),
-                    const Text('Date Created'),
-                  ],
+                child: Builder(
+                  builder: (context) => Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today,
+                        size: 18,
+                        color: context.secondaryTextColor,
+                      ),
+                      const SizedBox(width: 12),
+                      const Text('Date Created'),
+                    ],
+                  ),
                 ),
               ),
               PopupMenuItem(
                 value: 'name',
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.sort_by_alpha,
-                      size: 18,
-                      color: Colors.grey.shade700,
-                    ),
-                    const SizedBox(width: 12),
-                    const Text('Name (A-Z)'),
-                  ],
+                child: Builder(
+                  builder: (context) => Row(
+                    children: [
+                      Icon(
+                        Icons.sort_by_alpha,
+                        size: 18,
+                        color: context.secondaryTextColor,
+                      ),
+                      const SizedBox(width: 12),
+                      const Text('Name (A-Z)'),
+                    ],
+                  ),
                 ),
               ),
             ],
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: context.surfaceVariantColor,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.sort, size: 18, color: Colors.grey.shade700),
+                  Icon(Icons.sort, size: 18, color: context.secondaryTextColor),
                   const SizedBox(width: 8),
                   Text(
                     _sortBy == 'updated'
@@ -425,14 +437,14 @@ class _HomePageState extends ConsumerState<HomePage>
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade800,
+                      color: context.textColor,
                     ),
                   ),
                   const SizedBox(width: 4),
                   Icon(
                     Icons.arrow_drop_down,
                     size: 20,
-                    color: Colors.grey.shade600,
+                    color: context.secondaryTextColor,
                   ),
                 ],
               ),
@@ -447,12 +459,13 @@ class _HomePageState extends ConsumerState<HomePage>
             label: const Text('New Board'),
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              backgroundColor: Colors.blue.shade600,
+              backgroundColor: context.primaryColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
           ),
+          ThemeToggle(),
         ],
       ),
     );
@@ -536,13 +549,13 @@ class _HomePageState extends ConsumerState<HomePage>
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: context.primaryColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Icon(
                 Icons.people_outline,
                 size: 40,
-                color: Colors.blue.shade300,
+                color: context.primaryColor.withOpacity(0.4),
               ),
             ),
             const SizedBox(height: 16),
@@ -551,13 +564,13 @@ class _HomePageState extends ConsumerState<HomePage>
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade800,
+                color: context.textColor,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Boards shared with you will appear here',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 14, color: context.secondaryTextColor),
             ),
           ],
         ),
@@ -606,7 +619,10 @@ class _HomePageState extends ConsumerState<HomePage>
             height: 120,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.blue.shade50, Colors.blue.shade100],
+                colors: [
+                  context.primaryColor.withOpacity(0.1),
+                  context.primaryColor.withOpacity(0.2),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -615,22 +631,22 @@ class _HomePageState extends ConsumerState<HomePage>
             child: Icon(
               Icons.dashboard_outlined,
               size: 56,
-              color: Colors.blue.shade400,
+              color: context.primaryColor.withOpacity(0.6),
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'No boards yet',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF1F2937),
+              color: context.textColor,
             ),
           ),
           const SizedBox(height: 12),
           Text(
             'Create your first board to start organizing your work',
-            style: TextStyle(fontSize: 15, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: 15, color: context.secondaryTextColor),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
@@ -640,7 +656,7 @@ class _HomePageState extends ConsumerState<HomePage>
             label: const Text('Create Your First Board'),
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              backgroundColor: Colors.blue.shade600,
+              backgroundColor: context.primaryColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -656,20 +672,24 @@ class _HomePageState extends ConsumerState<HomePage>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off, size: 64, color: Colors.grey.shade300),
+          Icon(
+            Icons.search_off,
+            size: 64,
+            color: context.secondaryTextColor.withOpacity(0.3),
+          ),
           const SizedBox(height: 16),
           Text(
             'No boards found',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
+              color: context.textColor,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'Try searching with different keywords',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 14, color: context.secondaryTextColor),
           ),
         ],
       ),
@@ -701,22 +721,22 @@ class _HomePageState extends ConsumerState<HomePage>
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: Colors.red.shade50,
+              color: context.dangerColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Icon(
               Icons.error_outline,
               size: 48,
-              color: Colors.red.shade400,
+              color: context.dangerColor.withOpacity(0.6),
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'Something went wrong',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF1F2937),
+              color: context.textColor,
             ),
           ),
           const SizedBox(height: 12),
@@ -724,7 +744,7 @@ class _HomePageState extends ConsumerState<HomePage>
             padding: const EdgeInsets.symmetric(horizontal: 40),
             child: Text(
               message,
-              style: TextStyle(fontSize: 15, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 15, color: context.secondaryTextColor),
               textAlign: TextAlign.center,
             ),
           ),
@@ -735,7 +755,7 @@ class _HomePageState extends ConsumerState<HomePage>
             label: const Text('Try Again'),
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              backgroundColor: Colors.blue.shade600,
+              backgroundColor: context.primaryColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -820,15 +840,9 @@ class _UserMenuPanel extends StatelessWidget {
       width: 320,
       margin: const EdgeInsets.only(left: 8, bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.15),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        boxShadow: context.shadowMedium,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -838,7 +852,7 @@ class _UserMenuPanel extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+              color: context.surfaceVariantColor,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
@@ -847,12 +861,12 @@ class _UserMenuPanel extends StatelessWidget {
             child: Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: Colors.blue.shade100,
+                  backgroundColor: context.primaryColor.withOpacity(0.2),
                   radius: 24,
                   child: Text(
                     user?.name?.substring(0, 1).toUpperCase() ?? 'U',
                     style: TextStyle(
-                      color: Colors.blue.shade700,
+                      color: context.primaryColor,
                       fontWeight: FontWeight.w600,
                       fontSize: 20,
                     ),
@@ -865,9 +879,10 @@ class _UserMenuPanel extends StatelessWidget {
                     children: [
                       Text(
                         user?.name ?? 'User Name',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
+                          color: context.textColor,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -876,7 +891,7 @@ class _UserMenuPanel extends StatelessWidget {
                         user?.email ?? 'user@example.com',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.grey.shade600,
+                          color: context.secondaryTextColor,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -948,10 +963,10 @@ class _UserMenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isDestructive ? Colors.red.shade600 : Colors.grey.shade800;
+    final color = isDestructive ? context.dangerColor : context.textColor;
     final iconColor = isDestructive
-        ? Colors.red.shade600
-        : Colors.grey.shade600;
+        ? context.dangerColor
+        : context.secondaryTextColor;
 
     return InkWell(
       onTap: onTap,
@@ -1000,14 +1015,14 @@ class _SidebarItem extends StatelessWidget {
         leading: Icon(
           icon,
           size: 20,
-          color: isSelected ? Colors.blue.shade700 : Colors.grey.shade700,
+          color: isSelected ? context.primaryColor : context.secondaryTextColor,
         ),
         title: Text(
           label,
           style: TextStyle(
             fontSize: 14,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-            color: isSelected ? Colors.blue.shade700 : Colors.grey.shade800,
+            color: isSelected ? context.primaryColor : context.textColor,
           ),
         ),
         trailing: count != null
@@ -1015,8 +1030,8 @@ class _SidebarItem extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? Colors.blue.shade600
-                      : Colors.grey.shade200,
+                      ? context.primaryColor
+                      : context.borderColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -1024,13 +1039,15 @@ class _SidebarItem extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: isSelected ? Colors.white : Colors.grey.shade700,
+                    color: isSelected
+                        ? context.surfaceColor
+                        : context.secondaryTextColor,
                   ),
                 ),
               )
             : null,
         selected: isSelected,
-        selectedTileColor: Colors.blue.shade50,
+        selectedTileColor: context.primaryColor.withOpacity(0.1),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         onTap: onTap,
@@ -1126,19 +1143,19 @@ class _BoardCardState extends State<_BoardCard>
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.surfaceColor,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: _isHovered
                   ? _boardColor.withOpacity(0.3)
-                  : Colors.grey.shade200,
+                  : context.borderColor,
               width: _isHovered ? 2 : 1,
             ),
             boxShadow: [
               BoxShadow(
                 color: _isHovered
                     ? _boardColor.withOpacity(0.15)
-                    : Colors.black.withOpacity(0.04),
+                    : context.shadowSmall.first.color,
                 blurRadius: _isHovered ? 20 : 8,
                 offset: Offset(0, _isHovered ? 8 : 4),
               ),
@@ -1180,11 +1197,11 @@ class _BoardCardState extends State<_BoardCard>
                               // Board name
                               Text(
                                 widget.board.name,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: -0.3,
-                                  color: Color(0xFF1F2937),
+                                  color: context.textColor,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -1198,7 +1215,7 @@ class _BoardCardState extends State<_BoardCard>
                                   widget.board.description!,
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: Colors.grey.shade600,
+                                    color: context.secondaryTextColor,
                                     height: 1.4,
                                   ),
                                   maxLines: 2,
@@ -1218,14 +1235,15 @@ class _BoardCardState extends State<_BoardCard>
                                   Icon(
                                     Icons.update,
                                     size: 12,
-                                    color: Colors.grey.shade400,
+                                    color: context.secondaryTextColor
+                                        .withOpacity(0.6),
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
                                     _getTimeAgo(widget.board.updatedAt),
                                     style: TextStyle(
                                       fontSize: 11,
-                                      color: Colors.grey.shade500,
+                                      color: context.secondaryTextColor,
                                     ),
                                   ),
                                 ],
@@ -1319,16 +1337,10 @@ class _SkeletonBoardCardState extends State<_SkeletonBoardCard>
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: context.borderColor),
+        boxShadow: context.shadowSmall,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1340,7 +1352,7 @@ class _SkeletonBoardCardState extends State<_SkeletonBoardCard>
               return Container(
                 height: 8,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200.withOpacity(_animation.value),
+                  color: context.borderColor.withOpacity(_animation.value),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(15),
                     topRight: Radius.circular(15),
@@ -1369,7 +1381,7 @@ class _SkeletonBoardCardState extends State<_SkeletonBoardCard>
                             height: 20,
                             width: double.infinity,
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade200.withOpacity(
+                              color: context.borderColor.withOpacity(
                                 _animation.value,
                               ),
                               borderRadius: BorderRadius.circular(6),
@@ -1386,7 +1398,7 @@ class _SkeletonBoardCardState extends State<_SkeletonBoardCard>
                             height: 14,
                             width: double.infinity,
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade200.withOpacity(
+                              color: context.borderColor.withOpacity(
                                 _animation.value,
                               ),
                               borderRadius: BorderRadius.circular(4),
@@ -1402,7 +1414,7 @@ class _SkeletonBoardCardState extends State<_SkeletonBoardCard>
                             height: 14,
                             width: 150,
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade200.withOpacity(
+                              color: context.borderColor.withOpacity(
                                 _animation.value,
                               ),
                               borderRadius: BorderRadius.circular(4),
@@ -1421,7 +1433,7 @@ class _SkeletonBoardCardState extends State<_SkeletonBoardCard>
                         height: 28,
                         width: 60,
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade200.withOpacity(
+                          color: context.borderColor.withOpacity(
                             _animation.value,
                           ),
                           borderRadius: BorderRadius.circular(8),
@@ -1556,22 +1568,14 @@ class _ViewToggleButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
+          color: isSelected ? context.surfaceColor : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
-                  ),
-                ]
-              : null,
+          boxShadow: isSelected ? context.shadowSmall : null,
         ),
         child: Icon(
           icon,
           size: 20,
-          color: isSelected ? Colors.blue.shade600 : Colors.grey.shade600,
+          color: isSelected ? context.primaryColor : context.secondaryTextColor,
         ),
       ),
     );
@@ -1637,19 +1641,19 @@ class _BoardListItemState extends State<_BoardListItem> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.surfaceColor,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: _isHovered
                   ? _boardColor.withOpacity(0.3)
-                  : Colors.grey.shade200,
+                  : context.borderColor,
               width: _isHovered ? 2 : 1,
             ),
             boxShadow: [
               BoxShadow(
                 color: _isHovered
                     ? _boardColor.withOpacity(0.1)
-                    : Colors.black.withOpacity(0.02),
+                    : context.shadowSmall.first.color,
                 blurRadius: _isHovered ? 12 : 4,
                 offset: Offset(0, _isHovered ? 4 : 2),
               ),
@@ -1686,11 +1690,11 @@ class _BoardListItemState extends State<_BoardListItem> {
                         children: [
                           Text(
                             widget.board.name,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
                               letterSpacing: -0.3,
-                              color: Color(0xFF1F2937),
+                              color: context.textColor,
                             ),
                           ),
                           if (widget.board.description != null &&
@@ -1700,7 +1704,7 @@ class _BoardListItemState extends State<_BoardListItem> {
                               widget.board.description!,
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.grey.shade600,
+                                color: context.secondaryTextColor,
                                 height: 1.4,
                               ),
                               maxLines: 1,
@@ -1713,14 +1717,14 @@ class _BoardListItemState extends State<_BoardListItem> {
                               Icon(
                                 Icons.update,
                                 size: 14,
-                                color: Colors.grey.shade500,
+                                color: context.secondaryTextColor,
                               ),
                               const SizedBox(width: 6),
                               Text(
                                 'Updated ${_getTimeAgo(widget.board.updatedAt)}',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Colors.grey.shade500,
+                                  color: context.secondaryTextColor,
                                 ),
                               ),
                             ],

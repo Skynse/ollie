@@ -27,7 +27,7 @@ class OllieDialog extends StatelessWidget {
       child: Container(
         width: width,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -62,7 +62,6 @@ class OllieDialog extends StatelessWidget {
                       onPressed: onClose ?? () => Navigator.of(context).pop(),
                       icon: const Icon(Icons.close, size: 20),
                       style: IconButton.styleFrom(
-                        backgroundColor: Colors.grey.shade100,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -87,7 +86,7 @@ class OllieDialog extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(16),
                     bottomRight: Radius.circular(16),
