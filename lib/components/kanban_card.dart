@@ -25,43 +25,8 @@ class KanbanCard extends ConsumerStatefulWidget {
   ConsumerState<KanbanCard> createState() => _KanbanCardState();
 }
 
-class _KanbanCardState extends ConsumerState<KanbanCard>
-    with SingleTickerProviderStateMixin {
-  bool _isLongPressing = false;
-  late AnimationController _scaleController;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _scaleController = AnimationController(
-      duration: const Duration(milliseconds: 150),
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.97).animate(
-      CurvedAnimation(parent: _scaleController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _scaleController.dispose();
-    super.dispose();
-  }
-
-  void _onLongPressStart() {
-    setState(() {
-      _isLongPressing = true;
-    });
-    _scaleController.forward();
-  }
-
-  void _onLongPressEnd() {
-    setState(() {
-      _isLongPressing = false;
-    });
-    _scaleController.reverse();
-  }
+class _KanbanCardState extends ConsumerState<KanbanCard> {
+  bool _isDragging = false;
 
   @override
   Widget build(BuildContext context) {
@@ -117,56 +82,35 @@ class _KanbanCardState extends ConsumerState<KanbanCard>
           },
         ),
       ],
-      child: Listener(
-        child: LongPressDraggable<model.Card>(
-          data: widget.card,
-          hapticFeedbackOnStart: true,
-          onDragStarted: () {
-            _onLongPressEnd();
-          },
-          onDragEnd: (_) {
-            _onLongPressEnd();
-          },
-          delay: Duration(milliseconds: 100),
-          feedback: Material(
-            elevation: 8,
-            borderRadius: BorderRadius.circular(8),
-            child: SizedBox(
-              width: 280,
-              child: Opacity(
-                opacity: 0.8,
-                child: _buildCardContent(context, ref),
-              ),
+      child: Draggable<model.Card>(
+        data: widget.card,
+        onDragStarted: () {
+          setState(() => _isDragging = true);
+        },
+        onDragEnd: (_) {
+          // Reset drag state after a short delay to prevent tap from firing
+          Future.delayed(const Duration(milliseconds: 100), () {
+            if (mounted) {
+              setState(() => _isDragging = false);
+            }
+          });
+        },
+        feedback: Material(
+          elevation: 8,
+          borderRadius: BorderRadius.circular(8),
+          child: SizedBox(
+            width: 280,
+            child: Opacity(
+              opacity: 0.8,
+              child: _buildCardContent(context, ref),
             ),
           ),
-          childWhenDragging: Opacity(
-            opacity: 0.3,
-            child: _buildCardContent(context, ref),
-          ),
-          child: AnimatedBuilder(
-            animation: _scaleAnimation,
-            builder: (context, child) {
-              return Transform.scale(
-                scale: _scaleAnimation.value,
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: _isLongPressing
-                        ? [
-                            BoxShadow(
-                              color: context.primaryColor.withOpacity(0.4),
-                              blurRadius: 12,
-                              spreadRadius: 3,
-                            ),
-                          ]
-                        : [],
-                  ),
-                  child: _buildCardContent(context, ref),
-                ),
-              );
-            },
-          ),
         ),
+        childWhenDragging: Opacity(
+          opacity: 0.3,
+          child: _buildCardContent(context, ref),
+        ),
+        child: _buildCardContent(context, ref),
       ),
     );
   }
@@ -175,11 +119,13 @@ class _KanbanCardState extends ConsumerState<KanbanCard>
     return EnhancedCardContent(
       card: widget.card,
       onTap: () {
-        showDialog(
-          context: context,
-          builder: (context) =>
-              EditCardDialog(card: widget.card, boardId: widget.boardId),
-        );
+        if (!_isDragging) {
+          showDialog(
+            context: context,
+            builder: (context) =>
+                EditCardDialog(card: widget.card, boardId: widget.boardId),
+          );
+        }
       },
     );
   }
