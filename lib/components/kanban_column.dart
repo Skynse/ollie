@@ -8,6 +8,8 @@ import '../providers/board_provider.dart';
 import '../providers/auth_provider.dart';
 import 'kanban_card.dart';
 import 'add_card_dialog.dart';
+import 'enhanced_column_header.dart';
+import 'enhanced_drop_zone.dart';
 import 'ollie_ui/ollie_toast.dart';
 
 /// A kanban column component displaying a list of cards
@@ -79,7 +81,12 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Column header
-          _buildHeader(context, ref),
+          EnhancedColumnHeader(
+            column: widget.column,
+            boardId: widget.boardId,
+            onEdit: () => _editColumn(widget.column),
+            onDelete: () => _deleteColumn(),
+          ),
 
           // Cards list
           Flexible(
@@ -151,54 +158,23 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
     bool isTop = false,
     bool isBottom = false,
   }) {
-    return DragTarget<model.Card>(
-      onWillAcceptWithDetails: (details) {
-        final draggedCard = details.data;
-        // Don't allow dropping in the same position in the same column
-        if (draggedCard.columnId == widget.column.id) {
-          final originalIndex = cards.indexWhere((c) => c.id == draggedCard.id);
-          if (originalIndex == position || originalIndex + 1 == position) {
-            return false;
-          }
-        }
-        _onDragEnter(); // Trigger column animation
-        return true;
-      },
-      onLeave: (_) => _onDragLeave(), // Stop column animation
-      onAcceptWithDetails: (details) async {
-        _onDragLeave();
-        final draggedCard = details.data;
-
+    return EnhancedDropZone(
+      cards: cards,
+      position: position,
+      isTop: isTop,
+      isBottom: isBottom,
+      columnId: widget.column.id,
+      onAccept: (card, targetColumnId, targetPosition) async {
         await ref
             .read(boardNotifierProvider(widget.boardId).notifier)
             .moveCard(
-              card: draggedCard,
-
-              targetColumnId: widget.column.id,
-              targetPosition: position,
+              card: card,
+              targetColumnId: targetColumnId,
+              targetPosition: targetPosition,
             );
       },
-      builder: (context, candidateData, rejectedData) {
-        final isHovering = candidateData.isNotEmpty;
-        if (isHovering) {
-          // Show a placeholder when a card is being dragged over
-          return Container(
-            height: 80, // Height of the placeholder
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50.withOpacity(0.7),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue.shade200, width: 2),
-            ),
-            child: Center(child: Icon(Icons.add, color: Colors.blue.shade400)),
-          );
-        } else {
-          // Empty space when not hovering
-          return SizedBox(
-            height: isTop || isBottom ? 4 : 8,
-          ); // Smaller gap between cards
-        }
-      },
+      onDragEnter: _onDragEnter,
+      onDragLeave: _onDragLeave,
     );
   }
 
@@ -215,7 +191,9 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
           color: result['color'] as int,
           wipLimit: result['wipLimit'] as int?,
         );
-        await ref.read(boardNotifierProvider(widget.boardId).notifier).updateColumn(updatedColumn);
+        await ref
+            .read(boardNotifierProvider(widget.boardId).notifier)
+            .updateColumn(updatedColumn);
       } catch (e) {
         if (mounted) {
           OllieToast.error(context, 'Failed to update column: ${e.toString()}');
@@ -224,105 +202,18 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
     }
   }
 
-  Widget _buildHeader(BuildContext context, WidgetRef ref) {
-    final cardCount = ref.watch(
-      boardNotifierProvider(widget.boardId).select(
-        (asyncState) =>
-            asyncState.value?.columnCards[widget.column.id]?.length ?? 0,
-      ),
+  Future<void> _deleteColumn() async {
+    final confirmed = await showConfirmationDialog(
+      context,
+      'Delete Column',
+      'Are you sure you want to delete this column? All cards will be removed.',
     );
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-      ),
-      child: Row(
-        children: [
-          // Column color indicator
-          Container(
-            width: 4,
-            height: 20,
-            decoration: BoxDecoration(
-              color: _parseColor(widget.column.color),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 12),
-
-          // Column name
-          Expanded(
-            child: Text(
-              widget.column.name,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-            ),
-          ),
-
-          // Card count
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              '$cardCount',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
-              ),
-            ),
-          ),
-
-          // Column menu
-          InkWell(
-            onTapDown: (details) {
-              showOllieMenu(
-                position: Offset(
-                  details.globalPosition.dx,
-                  details.globalPosition.dy,
-                ),
-                items: [
-                  OllieMenuItem(
-                    title: 'Edit',
-                    icon: Icons.edit,
-                    onTap: () {
-                      _editColumn(widget.column);
-                    },
-                  ),
-                  OllieMenuItem(
-                    title: 'Delete',
-                    icon: Icons.delete,
-                    onTap: () async {
-                      // ask for confirmation first
-                      bool? confirmed = await showConfirmationDialog(
-                        context,
-                        'Delete Column',
-                        'Are you sure you want to delete this column?',
-                      );
-                      if (confirmed == true) {
-                        await ref
-                            .read(
-                              boardNotifierProvider(widget.boardId).notifier,
-                            )
-                            .deleteColumn(widget.column.id);
-                      }
-                    },
-                  ),
-                ],
-                context: context,
-              );
-            },
-            child: Icon(
-              Icons.more_horiz,
-              size: 18,
-              color: Colors.grey.shade600,
-            ),
-          ),
-        ],
-      ),
-    );
+    if (confirmed == true) {
+      await ref
+          .read(boardNotifierProvider(widget.boardId).notifier)
+          .deleteColumn(widget.column.id);
+    }
   }
 
   Widget _buildAddCardButton(BuildContext context, WidgetRef ref) {
@@ -372,14 +263,6 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
         },
       ),
     );
-  }
-
-  Color _parseColor(int argbColorValue) {
-    try {
-      return Color(argbColorValue);
-    } catch (e) {
-      return Colors.grey;
-    }
   }
 }
 
