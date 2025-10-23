@@ -110,7 +110,20 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
           await ref
               .read(sprintNotifierProvider(widget.boardId).notifier)
               .removeCardFromSprint(widget.card.sprintId!, widget.card.id);
+
+          final timeLogs = await ref
+              .read(sprintRepositoryProvider)
+              .getTimeLogsByCard(widget.card.id);
+
+          // 2. Filter for logs from the old sprint and delete them.
+          for (final log in timeLogs) {
+            if (log.sprintId == widget.card.sprintId) {
+              await ref.read(sprintRepositoryProvider).deleteTimeLog(log.id);
+            }
+          }
         }
+
+        ref.invalidate(sprintNotifierProvider(widget.boardId));
         // Add to new sprint
         if (_selectedSprintId != null) {
           await ref
@@ -332,6 +345,11 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
 
     return sprintsAsync.when(
       data: (sprints) {
+        final sprintIds = sprints.map((s) => s.id).toSet();
+        if (_selectedSprintId != null &&
+            !sprintIds.contains(_selectedSprintId)) {
+          _selectedSprintId = null;
+        }
         // Deduplicate sprints by ID to avoid duplicate dropdown values
         final seenIds = <String>{};
         final availableSprints = sprints
