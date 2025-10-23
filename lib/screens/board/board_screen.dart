@@ -7,8 +7,10 @@ import '../../providers/user_provider.dart';
 import '../../providers/sprint_provider.dart';
 import '../../models/board.dart';
 import '../../models/sprint.dart';
+import '../../models/card.dart' as model;
 import '../../components/components.dart';
 import '../../components/board_menu_overlay.dart';
+import '../../components/card_timer_widget.dart';
 
 /// Main kanban board screen showing columns and cards
 class BoardScreen extends ConsumerStatefulWidget {
@@ -290,6 +292,181 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildTimeTrackingPanel() {
+    final boardState = ref.watch(boardNotifierProvider(widget.boardId));
+    final activeSprint = ref.watch(sprintNotifierProvider(widget.boardId));
+
+    return Container(
+      width: 400,
+      decoration: BoxDecoration(
+        color: context.surfaceColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: context.borderColor),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: context.surfaceVariantColor,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.timer, color: context.primaryColor),
+                const SizedBox(width: 8),
+                Text(
+                  'Time Tracking',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: context.textColor,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => BoardMenuOverlay.hide(),
+                  iconSize: 20,
+                ),
+              ],
+            ),
+          ),
+
+          // Sprint info
+          if (activeSprint != null)
+            Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: context.successColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: context.successColor.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.play_circle,
+                    color: context.successColor,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          activeSprint.name,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: context.textColor,
+                          ),
+                        ),
+                        Text(
+                          '${activeSprint.cardIds.length} cards',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.secondaryTextColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // Cards with timers
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: boardState.when(
+                data: (state) {
+                  final allCards = state.columnCards.values
+                      .expand((cards) => cards)
+                      .toList();
+
+                  if (allCards.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.timer_off,
+                              size: 48,
+                              color: context.secondaryTextColor,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No cards on board',
+                              style: TextStyle(
+                                color: context.secondaryTextColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: allCards.map((card) {
+                      return _buildTimeTrackingCard(card);
+                    }).toList(),
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (_, __) => Center(
+                  child: Text(
+                    'Error loading cards',
+                    style: TextStyle(color: context.dangerColor),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimeTrackingCard(model.Card card) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: context.surfaceVariantColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: context.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            card.title,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: context.textColor,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 12),
+          CardTimerWidget(card: card),
+        ],
+      ),
     );
   }
 
@@ -697,6 +874,38 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
           // Members avatars
           _buildMembersAvatars(board.memberIds),
           const SizedBox(width: 16),
+
+          // Time Tracking button
+          IconButton(
+            onPressed: () {
+              final RenderBox button = context.findRenderObject() as RenderBox;
+              final RenderBox overlay =
+                  Overlay.of(context).context.findRenderObject() as RenderBox;
+              final position = button.localToGlobal(
+                Offset.zero,
+                ancestor: overlay,
+              );
+
+              final screenWidth = MediaQuery.of(context).size.width;
+              BoardMenuOverlay.show(
+                context: context,
+                position: Offset(
+                  screenWidth - 400 - 16,
+                  position.dy + button.size.height + 8,
+                ),
+                child: _buildTimeTrackingPanel(),
+              );
+            },
+            icon: const Icon(Icons.timer_outlined),
+            tooltip: 'Time Tracking',
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).drawerTheme.backgroundColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
 
           // Board menu
           IconButton(

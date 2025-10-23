@@ -259,6 +259,90 @@ class _CardTimerWidgetState extends ConsumerState<CardTimerWidget> {
                   ),
                 ),
               ),
+
+              // Clear all time logs button (only show if there are logs)
+              if (widget.card.totalLoggedHours > 0) ...[
+                const SizedBox(width: 6),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () async {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Clear All Time Logs?'),
+                          content: Text(
+                            'This will permanently delete all ${_formatHours(widget.card.totalLoggedHours)} of logged time for this card.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Cancel'),
+                            ),
+                            FilledButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: context.dangerColor,
+                              ),
+                              child: const Text('Clear All'),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirmed == true) {
+                        try {
+                          // Get all time logs for this card
+                          final timeLogs = await ref
+                              .read(sprintRepositoryProvider)
+                              .getTimeLogsByCard(widget.card.id);
+
+                          // Delete each time log
+                          for (final log in timeLogs) {
+                            await ref
+                                .read(sprintRepositoryProvider)
+                                .deleteTimeLog(log.id);
+                          }
+
+                          // Refresh the sprint data if card is in a sprint
+                          if (widget.card.sprintId != null) {
+                            ref.invalidate(
+                              sprintNotifierProvider(widget.card.sprintId!),
+                            );
+                          }
+
+                          if (context.mounted) {
+                            OllieToast.success(
+                              context,
+                              'All time logs cleared',
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            OllieToast.error(
+                              context,
+                              'Failed to clear time logs: $e',
+                            );
+                          }
+                        }
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: context.dangerColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        Icons.delete_outline,
+                        size: 18,
+                        color: context.dangerColor,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         );

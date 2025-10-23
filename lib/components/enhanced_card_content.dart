@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/card.dart' as model;
 import '../models/priority.dart';
 import '../providers/user_provider.dart';
-import 'card_timer_widget.dart';
 import 'ollie_ui/theme_extensions.dart';
 
 /// Enhanced card content widget with better visual design
@@ -28,9 +27,6 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
   @override
   Widget build(BuildContext context) {
     final priorityColor = _getPriorityColor(widget.card.priority);
-    final isOverdue =
-        widget.card.dueDate != null &&
-        widget.card.dueDate!.isBefore(DateTime.now());
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -185,9 +181,6 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
       runSpacing: 8,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        // Time tracking (if in sprint)
-        if (widget.card.sprintId != null) CardTimerWidget(card: widget.card),
-
         // Priority chip (only for medium/high)
         if (widget.card.priority != Priority.low) _buildPriorityChip(),
 

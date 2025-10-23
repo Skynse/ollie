@@ -186,19 +186,15 @@ class _EnhancedManualTimeLogDialogState
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.primaryContainer.withOpacity(0.5),
+                color: context.surfaceVariantColor,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                ),
+                border: Border.all(color: context.borderColor),
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.calendar_today,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: context.primaryColor,
                     size: 20,
                   ),
                   const SizedBox(width: 12),
@@ -210,9 +206,7 @@ class _EnhancedManualTimeLogDialogState
                           'Date',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
+                            color: context.secondaryTextColor,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -222,9 +216,7 @@ class _EnhancedManualTimeLogDialogState
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onPrimaryContainer,
+                            color: context.textColor,
                           ),
                         ),
                       ],
@@ -252,7 +244,7 @@ class _EnhancedManualTimeLogDialogState
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurface,
+                          color: context.textColor,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -265,24 +257,16 @@ class _EnhancedManualTimeLogDialogState
                             vertical: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
+                            color: context.surfaceVariantColor,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.outline.withOpacity(0.3),
-                            ),
+                            border: Border.all(color: context.borderColor),
                           ),
                           child: Row(
                             children: [
                               Icon(
                                 Icons.access_time,
                                 size: 18,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
+                                color: context.secondaryTextColor,
                               ),
                               const SizedBox(width: 8),
                               Text(
@@ -290,9 +274,7 @@ class _EnhancedManualTimeLogDialogState
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface,
+                                  color: context.textColor,
                                 ),
                               ),
                             ],
@@ -312,7 +294,7 @@ class _EnhancedManualTimeLogDialogState
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurface,
+                          color: context.textColor,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -325,24 +307,16 @@ class _EnhancedManualTimeLogDialogState
                             vertical: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
+                            color: context.surfaceVariantColor,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.outline.withOpacity(0.3),
-                            ),
+                            border: Border.all(color: context.borderColor),
                           ),
                           child: Row(
                             children: [
                               Icon(
                                 Icons.access_time,
                                 size: 18,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
+                                color: context.secondaryTextColor,
                               ),
                               const SizedBox(width: 8),
                               Text(
@@ -351,11 +325,8 @@ class _EnhancedManualTimeLogDialogState
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
                                   color: _endTime != null
-                                      ? Theme.of(context).colorScheme.onSurface
-                                      : Theme.of(context)
-                                            .colorScheme
-                                            .onSurfaceVariant
-                                            .withOpacity(0.5),
+                                      ? context.textColor
+                                      : context.secondaryTextColor,
                                 ),
                               ),
                             ],
@@ -375,32 +346,27 @@ class _EnhancedManualTimeLogDialogState
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.onSurface,
+                color: context.textColor,
               ),
             ),
             const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
-                  child: TextField(
+                  child: OllieTextfield.simple(
+                    label: 'Hours',
+                    hint: '0',
                     controller: _hoursController,
                     enabled: !_isLogging,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: InputDecoration(
-                      labelText: 'Hours',
-                      hintText: '0',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
-                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: TextField(
+                  child: OllieTextfield.simple(
+                    label: 'Minutes',
+                    hint: '0',
                     controller: _minutesController,
                     enabled: !_isLogging,
                     keyboardType: TextInputType.number,
@@ -408,15 +374,6 @@ class _EnhancedManualTimeLogDialogState
                       FilteringTextInputFormatter.digitsOnly,
                       LengthLimitingTextInputFormatter(2),
                     ],
-                    decoration: InputDecoration(
-                      labelText: 'Minutes',
-                      hintText: '0',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
-                    ),
                   ),
                 ),
               ],
