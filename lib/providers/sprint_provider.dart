@@ -98,15 +98,15 @@ class SprintNotifier extends StateNotifier<Sprint?> {
 
   /// Start a sprint (change status to active)
   Future<void> startSprint(String sprintId) async {
-    if (state == null) return;
-
     try {
       final current = await _repository.getSprint(sprintId);
       final updated = current.copyWith(status: SprintStatus.active);
-      await _repository.updateSprint(updated);
-      await _loadActiveSprint();
+      final result = await _repository.updateSprint(updated);
+      state = result; // Immediately update state
+      await _loadActiveSprint(); // Also refresh from DB
     } catch (e) {
       // Handle error
+      rethrow;
     }
   }
 
@@ -220,15 +220,23 @@ class SprintNotifier extends StateNotifier<Sprint?> {
     required int durationMinutes,
     String? notes,
     String? sprintId,
+    DateTime? startTime,
+    DateTime? endTime,
   }) async {
     try {
       final now = DateTime.now();
+
+      // Use provided times or calculate defaults
+      final actualStartTime =
+          startTime ?? now.subtract(Duration(minutes: durationMinutes));
+      final actualEndTime = endTime ?? now;
+
       final timeLog = TimeLog(
         id: '',
         cardId: cardId,
         userId: userId,
-        startTime: now.subtract(Duration(minutes: durationMinutes)),
-        endTime: now,
+        startTime: actualStartTime,
+        endTime: actualEndTime,
         durationMinutes: durationMinutes,
         notes: notes,
         isActive: false,

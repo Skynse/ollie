@@ -102,127 +102,147 @@ class _CardTimerWidgetState extends ConsumerState<CardTimerWidget> {
 
             final displayHours = totalHours + (_elapsedSeconds / 3600);
 
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Time display
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isActiveOnThisCard
-                        ? Colors.green.shade50
-                        : Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.timer_outlined,
-                        size: 10,
-                        color: isActiveOnThisCard
-                            ? Colors.green.shade700
-                            : Colors.grey.shade600,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        isActiveOnThisCard
-                            ? _formatDuration(_elapsedSeconds)
-                            : _formatHours(displayHours),
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: isActiveOnThisCard
-                              ? Colors.green.shade700
-                              : Colors.grey.shade700,
-                        ),
-                      ),
-                      if (widget.card.estimatedHours != null) ...[
-                        Text(
-                          ' / ${_formatHours(widget.card.estimatedHours!)}',
-                          style: TextStyle(
-                            fontSize: 9,
-                            color: Colors.grey.shade500,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                color: isActiveOnThisCard
+                    ? Colors.green.shade50
+                    : Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isActiveOnThisCard
+                      ? Colors.green.shade200
+                      : Colors.grey.shade200,
+                  width: 1.5,
                 ),
-                const SizedBox(width: 4),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Time display
+                  Icon(
+                    Icons.timer_outlined,
+                    size: 16,
+                    color: isActiveOnThisCard
+                        ? Colors.green.shade700
+                        : Colors.grey.shade600,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    isActiveOnThisCard
+                        ? _formatDuration(_elapsedSeconds)
+                        : _formatHours(displayHours),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isActiveOnThisCard
+                          ? Colors.green.shade700
+                          : Colors.grey.shade700,
+                    ),
+                  ),
+                  if (widget.card.estimatedHours != null) ...[
+                    Text(
+                      ' / ${_formatHours(widget.card.estimatedHours!)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(width: 8),
 
-                // Timer control button
-                InkWell(
-                  onTap: () async {
-                    if (isActiveOnThisCard && activeTimeLog != null) {
-                      // Stop timer
-                      await ref
-                          .read(
-                            sprintNotifierProvider(
-                              widget.card.sprintId ?? '',
-                            ).notifier,
-                          )
-                          .stopTimer(activeTimeLog.id);
-                    } else if (activeTimeLog != null) {
-                      // There's an active timer on another card
-                      OllieToast.info(
-                        context,
-                        'Please stop the active timer first',
-                      );
-                    } else {
-                      // Start timer
-                      await ref
-                          .read(
-                            sprintNotifierProvider(
-                              widget.card.sprintId ?? '',
-                            ).notifier,
-                          )
-                          .startTimer(
+                  // Divider
+                  Container(width: 1, height: 20, color: Colors.grey.shade300),
+                  const SizedBox(width: 8),
+
+                  // Timer control button
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () async {
+                        if (isActiveOnThisCard && activeTimeLog != null) {
+                          // Stop timer
+                          await ref
+                              .read(
+                                sprintNotifierProvider(
+                                  widget.card.sprintId ?? '',
+                                ).notifier,
+                              )
+                              .stopTimer(activeTimeLog.id);
+                        } else if (activeTimeLog != null) {
+                          // There's an active timer on another card
+                          OllieToast.info(
+                            context,
+                            'Please stop the active timer first',
+                          );
+                        } else {
+                          // Start timer
+                          await ref
+                              .read(
+                                sprintNotifierProvider(
+                                  widget.card.sprintId ?? '',
+                                ).notifier,
+                              )
+                              .startTimer(
+                                cardId: widget.card.id,
+                                userId: currentUser.id,
+                                sprintId: widget.card.sprintId,
+                              );
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(6),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: isActiveOnThisCard
+                              ? Colors.red.shade100
+                              : Colors.blue.shade100,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(
+                          isActiveOnThisCard ? Icons.stop : Icons.play_arrow,
+                          size: 18,
+                          color: isActiveOnThisCard
+                              ? Colors.red.shade700
+                              : Colors.blue.shade700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+
+                  // Manual time entry button
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => ManualTimeLogDialog(
                             cardId: widget.card.id,
                             userId: currentUser.id,
                             sprintId: widget.card.sprintId,
-                          );
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(4),
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    child: Icon(
-                      isActiveOnThisCard ? Icons.stop : Icons.play_arrow,
-                      size: 12,
-                      color: isActiveOnThisCard
-                          ? Colors.red.shade700
-                          : Colors.blue.shade700,
-                    ),
-                  ),
-                ),
-
-                // Manual time entry button
-                InkWell(
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => ManualTimeLogDialog(
-                        cardId: widget.card.id,
-                        userId: currentUser.id,
-                        sprintId: widget.card.sprintId,
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(6),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(
+                          Icons.add,
+                          size: 18,
+                          color: Colors.grey.shade700,
+                        ),
                       ),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(4),
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    child: Icon(
-                      Icons.edit_outlined,
-                      size: 12,
-                      color: Colors.grey.shade600,
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             );
           },
           loading: () => const SizedBox(

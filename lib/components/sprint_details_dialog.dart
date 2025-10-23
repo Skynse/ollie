@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/sprint.dart';
 import '../providers/burndown_provider.dart';
 import 'burndown_chart.dart';
+import 'burndown_editor_dialog.dart';
 
 class SprintDetailsDialog extends ConsumerWidget {
   final Sprint sprint;
@@ -45,6 +46,43 @@ class SprintDetailsDialog extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 24),
+
+                    // Burndown chart header with edit button
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Sprint Burndown Chart',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () async {
+                            final result = await showDialog<bool>(
+                              context: context,
+                              builder: (context) =>
+                                  BurndownEditorDialog(sprint: sprint),
+                            );
+
+                            if (result == true) {
+                              // Refresh burndown data
+                              ref.invalidate(sprintBurndownProvider(sprint.id));
+                              ref.invalidate(
+                                sprintBurndownStatsProvider(sprint.id),
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.edit, size: 16),
+                          label: const Text('Edit Burndown Data'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.blue.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
 
                     // Burndown chart
                     burndownAsync.when(
