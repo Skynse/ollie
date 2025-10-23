@@ -1,0 +1,300 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/board_column.dart';
+import '../providers/board_provider.dart';
+import 'ollie_ui/ollie_context_menu.dart';
+
+/// Enhanced column header with WIP limit indicators and better styling
+class EnhancedColumnHeader extends ConsumerWidget {
+  final BoardColumn column;
+  final String boardId;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const EnhancedColumnHeader({
+    super.key,
+    required this.column,
+    required this.boardId,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cardCount = ref.watch(
+      boardNotifierProvider(boardId).select(
+        (asyncState) => asyncState.value?.columnCards[column.id]?.length ?? 0,
+      ),
+    );
+
+    final wipLimit = column.wipLimit;
+    final isNearLimit =
+        wipLimit != null && cardCount >= (wipLimit * 0.8).floor();
+    final isOverLimit = wipLimit != null && cardCount > wipLimit;
+    final columnColor = _parseColor(column.color);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            columnColor.withOpacity(0.08),
+            columnColor.withOpacity(0.03),
+          ],
+        ),
+        border: Border(
+          bottom: BorderSide(color: columnColor.withOpacity(0.2), width: 2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              // Column color indicator
+              Container(
+                width: 4,
+                height: 24,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [columnColor, columnColor.withOpacity(0.7)],
+                  ),
+                  borderRadius: BorderRadius.circular(2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: columnColor.withOpacity(0.3),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Column name
+              Expanded(
+                child: Text(
+                  column.name,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                    color: Color(0xFF1F2937),
+                  ),
+                ),
+              ),
+
+              // Card count badge
+              _buildCardCountBadge(
+                cardCount,
+                wipLimit,
+                isNearLimit,
+                isOverLimit,
+                columnColor,
+              ),
+
+              const SizedBox(width: 8),
+
+              // Column menu
+              InkWell(
+                onTapDown: (details) {
+                  showOllieMenu(
+                    position: Offset(
+                      details.globalPosition.dx,
+                      details.globalPosition.dy,
+                    ),
+                    items: [
+                      OllieMenuItem(
+                        title: 'Edit Column',
+                        icon: Icons.edit_outlined,
+                        onTap: onEdit,
+                      ),
+                      OllieMenuItem(
+                        title: 'Delete Column',
+                        icon: Icons.delete_outline,
+                        onTap: onDelete,
+                      ),
+                    ],
+                    context: context,
+                  );
+                },
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(
+                    Icons.more_horiz,
+                    size: 20,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // WIP limit indicator
+          if (wipLimit != null) ...[
+            const SizedBox(height: 12),
+            _buildWipLimitIndicator(
+              cardCount,
+              wipLimit,
+              isNearLimit,
+              isOverLimit,
+              columnColor,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCardCountBadge(
+    int cardCount,
+    int? wipLimit,
+    bool isNearLimit,
+    bool isOverLimit,
+    Color columnColor,
+  ) {
+    Color badgeColor;
+    Color textColor;
+
+    if (isOverLimit) {
+      badgeColor = Colors.red.shade50;
+      textColor = Colors.red.shade700;
+    } else if (isNearLimit) {
+      badgeColor = Colors.orange.shade50;
+      textColor = Colors.orange.shade700;
+    } else {
+      badgeColor = columnColor.withOpacity(0.15);
+      textColor = columnColor;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: badgeColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isOverLimit
+              ? Colors.red.shade200
+              : isNearLimit
+              ? Colors.orange.shade200
+              : columnColor.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isOverLimit)
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Icon(Icons.warning_rounded, size: 14, color: textColor),
+            ),
+          Text(
+            wipLimit != null ? '$cardCount/$wipLimit' : '$cardCount',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: textColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWipLimitIndicator(
+    int cardCount,
+    int wipLimit,
+    bool isNearLimit,
+    bool isOverLimit,
+    Color columnColor,
+  ) {
+    final percentage = (cardCount / wipLimit).clamp(0.0, 1.0);
+    Color indicatorColor;
+
+    if (isOverLimit) {
+      indicatorColor = Colors.red.shade600;
+    } else if (isNearLimit) {
+      indicatorColor = Colors.orange.shade600;
+    } else {
+      indicatorColor = columnColor;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'WIP Limit',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            Text(
+              isOverLimit
+                  ? 'Over limit!'
+                  : isNearLimit
+                  ? 'Near limit'
+                  : 'On track',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: indicatorColor,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Stack(
+            children: [
+              Container(
+                height: 6,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              FractionallySizedBox(
+                widthFactor: percentage > 1.0 ? 1.0 : percentage,
+                child: Container(
+                  height: 6,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [indicatorColor, indicatorColor.withOpacity(0.7)],
+                    ),
+                    borderRadius: BorderRadius.circular(4),
+                    boxShadow: [
+                      BoxShadow(
+                        color: indicatorColor.withOpacity(0.3),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Color _parseColor(int argbColorValue) {
+    try {
+      return Color(argbColorValue);
+    } catch (e) {
+      return Colors.grey;
+    }
+  }
+}

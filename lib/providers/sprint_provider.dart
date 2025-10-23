@@ -3,7 +3,26 @@ import 'package:flutter_riverpod/legacy.dart';
 import '../models/sprint.dart';
 import '../models/time_log.dart';
 import '../repositories/sprint_repository.dart';
+import '../repositories/board_repository.dart';
 import '../repositories/appwrite/appwrite_config.dart';
+
+/// Local timer state (only committed to DB when stopped)
+class LocalTimerState {
+  final String cardId;
+  final String userId;
+  final String? sprintId;
+  final DateTime startTime;
+
+  LocalTimerState({
+    required this.cardId,
+    required this.userId,
+    this.sprintId,
+    required this.startTime,
+  });
+}
+
+/// Provider for local timer state (not persisted until stopped)
+final localTimerProvider = StateProvider<LocalTimerState?>((ref) => null);
 
 /// Sprint repository provider
 final sprintRepositoryProvider = Provider<SprintRepository>((ref) {
@@ -48,16 +67,18 @@ final activeTimeLogProvider = FutureProvider.family<TimeLog?, String>((
 
 /// Sprint state notifier for managing sprint operations
 class SprintNotifier extends StateNotifier<Sprint?> {
-  final SprintRepository _repository;
+  final SprintRepository _sprintRepository;
+  final BoardRepository _boardRepository;
   final String _boardId;
 
-  SprintNotifier(this._repository, this._boardId) : super(null) {
+  SprintNotifier(this._sprintRepository, this._boardRepository, this._boardId)
+    : super(null) {
     _loadActiveSprint();
   }
 
   Future<void> _loadActiveSprint() async {
     try {
-      final sprint = await _repository.getActiveSprint(_boardId);
+      final sprint = await _sprintRepository.getActiveSprint(_boardId);
       state = sprint;
     } catch (e) {
       // Keep state as null on error
@@ -88,7 +109,7 @@ class SprintNotifier extends StateNotifier<Sprint?> {
         updatedAt: DateTime.now(),
       );
 
-      final created = await _repository.createSprint(sprint);
+      final created = await _sprintRepository.createSprint(sprint);
       await _loadActiveSprint();
       return created;
     } catch (e) {
@@ -98,24 +119,24 @@ class SprintNotifier extends StateNotifier<Sprint?> {
 
   /// Start a sprint (change status to active)
   Future<void> startSprint(String sprintId) async {
-    if (state == null) return;
-
     try {
-      final current = await _repository.getSprint(sprintId);
+      final current = await _sprintRepository.getSprint(sprintId);
       final updated = current.copyWith(status: SprintStatus.active);
-      await _repository.updateSprint(updated);
-      await _loadActiveSprint();
+      final result = await _sprintRepository.updateSprint(updated);
+      state = result; // Immediately update state
+      await _loadActiveSprint(); // Also refresh from DB
     } catch (e) {
       // Handle error
+      rethrow;
     }
   }
 
   /// Complete a sprint
   Future<void> completeSprint(String sprintId) async {
     try {
-      final current = await _repository.getSprint(sprintId);
+      final current = await _sprintRepository.getSprint(sprintId);
       final updated = current.copyWith(status: SprintStatus.completed);
-      await _repository.updateSprint(updated);
+      await _sprintRepository.updateSprint(updated);
       await _loadActiveSprint();
     } catch (e) {
       // Handle error
@@ -125,10 +146,10 @@ class SprintNotifier extends StateNotifier<Sprint?> {
   /// Add card to sprint
   Future<void> addCardToSprint(String sprintId, String cardId) async {
     try {
-      final sprint = await _repository.getSprint(sprintId);
+      final sprint = await _sprintRepository.getSprint(sprintId);
       final updatedCardIds = [...sprint.cardIds, cardId];
       final updated = sprint.copyWith(cardIds: updatedCardIds);
-      await _repository.updateSprint(updated);
+      await _sprintRepository.updateSprint(updated);
       await _loadActiveSprint();
     } catch (e) {
       // Handle error
@@ -138,12 +159,12 @@ class SprintNotifier extends StateNotifier<Sprint?> {
   /// Remove card from sprint
   Future<void> removeCardFromSprint(String sprintId, String cardId) async {
     try {
-      final sprint = await _repository.getSprint(sprintId);
+      final sprint = await _sprintRepository.getSprint(sprintId);
       final updatedCardIds = sprint.cardIds
           .where((id) => id != cardId)
           .toList();
       final updated = sprint.copyWith(cardIds: updatedCardIds);
-      await _repository.updateSprint(updated);
+      await _sprintRepository.updateSprint(updated);
       await _loadActiveSprint();
     } catch (e) {
       // Handle error
@@ -168,7 +189,7 @@ class SprintNotifier extends StateNotifier<Sprint?> {
   }) async {
     try {
       // Check if user already has an active timer
-      final existing = await _repository.getActiveTimeLog(userId);
+      final existing = await _sprintRepository.getActiveTimeLog(userId);
       if (existing != null) {
         throw Exception('User already has an active timer');
       }
@@ -187,7 +208,7 @@ class SprintNotifier extends StateNotifier<Sprint?> {
         updatedAt: DateTime.now(),
       );
 
-      return await _repository.createTimeLog(timeLog);
+      return await _sprintRepository.createTimeLog(timeLog);
     } catch (e) {
       rethrow;
     }
@@ -196,7 +217,7 @@ class SprintNotifier extends StateNotifier<Sprint?> {
   /// Stop a running timer
   Future<TimeLog?> stopTimer(String timeLogId) async {
     try {
-      final timeLog = await _repository.getTimeLog(timeLogId);
+      final timeLog = await _sprintRepository.getTimeLog(timeLogId);
       final now = DateTime.now();
       final duration = now.difference(timeLog.startTime).inMinutes;
 
@@ -207,7 +228,7 @@ class SprintNotifier extends StateNotifier<Sprint?> {
         updatedAt: now,
       );
 
-      return await _repository.updateTimeLog(updated);
+      return await _sprintRepository.updateTimeLog(updated);
     } catch (e) {
       rethrow;
     }
@@ -220,15 +241,23 @@ class SprintNotifier extends StateNotifier<Sprint?> {
     required int durationMinutes,
     String? notes,
     String? sprintId,
+    DateTime? startTime,
+    DateTime? endTime,
   }) async {
     try {
       final now = DateTime.now();
+
+      // Use provided times or calculate defaults
+      final actualStartTime =
+          startTime ?? now.subtract(Duration(minutes: durationMinutes));
+      final actualEndTime = endTime ?? now;
+
       final timeLog = TimeLog(
         id: '',
         cardId: cardId,
         userId: userId,
-        startTime: now.subtract(Duration(minutes: durationMinutes)),
-        endTime: now,
+        startTime: actualStartTime,
+        endTime: actualEndTime,
         durationMinutes: durationMinutes,
         notes: notes,
         isActive: false,
@@ -237,7 +266,22 @@ class SprintNotifier extends StateNotifier<Sprint?> {
         updatedAt: now,
       );
 
-      return await _repository.createTimeLog(timeLog);
+      final createdLog = await _sprintRepository.createTimeLog(timeLog);
+
+      // Update card's totalLoggedHours
+      try {
+        final card = await _boardRepository.getCard(cardId);
+        final durationHours = durationMinutes / 60.0;
+        final updatedCard = card.copyWith(
+          totalLoggedHours: card.totalLoggedHours + durationHours,
+        );
+        await _boardRepository.updateCard(updatedCard);
+      } catch (e) {
+        // Log error but don't fail the time log creation
+        print('Failed to update card totalLoggedHours: $e');
+      }
+
+      return createdLog;
     } catch (e) {
       rethrow;
     }
@@ -250,6 +294,7 @@ final sprintNotifierProvider =
       ref,
       boardId,
     ) {
-      final repository = ref.read(sprintRepositoryProvider);
-      return SprintNotifier(repository, boardId);
+      final sprintRepository = ref.read(sprintRepositoryProvider);
+      final boardRepository = AppwriteConfig.createBoardRepository();
+      return SprintNotifier(sprintRepository, boardRepository, boardId);
     });

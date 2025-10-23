@@ -6,18 +6,7 @@ import '../../providers/user_provider.dart';
 import '../../providers/sprint_provider.dart';
 import '../../models/board.dart';
 import '../../models/sprint.dart';
-import '../../components/kanban_column.dart';
-import '../../components/ollie_ui/ollie_button.dart';
-import '../../components/add_column_dialog.dart';
-import '../../components/invite_member_dialog.dart';
-import '../../components/create_sprint_dialog.dart';
-import '../../components/edit_board_dialog.dart';
-import '../../components/manage_members_dialog.dart';
-import '../../components/manage_columns_dialog.dart';
-import '../../components/sprint_management_dialog.dart';
-import '../../components/board_analytics_dialog.dart';
-import '../../components/export_board_dialog.dart';
-import '../../components/ollie_ui/ollie_toast.dart';
+import '../../components/components.dart';
 
 /// Main kanban board screen showing columns and cards
 class BoardScreen extends ConsumerStatefulWidget {
@@ -60,162 +49,157 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   Widget _buildBoardDrawer() {
     final boardState = ref.watch(boardNotifierProvider(widget.boardId));
     final board = boardState.value?.board;
+    final activeSprint = ref.watch(sprintNotifierProvider(widget.boardId));
 
     return Drawer(
+      backgroundColor: Colors.grey.shade50,
       child: Column(
         children: [
-          // Drawer Header
+          // Drawer Header - Simplified
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
+            padding: const EdgeInsets.fromLTRB(20, 48, 20, 20),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Colors.blue.shade700, Colors.blue.shade500],
+              color: Colors.white,
+              border: Border(
+                bottom: BorderSide(color: Colors.grey.shade200, width: 1),
               ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Icon(Icons.dashboard, color: Colors.white, size: 28),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        board?.name ?? 'Board Settings',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
+                Text(
+                  board?.name ?? 'Board Settings',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1F2937),
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 Text(
                   'Board Management',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                 ),
               ],
             ),
           ),
 
+          // Active Sprint Status Card
+          if (activeSprint != null)
+            Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: activeSprint.status == SprintStatus.active
+                              ? Colors.green.shade50
+                              : Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: activeSprint.status == SprintStatus.active
+                                ? Colors.green.shade200
+                                : Colors.blue.shade200,
+                          ),
+                        ),
+                        child: Text(
+                          activeSprint.status == SprintStatus.active
+                              ? 'ACTIVE'
+                              : 'PLANNING',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: activeSprint.status == SprintStatus.active
+                                ? Colors.green.shade700
+                                : Colors.blue.shade700,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    activeSprint.name,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1F2937),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today,
+                        size: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${activeSprint.daysRemaining} days remaining',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.assignment,
+                        size: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${activeSprint.cardIds.length} cards',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
           // Drawer Content
           Expanded(
             child: ListView(
-              padding: EdgeInsets.zero,
+              padding: const EdgeInsets.symmetric(vertical: 8),
               children: [
-                const SizedBox(height: 8),
-
-                // Board Settings Section
-                _buildDrawerSection('Board Settings'),
+                // Sprints Section - Moved to top
+                _buildDrawerSection('Sprint'),
                 _buildDrawerTile(
-                  icon: Icons.edit,
-                  title: 'Edit Board Details',
-                  subtitle: 'Name, description, and settings',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showEditBoardDialog();
-                  },
-                ),
-                _buildDrawerTile(
-                  icon: Icons.color_lens,
-                  title: 'Board Theme',
-                  subtitle: 'Customize appearance',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showBoardThemeDialog();
-                  },
-                ),
-                _buildDrawerTile(
-                  icon: Icons.archive,
-                  title: 'Archive Board',
-                  subtitle: 'Move to archived boards',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showArchiveBoardDialog();
-                  },
-                ),
-
-                const Divider(height: 32),
-
-                // Members Section
-                _buildDrawerSection('Members'),
-                _buildDrawerTile(
-                  icon: Icons.people,
-                  title: 'Manage Members',
-                  subtitle: '${board?.memberIds.length ?? 0} members',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showManageMembersDialog();
-                  },
-                ),
-                _buildDrawerTile(
-                  icon: Icons.person_add,
-                  title: 'Invite Members',
-                  subtitle: 'Add people to this board',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showInviteMemberDialog();
-                  },
-                ),
-                _buildDrawerTile(
-                  icon: Icons.admin_panel_settings,
-                  title: 'Roles & Permissions',
-                  subtitle: 'Manage access levels',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showRolesPermissionsDialog();
-                  },
-                ),
-
-                const Divider(height: 32),
-
-                // Columns Section
-                _buildDrawerSection('Columns'),
-                _buildDrawerTile(
-                  icon: Icons.view_column,
-                  title: 'Manage Columns',
-                  subtitle: '${board?.columnIds.length ?? 0} columns',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showManageColumnsDialog();
-                  },
-                ),
-                _buildDrawerTile(
-                  icon: Icons.add_box,
-                  title: 'Add Column',
-                  subtitle: 'Create a new column',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showAddColumnDialog();
-                  },
-                ),
-
-                const Divider(height: 32),
-
-                // Sprints Section
-                _buildDrawerSection('Sprints'),
-                _buildDrawerTile(
-                  icon: Icons.timer,
-                  title: 'Sprint Management',
-                  subtitle: 'View and manage sprints',
+                  icon: Icons.view_list,
+                  title: 'Manage Sprints',
                   onTap: () {
                     Navigator.pop(context);
                     _showSprintManagementDialog();
                   },
                 ),
                 _buildDrawerTile(
-                  icon: Icons.add_circle,
+                  icon: Icons.add,
                   title: 'Create Sprint',
-                  subtitle: 'Start a new sprint',
                   onTap: () async {
                     Navigator.pop(context);
                     await showDialog(
@@ -223,51 +207,77 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                       builder: (context) =>
                           CreateSprintDialog(boardId: widget.boardId),
                     );
-                    // Sprint data is refreshed inside the dialog
                   },
                 ),
 
-                const Divider(height: 32),
+                const SizedBox(height: 16),
 
-                // Export & Reports Section
-                _buildDrawerSection('Export & Reports'),
+                // Board Section
+                _buildDrawerSection('Board'),
+                _buildDrawerTile(
+                  icon: Icons.edit,
+                  title: 'Edit Board',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showEditBoardDialog();
+                  },
+                ),
+                _buildDrawerTile(
+                  icon: Icons.view_column,
+                  title: 'Manage Columns',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showManageColumnsDialog();
+                  },
+                ),
                 _buildDrawerTile(
                   icon: Icons.analytics,
-                  title: 'Board Analytics',
-                  subtitle: 'View performance metrics',
+                  title: 'Analytics',
                   onTap: () {
                     Navigator.pop(context);
                     _showBoardAnalyticsDialog();
                   },
                 ),
+
+                const SizedBox(height: 16),
+
+                // Team Section
+                _buildDrawerSection('Team'),
+                _buildDrawerTile(
+                  icon: Icons.people,
+                  title: 'Members',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showManageMembersDialog();
+                  },
+                ),
+                _buildDrawerTile(
+                  icon: Icons.person_add,
+                  title: 'Invite',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showInviteMemberDialog();
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                // More Section
+                _buildDrawerSection('More'),
                 _buildDrawerTile(
                   icon: Icons.file_download,
-                  title: 'Export Board',
-                  subtitle: 'Download as CSV or JSON',
+                  title: 'Export',
                   onTap: () {
                     Navigator.pop(context);
                     _showExportBoardDialog();
                   },
                 ),
-
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
-
-          // Bottom Actions
-          Container(
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: Colors.grey.shade200)),
-            ),
-            child: Column(
-              children: [
                 _buildDrawerTile(
-                  icon: Icons.help_outline,
-                  title: 'Help & Support',
+                  icon: Icons.archive,
+                  title: 'Archive',
                   onTap: () {
                     Navigator.pop(context);
-                    _showHelpDialog();
+                    _showArchiveBoardDialog();
                   },
                 ),
               ],
@@ -280,14 +290,14 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
 
   Widget _buildDrawerSection(String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Text(
         title.toUpperCase(),
         style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: Colors.grey.shade600,
-          letterSpacing: 0.5,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: Colors.grey.shade500,
+          letterSpacing: 1,
         ),
       ),
     );
@@ -300,20 +310,33 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     required VoidCallback onTap,
     Color? iconColor,
   }) {
-    return ListTile(
-      leading: Icon(icon, color: iconColor ?? Colors.blue.shade700, size: 24),
-      title: Text(
-        title,
-        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(6),
       ),
-      subtitle: subtitle != null
-          ? Text(
-              subtitle,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-            )
-          : null,
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+      child: ListTile(
+        dense: true,
+        leading: Icon(icon, color: iconColor ?? Colors.grey.shade700, size: 20),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF1F2937),
+          ),
+        ),
+        subtitle: subtitle != null
+            ? Text(
+                subtitle,
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              )
+            : null,
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+      ),
     );
   }
 
@@ -477,11 +500,18 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   }
 
   void _showSprintManagementDialog() async {
+    void refreshDialog() {
+      // Force refresh by invalidating providers
+      ref.invalidate(boardSprintsProvider(widget.boardId));
+      ref.invalidate(sprintNotifierProvider(widget.boardId));
+    }
+
     final sprintsAsync = ref.read(boardSprintsProvider(widget.boardId));
-    final activeSprint = ref.read(sprintNotifierProvider(widget.boardId));
 
     sprintsAsync.when(
       data: (sprints) async {
+        final activeSprint = ref.read(sprintNotifierProvider(widget.boardId));
+
         await showDialog(
           context: context,
           builder: (context) => SprintManagementDialog(
@@ -500,23 +530,16 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             onDeleteSprint: (sprintId) async {
               final repository = ref.read(sprintRepositoryProvider);
               await repository.deleteSprint(sprintId);
-              ref.invalidate(boardSprintsProvider(widget.boardId));
             },
+            onRefresh: refreshDialog,
           ),
         );
-        // After dialog closes, refresh sprint data
-        await ref
-            .read(sprintNotifierProvider(widget.boardId).notifier)
-            .refresh();
       },
       loading: () {
         OllieToast.info(context, 'Loading sprints...');
       },
       error: (error, _) {
-        OllieToast.error(
-          context,
-          'Failed to load sprints: ${error.toString()}',
-        );
+        OllieToast.error(context, 'Failed to load sprints: $error');
       },
     );
   }
@@ -695,18 +718,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                 child: userAsync.when(
                   data: (user) => Tooltip(
                     message: user.name,
-                    child: CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Colors.blue.shade100,
-                      child: Text(
-                        user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.blue.shade700,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+                    child: HoverAnimatedAvatar(user: user),
                   ),
                   loading: () => CircleAvatar(
                     radius: 16,

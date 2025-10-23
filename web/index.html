@@ -55,9 +55,12 @@
             };
             const checkVersion = async () => {
                 try {
-                    const res = await fetch("/version.json", {
-                        cache: "no-cache",
-                    });
+                    const res = await fetch(
+                        "/version.json?v=" + new Date().getTime(),
+                        {
+                            cache: "no-cache",
+                        },
+                    );
                     const { version: latestVersion } = await res.json();
                     const currentVersion = localStorage.getItem("app_version");
                     if (!currentVersion) {

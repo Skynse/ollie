@@ -13,7 +13,7 @@ class AppwriteSprintRepository implements SprintRepository {
 
   static const String sprintsCollection = 'sprints';
   static const String timeLogsCollection = 'time_logs';
-  static const String burndownSnapshotsCollection = 'burndown_snapshots';
+  static const String burndownSnapshotsCollection = 'burdown_snapshots';
 
   // Sprint operations
   @override

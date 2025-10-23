@@ -104,9 +104,14 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
   final RealtimeService _realtimeService;
   final String _boardId;
   StreamSubscription<RealtimeEvent>? _realtimeSubscription;
+  final Ref _ref;
 
-  BoardNotifier(this._repository, this._realtimeService, this._boardId)
-    : super(const AsyncValue.loading()) {
+  BoardNotifier(
+    this._repository,
+    this._realtimeService,
+    this._boardId,
+    this._ref,
+  ) : super(const AsyncValue.loading()) {
     _loadBoard();
     _setupRealtimeListener();
   }
@@ -156,7 +161,9 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
           await _handleCardEvent(event, currentState);
           break;
       }
-    } catch (e) {
+    } catch (e, s) {
+      print(e);
+      print(s);
       // Silently handle errors - could add logging here if needed
     }
   }
@@ -179,7 +186,7 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
     BoardState currentState,
   ) async {
     final columns = List<BoardColumn>.from(currentState.columns);
-
+    print('Handling column event');
     switch (event.type) {
       case RealtimeEventType.create:
         if (event.data != null && event.data!['boardId'] == _boardId) {
@@ -210,17 +217,81 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
   }
 
   Future<void> _handleCardEvent(
-    RealtimeEvent event,
-    BoardState currentState,
-  ) async {
-    // For card events, we just need to invalidate the affected column
-    // The columnCardsProvider will handle fetching the updated cards
-    // This is a simple notification that something changed
+     RealtimeEvent event,
+     BoardState currentState,
+   ) async {
+     final newCardsByColumn = Map<String, List<model.Card>>.from(
+       currentState.columnCards.map(
+         (key, value) => MapEntry(key, List<model.Card>.from(value)),
+       ),
+     );
 
-    // We could implement an in-memory card cache here if needed
-    // For now, we let the column provider refetch when cards change
-  }
+     switch (event.type) {
+       case RealtimeEventType.create:
+         if (event.data != null) {
+           final newCard = model.Card.fromJson(event.data!);
+           final cardList = newCardsByColumn[newCard.columnId] ?? [];
 
+           // Avoid duplicates if card was already added optimistically
+           if (!cardList.any((c) => c.id == newCard.id)) {
+             cardList.insert(
+               newCard.position.clamp(0, cardList.length),
+               newCard,
+             );
+             newCardsByColumn[newCard.columnId] = cardList;
+             state = AsyncValue.data(
+               currentState.copyWith(columnCards: newCardsByColumn),
+             );
+           }
+         }
+         break;
+
+       case RealtimeEventType.update:
+         if (event.data != null) {
+           final updatedCard = model.Card.fromJson(event.data!);
+
+           // Remove the card from its old position in any column
+           newCardsByColumn.forEach((_, cards) {
+             cards.removeWhere((c) => c.id == updatedCard.id);
+           });
+
+           // Add/update the card in its new column and position
+           final targetList = newCardsByColumn[updatedCard.columnId] ?? [];
+           targetList.insert(
+             updatedCard.position.clamp(0, targetList.length),
+             updatedCard,
+           );
+           newCardsByColumn[updatedCard.columnId] = targetList;
+
+           state = AsyncValue.data(
+             currentState.copyWith(columnCards: newCardsByColumn),
+           );
+         }
+         break;
+
+       case RealtimeEventType.delete:
+         final cardId = event.documentId;
+         String? columnId;
+
+         // Find and remove the card
+         for (var entry in newCardsByColumn.entries) {
+           final list = entry.value;
+           final initialLength = list.length;
+           list.removeWhere((c) => c.id == cardId);
+           if (list.length < initialLength) {
+             columnId = entry.key;
+             break;
+           }
+         }
+
+         if (columnId != null) {
+           state = AsyncValue.data(
+             currentState.copyWith(columnCards: newCardsByColumn),
+           );
+         }
+         break;
+     }
+   }
   @override
   void dispose() {
     _realtimeSubscription?.cancel();
@@ -273,6 +344,22 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
       );
 
       return null;
+    }
+  }
+
+  Future<void> updateColumn(BoardColumn column) async {
+    if (state is! AsyncData<BoardState>) return;
+
+    try {
+      await _repository.updateColumn(column);
+      // Real-time listener will handle updating the state
+    } catch (e) {
+      final currentState = (state as AsyncData<BoardState>).value;
+      state = AsyncValue.data(
+        currentState.copyWith(
+          errorMessage: 'Failed to update column: ${e.toString()}',
+        ),
+      );
     }
   }
 
@@ -496,6 +583,6 @@ final boardNotifierProvider =
       (ref, boardId) {
         final repository = ref.read(boardRepositoryProvider);
         final realtimeService = ref.read(realtimeServiceProvider);
-        return BoardNotifier(repository, realtimeService, boardId);
+        return BoardNotifier(repository, realtimeService, boardId, ref);
       },
     );

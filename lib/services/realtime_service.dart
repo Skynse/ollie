@@ -89,6 +89,7 @@ class RealtimeService {
         }
       },
       onError: (error) {
+
         controller.addError(error);
       },
     );

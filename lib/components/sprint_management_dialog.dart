@@ -10,6 +10,7 @@ class SprintManagementDialog extends ConsumerWidget {
   final Future<void> Function(String sprintId) onStartSprint;
   final Future<void> Function(String sprintId) onCompleteSprint;
   final Future<void> Function(String sprintId) onDeleteSprint;
+  final VoidCallback onRefresh;
 
   const SprintManagementDialog({
     super.key,
@@ -18,6 +19,7 @@ class SprintManagementDialog extends ConsumerWidget {
     required this.onStartSprint,
     required this.onCompleteSprint,
     required this.onDeleteSprint,
+    required this.onRefresh,
   });
 
   @override
@@ -60,6 +62,11 @@ class SprintManagementDialog extends ConsumerWidget {
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const Spacer(),
+                  IconButton(
+                    onPressed: onRefresh,
+                    icon: const Icon(Icons.refresh),
+                    tooltip: 'Refresh',
+                  ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.close),
@@ -154,6 +161,7 @@ class SprintManagementDialog extends ConsumerWidget {
         await onStartSprint(sprint.id);
         if (context.mounted) {
           OllieToast.success(context, 'Sprint started successfully');
+          onRefresh();
         }
       } catch (e) {
         if (context.mounted) {
@@ -193,6 +201,7 @@ class SprintManagementDialog extends ConsumerWidget {
         await onCompleteSprint(sprint.id);
         if (context.mounted) {
           OllieToast.success(context, 'Sprint completed successfully');
+          onRefresh();
         }
       } catch (e) {
         if (context.mounted) {
@@ -233,6 +242,7 @@ class SprintManagementDialog extends ConsumerWidget {
         await onDeleteSprint(sprint.id);
         if (context.mounted) {
           OllieToast.success(context, 'Sprint deleted successfully');
+          onRefresh();
         }
       } catch (e) {
         if (context.mounted) {

@@ -15,6 +15,8 @@ class Card {
   final DateTime updatedAt;
   final String createdBy;
   final double? estimatedHours;
+  final double
+  totalLoggedHours; // Total hours logged (denormalized for performance)
   final String? sprintId;
 
   Card({
@@ -32,6 +34,7 @@ class Card {
     required this.updatedAt,
     required this.createdBy,
     this.estimatedHours,
+    this.totalLoggedHours = 0.0,
     this.sprintId,
   });
 
@@ -48,6 +51,7 @@ class Card {
       'commentCount': commentCount,
       'createdBy': createdBy,
       'estimatedHours': estimatedHours,
+      'totalLoggedHours': totalLoggedHours,
       'sprintId': sprintId,
     };
   }
@@ -84,6 +88,7 @@ class Card {
           : DateTime.now(),
       createdBy: json['createdBy'] as String,
       estimatedHours: (json['estimatedHours'] as num?)?.toDouble(),
+      totalLoggedHours: (json['totalLoggedHours'] as num?)?.toDouble() ?? 0.0,
       sprintId: json['sprintId'] as String?,
     );
   }
@@ -123,6 +128,7 @@ class Card {
     DateTime? updatedAt,
     String? createdBy,
     double? estimatedHours,
+    double? totalLoggedHours,
     String? sprintId,
   }) {
     return Card(
@@ -140,6 +146,7 @@ class Card {
       updatedAt: updatedAt ?? this.updatedAt,
       createdBy: createdBy ?? this.createdBy,
       estimatedHours: estimatedHours ?? this.estimatedHours,
+      totalLoggedHours: totalLoggedHours ?? this.totalLoggedHours,
       sprintId: sprintId ?? this.sprintId,
     );
   }

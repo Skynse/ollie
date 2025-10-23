@@ -149,10 +149,15 @@ class AppwriteBoardRepository implements BoardRepository {
 
   @override
   Future<void> deleteColumn(String columnId) async {
+
+
+
+    // await tablesDB.updateTransaction(transactionId: tx.$id, commit:true);
     await databases.deleteDocument(
       databaseId: databaseId,
       collectionId: columnsCollection,
       documentId: columnId,
+
     );
   }
 
