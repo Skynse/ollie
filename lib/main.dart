@@ -24,17 +24,28 @@ class OllieApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
-    final themeMode = ref.watch(themeModeProvider);
+    final themeModeAsync = ref.watch(themeModeProvider);
 
-    return MaterialApp.router(
-      title: 'Ollie - Kanban Board',
-      debugShowCheckedModeBanner: false,
-      theme: OllieTheme.lightTheme,
-
-      darkTheme: OllieTheme.darkTheme,
-      themeMode: themeMode,
-
-      routerConfig: router,
+    return themeModeAsync.when(
+      data: (themeMode) => MaterialApp.router(
+        title: 'Ollie - Kanban Board',
+        debugShowCheckedModeBanner: false,
+        theme: OllieTheme.lightTheme,
+        darkTheme: OllieTheme.darkTheme,
+        themeMode: themeMode,
+        routerConfig: router,
+      ),
+      loading: () => MaterialApp(
+        home: Scaffold(body: Center(child: CircularProgressIndicator())),
+      ),
+      error: (_, __) => MaterialApp.router(
+        title: 'Ollie - Kanban Board',
+        debugShowCheckedModeBanner: false,
+        theme: OllieTheme.lightTheme,
+        darkTheme: OllieTheme.darkTheme,
+        themeMode: ThemeMode.system, // Fallback to system
+        routerConfig: router,
+      ),
     );
   }
 }

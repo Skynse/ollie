@@ -34,31 +34,41 @@ class OllieThemeConstants {
 
   // ========== DARK THEME COLORS ==========
 
-  static const Color darkPrimary = Color(0xFF26AB7B); // Pink
-  static const Color darkSecondary = Color(0xFF5F5F5F); // Davys Gray 2
+  static const Color darkPrimary = Color(0xFF42A5F5); // Light Blue (accent)
+  static const Color darkSecondary = Color(
+    0xFF8B9198,
+  ); // Light Gray (for secondary elements)
   static const Color darkDanger = Color(0xFFEF5350); // Lighter red
   static const Color darkSuccess = Color(0xFF66BB6A); // Lighter green
 
   // divider
-  static const Color darkDivider = Color(0xFF4D5150); // Davys Gray
-  // Backgrounds
-  static const Color darkBackground = Color(0xFF142423); // Gunmetal
-  static const Color darkSurface = Color(0xFF273332); // Gunmetal 2
-  static const Color darkSurfaceVariant = Color(0xFF3A4241); // Outer Space
+  static const Color darkDivider = Color(0xFF1F2329); // Darker divider
+  // Backgrounds - Zed-inspired dark bluish-black
+  static const Color darkBackground = Color(
+    0xFF0A0E14,
+  ); // Very dark blue-black (main bg)
+  static const Color darkSurface = Color(
+    0xFF0F131A,
+  ); // Slightly lighter blue-black (cards/surfaces)
+  static const Color darkSurfaceVariant = Color(
+    0xFF1A1F29,
+  ); // Elevated surfaces
 
   // Text colors
-  static const Color darkTextPrimary = Color(0xFFE0E0E0);
-  static const Color darkTextSecondary = Color(0xFF9F9F9F); // Davys Gray 2
-  static const Color darkTextDisabled = Color(0xFF4D5150); // Davys Gray
+  static const Color darkTextPrimary = Color(0xFFE6E6E8); // Off-white text
+  static const Color darkTextSecondary = Color(0xFF8B9198); // Gray text
+  static const Color darkTextDisabled = Color(0xFF4D5563); // Dimmed text
 
   // Border colors
-  static const Color darkBorder = Color(0xFF3A4241); // Outer Space
+  static const Color darkBorder = Color(0xFF1F2329); // Subtle dark borders
   static const Color darkBorderFocus = darkPrimary;
 
   // State colors
-  static const Color darkHover = Color(0xFF1F2B2A);
-  static const Color darkPressed = Color(0xFF2D3B3A);
-  static const Color darkDisabled = Color(0xFF3A4241); // Outer Space
+  static const Color darkHover = Color(0xFF141923); // Slightly lighter on hover
+  static const Color darkPressed = Color(
+    0xFF1A1F29,
+  ); // Slightly more elevation when pressed
+  static const Color darkDisabled = Color(0xFF1F2329); // Disabled state
 
   // ========== SHARED CONSTANTS ==========
 

@@ -4,31 +4,32 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Theme mode state notifier
 /// Manages the current theme mode and persists it to local storage
-class ThemeModeNotifier extends Notifier<ThemeMode> {
+class ThemeModeNotifier extends AsyncNotifier<ThemeMode> {
   static const String _themeModeKey = 'theme_mode';
 
   @override
-  ThemeMode build() {
-    _loadThemeMode();
-    return ThemeMode.system;
+  Future<ThemeMode> build() async {
+    // Load saved theme mode from storage
+    return await _loadThemeMode();
   }
 
   /// Load theme mode from shared preferences
-  Future<void> _loadThemeMode() async {
+  Future<ThemeMode> _loadThemeMode() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final themeModeString = prefs.getString(_themeModeKey);
 
       if (themeModeString != null) {
-        state = ThemeMode.values.firstWhere(
+        return ThemeMode.values.firstWhere(
           (mode) => mode.toString() == themeModeString,
           orElse: () => ThemeMode.system,
         );
       }
     } catch (e) {
-      // If loading fails, keep system default
+      // If loading fails, use system default
       debugPrint('Failed to load theme mode: $e');
     }
+    return ThemeMode.system;
   }
 
   /// Save theme mode to shared preferences
@@ -42,43 +43,45 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
   }
 
   /// Set theme to light mode
-  void setLightMode() {
-    state = ThemeMode.light;
-    _saveThemeMode(ThemeMode.light);
+  Future<void> setLightMode() async {
+    state = const AsyncValue.data(ThemeMode.light);
+    await _saveThemeMode(ThemeMode.light);
   }
 
   /// Set theme to dark mode
-  void setDarkMode() {
-    state = ThemeMode.dark;
-    _saveThemeMode(ThemeMode.dark);
+  Future<void> setDarkMode() async {
+    state = const AsyncValue.data(ThemeMode.dark);
+    await _saveThemeMode(ThemeMode.dark);
   }
 
   /// Set theme to system mode
-  void setSystemMode() {
-    state = ThemeMode.system;
-    _saveThemeMode(ThemeMode.system);
+  Future<void> setSystemMode() async {
+    state = const AsyncValue.data(ThemeMode.system);
+    await _saveThemeMode(ThemeMode.system);
   }
 
   /// Toggle between light and dark mode
-  void toggleTheme(BuildContext context) {
+  Future<void> toggleTheme(BuildContext context) async {
+    final currentMode = state.value ?? ThemeMode.system;
     final brightness = MediaQuery.of(context).platformBrightness;
-    final currentBrightness = state == ThemeMode.system
+    final currentBrightness = currentMode == ThemeMode.system
         ? brightness
-        : (state == ThemeMode.light ? Brightness.light : Brightness.dark);
+        : (currentMode == ThemeMode.light ? Brightness.light : Brightness.dark);
 
     if (currentBrightness == Brightness.light) {
-      setDarkMode();
+      await setDarkMode();
     } else {
-      setLightMode();
+      await setLightMode();
     }
   }
 
   /// Get the effective brightness based on current theme mode
   Brightness getEffectiveBrightness(BuildContext context) {
-    if (state == ThemeMode.system) {
+    final currentMode = state.value ?? ThemeMode.system;
+    if (currentMode == ThemeMode.system) {
       return MediaQuery.of(context).platformBrightness;
     }
-    return state == ThemeMode.light ? Brightness.light : Brightness.dark;
+    return currentMode == ThemeMode.light ? Brightness.light : Brightness.dark;
   }
 
   /// Check if dark mode is currently active
@@ -88,6 +91,8 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
 }
 
 /// Provider for theme mode
-final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(() {
-  return ThemeModeNotifier();
-});
+final themeModeProvider = AsyncNotifierProvider<ThemeModeNotifier, ThemeMode>(
+  () {
+    return ThemeModeNotifier();
+  },
+);

@@ -20,7 +20,6 @@ class ThemeToggle extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeModeProvider);
     final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
 
@@ -73,7 +72,13 @@ class ThemeModeSelector extends ConsumerWidget {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: options.map((option) {
-          return _buildOption(context, option, themeMode, brightness, notifier);
+          return _buildOption(
+            context,
+            option,
+            themeMode.value ?? ThemeMode.system,
+            brightness,
+            notifier,
+          );
         }).toList(),
       );
     }
@@ -81,7 +86,13 @@ class ThemeModeSelector extends ConsumerWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: options.map((option) {
-        return _buildOption(context, option, themeMode, brightness, notifier);
+        return _buildOption(
+          context,
+          option,
+          themeMode.value ?? ThemeMode.system,
+          brightness,
+          notifier,
+        );
       }).toList(),
     );
   }
