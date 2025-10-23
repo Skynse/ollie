@@ -6,6 +6,7 @@ import '../providers/sprint_provider.dart';
 import '../providers/user_provider.dart';
 import 'manual_time_log_dialog.dart';
 import 'ollie_ui/ollie_toast.dart';
+import 'enhanced_manual_time_log_dialog.dart';
 
 /// Widget for displaying and controlling time tracking on a card
 class CardTimerWidget extends ConsumerStatefulWidget {
@@ -67,191 +68,194 @@ class _CardTimerWidgetState extends ConsumerState<CardTimerWidget> {
   @override
   Widget build(BuildContext context) {
     final currentUserAsync = ref.watch(currentUserProvider);
-    final cardTimeLogsAsync = ref.watch(cardTimeLogsProvider(widget.card.id));
+    final localTimer = ref.watch(localTimerProvider);
 
     return currentUserAsync.when(
       data: (currentUser) {
         if (currentUser == null) return const SizedBox.shrink();
 
-        final activeTimeLogAsync = ref.watch(
-          activeTimeLogProvider(currentUser.id),
-        );
+        // Check if local timer is running on this card
+        final isActiveOnThisCard =
+            localTimer?.cardId == widget.card.id &&
+            localTimer?.userId == currentUser.id;
 
-        return activeTimeLogAsync.when(
-          data: (activeTimeLog) {
-            final isActiveOnThisCard = activeTimeLog?.cardId == widget.card.id;
+        // Start local timer if this card has active time log
+        if (isActiveOnThisCard && _timer == null && localTimer != null) {
+          final elapsed = DateTime.now()
+              .difference(localTimer.startTime)
+              .inSeconds;
+          _elapsedSeconds = elapsed;
+          _startTimer();
+        } else if (!isActiveOnThisCard && _timer != null) {
+          _stopTimer();
+        }
 
-            // Calculate total logged hours
-            final totalHours = cardTimeLogsAsync.when(
-              data: (logs) =>
-                  logs.fold<double>(0.0, (sum, log) => sum + log.durationHours),
-              loading: () => 0.0,
-              error: (_, __) => 0.0,
-            );
-
-            // Start local timer if this card has active time log
-            if (isActiveOnThisCard && _timer == null && activeTimeLog != null) {
-              final elapsed = DateTime.now()
-                  .difference(activeTimeLog.startTime)
-                  .inSeconds;
-              _elapsedSeconds = elapsed;
-              _startTimer();
-            } else if (!isActiveOnThisCard && _timer != null) {
-              _stopTimer();
-            }
-
-            final displayHours = totalHours + (_elapsedSeconds / 3600);
-
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              decoration: BoxDecoration(
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: isActiveOnThisCard
+                ? Colors.green.shade50
+                : Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isActiveOnThisCard
+                  ? Colors.green.shade200
+                  : Colors.grey.shade200,
+              width: 1.5,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Time display
+              Icon(
+                Icons.timer_outlined,
+                size: 16,
                 color: isActiveOnThisCard
-                    ? Colors.green.shade50
-                    : Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: isActiveOnThisCard
-                      ? Colors.green.shade200
-                      : Colors.grey.shade200,
-                  width: 1.5,
-                ),
+                    ? Colors.green.shade700
+                    : Colors.grey.shade600,
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Time display
-                  Icon(
-                    Icons.timer_outlined,
-                    size: 16,
-                    color: isActiveOnThisCard
-                        ? Colors.green.shade700
-                        : Colors.grey.shade600,
+              const SizedBox(width: 6),
+              if (isActiveOnThisCard)
+                Text(
+                  _formatDuration(_elapsedSeconds),
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.green.shade700,
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    isActiveOnThisCard
-                        ? _formatDuration(_elapsedSeconds)
-                        : _formatHours(displayHours),
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: isActiveOnThisCard
-                          ? Colors.green.shade700
-                          : Colors.grey.shade700,
-                    ),
-                  ),
-                  if (widget.card.estimatedHours != null) ...[
+                )
+              else
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     Text(
-                      ' / ${_formatHours(widget.card.estimatedHours!)}',
+                      _formatHours(widget.card.totalLoggedHours),
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.grey.shade700,
                       ),
                     ),
+                    if (widget.card.estimatedHours != null)
+                      Text(
+                        ' / ${_formatHours(widget.card.estimatedHours!)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
                   ],
-                  const SizedBox(width: 8),
+                ),
+              const SizedBox(width: 8),
 
-                  // Divider
-                  Container(width: 1, height: 20, color: Colors.grey.shade300),
-                  const SizedBox(width: 8),
+              // Divider
+              Container(width: 1, height: 20, color: Colors.grey.shade300),
+              const SizedBox(width: 8),
 
-                  // Timer control button
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () async {
-                        if (isActiveOnThisCard && activeTimeLog != null) {
-                          // Stop timer
-                          await ref
-                              .read(
-                                sprintNotifierProvider(
-                                  widget.card.sprintId ?? '',
-                                ).notifier,
-                              )
-                              .stopTimer(activeTimeLog.id);
-                        } else if (activeTimeLog != null) {
-                          // There's an active timer on another card
-                          OllieToast.info(
-                            context,
-                            'Please stop the active timer first',
-                          );
-                        } else {
-                          // Start timer
-                          await ref
-                              .read(
-                                sprintNotifierProvider(
-                                  widget.card.sprintId ?? '',
-                                ).notifier,
-                              )
-                              .startTimer(
-                                cardId: widget.card.id,
-                                userId: currentUser.id,
-                                sprintId: widget.card.sprintId,
-                              );
-                        }
-                      },
-                      borderRadius: BorderRadius.circular(6),
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: isActiveOnThisCard
-                              ? Colors.red.shade100
-                              : Colors.blue.shade100,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Icon(
-                          isActiveOnThisCard ? Icons.stop : Icons.play_arrow,
-                          size: 18,
-                          color: isActiveOnThisCard
-                              ? Colors.red.shade700
-                              : Colors.blue.shade700,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
+              // Timer control button
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () async {
+                    if (isActiveOnThisCard && localTimer != null) {
+                      // Stop timer - commit to database
+                      final duration = DateTime.now()
+                          .difference(localTimer.startTime)
+                          .inMinutes;
 
-                  // Manual time entry button
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => ManualTimeLogDialog(
+                      // Log the time to database
+                      await ref
+                          .read(
+                            sprintNotifierProvider(
+                              widget.card.sprintId ?? '',
+                            ).notifier,
+                          )
+                          .logManualTime(
                             cardId: widget.card.id,
                             userId: currentUser.id,
+                            durationMinutes: duration,
                             sprintId: widget.card.sprintId,
-                          ),
-                        );
-                      },
+                            startTime: localTimer.startTime,
+                            endTime: DateTime.now(),
+                          );
+
+                      // Clear local timer
+                      ref.read(localTimerProvider.notifier).state = null;
+
+                      // Invalidate card data to refresh totalLoggedHours
+                      // (You'll need to add this provider invalidation based on your setup)
+                    } else if (localTimer != null) {
+                      // There's an active timer on another card
+                      OllieToast.info(
+                        context,
+                        'Please stop the active timer first',
+                      );
+                    } else {
+                      // Start timer - only local state, no DB write
+                      ref
+                          .read(localTimerProvider.notifier)
+                          .state = LocalTimerState(
+                        cardId: widget.card.id,
+                        userId: currentUser.id,
+                        sprintId: widget.card.sprintId,
+                        startTime: DateTime.now(),
+                      );
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: isActiveOnThisCard
+                          ? Colors.red.shade100
+                          : Colors.blue.shade100,
                       borderRadius: BorderRadius.circular(6),
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Icon(
-                          Icons.add,
-                          size: 18,
-                          color: Colors.grey.shade700,
-                        ),
-                      ),
+                    ),
+                    child: Icon(
+                      isActiveOnThisCard ? Icons.stop : Icons.play_arrow,
+                      size: 18,
+                      color: isActiveOnThisCard
+                          ? Colors.red.shade700
+                          : Colors.blue.shade700,
                     ),
                   ),
-                ],
+                ),
               ),
-            );
-          },
-          loading: () => const SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2),
+              const SizedBox(width: 6),
+
+              // Manual time entry button
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => EnhancedManualTimeLogDialog(
+                        cardId: widget.card.id,
+                        userId: currentUser.id,
+                        sprintId: widget.card.sprintId,
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Icon(
+                      Icons.add,
+                      size: 18,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          error: (_, __) =>
-              const Icon(Icons.error, size: 12, color: Colors.red),
         );
       },
       loading: () => const SizedBox.shrink(),
