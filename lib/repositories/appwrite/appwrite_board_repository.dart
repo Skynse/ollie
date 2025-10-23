@@ -1,5 +1,6 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
+import 'package:ollie/algos/lexorank.dart';
 import 'package:ollie/repositories/appwrite/appwrite_config.dart';
 import '../../models/board.dart';
 import '../../models/board_column.dart';
@@ -149,15 +150,11 @@ class AppwriteBoardRepository implements BoardRepository {
 
   @override
   Future<void> deleteColumn(String columnId) async {
-
-
-
     // await tablesDB.updateTransaction(transactionId: tx.$id, commit:true);
     await databases.deleteDocument(
       databaseId: databaseId,
       collectionId: columnsCollection,
       documentId: columnId,
-
     );
   }
 
@@ -190,41 +187,20 @@ class AppwriteBoardRepository implements BoardRepository {
     final docs = await databases.listDocuments(
       databaseId: databaseId,
       collectionId: cardsCollection,
-      queries: [Query.equal('columnId', columnId), Query.orderAsc('position')],
+      queries: [Query.equal('columnId', columnId), Query.orderAsc('rank')],
     );
     return docs.documents.map((doc) => Card.fromJson(doc.data)).toList();
   }
 
   @override
   Future<Card> createCard(Card card) async {
-    // --- START OF MODIFICATION ---
-    // Get all cards in the target column to shift their positions
-    final existingCards = await getCardsByColumn(card.columnId);
-
-    // Create a list of futures for batch updating
-    final List<Future> updateFutures = [];
-
-    // Shift all existing cards down by one position
-    for (final existingCard in existingCards) {
-      updateFutures.add(
-        databases.updateDocument(
-          databaseId: databaseId,
-          collectionId: cardsCollection,
-          documentId: existingCard.id,
-          data: {'position': existingCard.position + 1},
-        ),
-      );
-    }
-
-    // Wait for all shifts to complete
-    await Future.wait(updateFutures);
-
-    // Now, create the new card at position 0
+    // Since we're using LexoRank for ordering, we don't need to shift positions
+    // The rank field will handle the ordering
     final doc = await databases.createDocument(
       databaseId: databaseId,
       collectionId: cardsCollection,
       documentId: ID.unique(),
-      data: card.toJson(), // The card already has position: 0 from the notifier
+      data: card.toJson(),
     );
 
     return Card.fromJson(doc.data);
@@ -250,106 +226,21 @@ class AppwriteBoardRepository implements BoardRepository {
     );
   }
 
-  @override
   Future<void> moveCard({
     required String cardId,
     required String sourceColumnId,
     required String targetColumnId,
-    required int targetPosition,
+    required String newRank,
   }) async {
-    Transaction? tx; // Use a nullable transaction object for safe rollback
     try {
-      // Step 1: Get the current state of cards from both columns.
-      final sourceColumnCards = await getCardsByColumn(sourceColumnId);
-      final List<Card> targetColumnCards;
-
-      // If reordering in the same column, we work on the same list instance.
-      if (sourceColumnId == targetColumnId) {
-        targetColumnCards = sourceColumnCards;
-      } else {
-        targetColumnCards = await getCardsByColumn(targetColumnId);
-      }
-
-      // Step 2: Perform the move in-memory to determine the final state.
-      final cardToMove = sourceColumnCards.firstWhere((c) => c.id == cardId);
-      sourceColumnCards.removeWhere((c) => c.id == cardId);
-
-      final adjustedTargetPosition = targetPosition.clamp(
-        0,
-        targetColumnCards.length,
+      await databases.updateDocument(
+        databaseId: databaseId,
+        collectionId: cardsCollection,
+        documentId: cardId,
+        data: {'columnId': targetColumnId, 'rank': newRank},
       );
-      targetColumnCards.insert(adjustedTargetPosition, cardToMove);
-
-      // Step 3: Build the list of database operations based on the changes.
-      final List<Map<String, dynamic>> operations = [];
-
-      // Operations for the source column (if different from target)
-      if (sourceColumnId != targetColumnId) {
-        for (int i = 0; i < sourceColumnCards.length; i++) {
-          final card = sourceColumnCards[i];
-          if (card.position != i) {
-            operations.add({
-              'action': 'update',
-              'databaseId': databaseId,
-              'collectionId': cardsCollection,
-              'documentId': card.id,
-              'data': {'position': i},
-            });
-          }
-        }
-      }
-
-      // Operations for the target column
-      for (int i = 0; i < targetColumnCards.length; i++) {
-        final card = targetColumnCards[i];
-        final newPosition = i;
-
-        Map<String, dynamic> updateData = {};
-
-        // Check if position needs to be updated
-        if (card.position != newPosition) {
-          updateData['position'] = newPosition;
-        }
-
-        // If this is the moved card, check if its columnId needs updating
-        if (card.id == cardId && card.columnId != targetColumnId) {
-          updateData['columnId'] = targetColumnId;
-        }
-
-        // If there's anything to update for this card, add it to operations
-        if (updateData.isNotEmpty) {
-          operations.add({
-            'action': 'update',
-            'databaseId': databaseId,
-            'collectionId': cardsCollection,
-            'documentId': card.id,
-            'data': updateData,
-          });
-        }
-      }
-
-      // Step 4: Execute the operations within a transaction if there are any.
-      if (operations.isNotEmpty) {
-        tx = await databases.createTransaction();
-
-        // Stage all operations in a single request
-        await databases.createOperations(
-          transactionId: tx.$id,
-          operations: operations,
-        );
-
-        // Commit the transaction
-        await databases.updateTransaction(transactionId: tx.$id, commit: true);
-      }
     } catch (e) {
-      // If anything fails, roll back the transaction if it was created
-      if (tx != null) {
-        await databases.updateTransaction(
-          transactionId: tx.$id,
-          rollback: true,
-        );
-      }
-      print('Error moving card, transaction rolled back: $e');
+      print('Failed to move card: $e');
       rethrow;
     }
   }
