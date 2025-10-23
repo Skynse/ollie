@@ -6,6 +6,7 @@ import '../models/board.dart';
 import '../models/board_column.dart';
 import '../providers/boards_provider.dart';
 import 'ollie_ui/ollie_toast.dart';
+import 'ollie_ui/theme_extensions.dart';
 
 enum ExportFormat { json, csv }
 
@@ -172,16 +173,29 @@ class _ExportBoardDialogState extends ConsumerState<ExportBoardDialog> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.indigo.shade50,
-                border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                color: Theme.of(context).colorScheme.primaryContainer,
+                border: Border(
+                  bottom: BorderSide(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withOpacity(0.3),
+                  ),
+                ),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.file_download, color: Colors.indigo.shade700),
+                  Icon(
+                    Icons.file_download,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
                   const SizedBox(width: 12),
-                  const Text(
+                  Text(
                     'Export Board',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
                   ),
                   const Spacer(),
                   IconButton(
@@ -310,9 +324,15 @@ class _ExportBoardDialogState extends ConsumerState<ExportBoardDialog> {
                         margin: const EdgeInsets.all(20),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade300),
+                          border: Border.all(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.outline.withOpacity(0.3),
+                          ),
                         ),
                         child: SingleChildScrollView(
                           child: SelectableText(

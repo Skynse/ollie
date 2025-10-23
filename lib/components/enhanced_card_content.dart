@@ -4,6 +4,7 @@ import '../models/card.dart' as model;
 import '../models/priority.dart';
 import '../providers/user_provider.dart';
 import 'card_timer_widget.dart';
+import 'ollie_ui/theme_extensions.dart';
 
 /// Enhanced card content widget with better visual design
 class EnhancedCardContent extends ConsumerStatefulWidget {
@@ -38,22 +39,23 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
         duration: const Duration(milliseconds: 200),
         margin: EdgeInsets.zero,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.surfaceColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: _isHovered
                 ? priorityColor.withOpacity(0.4)
-                : Colors.grey.shade200,
+                : context.borderColor,
             width: _isHovered ? 2 : 1,
           ),
           boxShadow: [
-            BoxShadow(
-              color: _isHovered
-                  ? priorityColor.withOpacity(0.12)
-                  : Colors.black.withOpacity(0.04),
-              blurRadius: _isHovered ? 12 : 6,
-              offset: Offset(0, _isHovered ? 4 : 2),
-            ),
+            if (_isHovered)
+              BoxShadow(
+                color: priorityColor.withOpacity(0.12),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              )
+            else
+              ...context.shadowSmall,
           ],
         ),
         child: InkWell(
@@ -104,7 +106,7 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFF1F2937),
+                              color: context.textColor,
                               height: 1.3,
                             ),
                             maxLines: 3,
@@ -131,7 +133,7 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
                         widget.card.description!,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: context.secondaryTextColor,
                           height: 1.4,
                         ),
                         maxLines: 2,
@@ -154,22 +156,16 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
                   right: 8,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.surfaceColor,
                       borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                      boxShadow: context.shadowMedium,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         _QuickActionButton(
                           icon: Icons.edit,
-                          color: Colors.blue.shade600,
+                          color: context.primaryColor,
                           onTap: widget.onTap,
                         ),
                       ],
@@ -256,8 +252,8 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
       textColor = Colors.orange.shade700;
       iconData = Icons.schedule;
     } else {
-      chipColor = Colors.grey.shade100;
-      textColor = Colors.grey.shade700;
+      chipColor = context.surfaceVariantColor;
+      textColor = context.secondaryTextColor;
       iconData = Icons.calendar_today;
     }
 
@@ -297,7 +293,7 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: context.surfaceVariantColor,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
@@ -306,14 +302,14 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
           Icon(
             Icons.chat_bubble_outline,
             size: 12,
-            color: Colors.grey.shade600,
+            color: context.secondaryTextColor,
           ),
           const SizedBox(width: 4),
           Text(
             '${widget.card.commentCount}',
             style: TextStyle(
               fontSize: 11,
-              color: Colors.grey.shade700,
+              color: context.secondaryTextColor,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -342,16 +338,16 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
                 child: Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
+                    border: Border.all(color: context.surfaceColor, width: 2),
                   ),
                   child: CircleAvatar(
                     radius: 12,
-                    backgroundColor: Colors.blue.shade100,
+                    backgroundColor: context.primaryColor.withOpacity(0.2),
                     child: Text(
                       user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
                       style: TextStyle(
                         fontSize: 9,
-                        color: Colors.blue.shade700,
+                        color: context.primaryColor,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -361,22 +357,26 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
               loading: () => Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
+                  border: Border.all(color: context.surfaceColor, width: 2),
                 ),
                 child: CircleAvatar(
                   radius: 12,
-                  backgroundColor: Colors.grey.shade200,
+                  backgroundColor: context.borderColor,
                 ),
               ),
               error: (_, __) => Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
+                  border: Border.all(color: context.surfaceColor, width: 2),
                 ),
                 child: CircleAvatar(
                   radius: 12,
-                  backgroundColor: Colors.red.shade100,
-                  child: Icon(Icons.error, size: 12, color: Colors.red),
+                  backgroundColor: context.dangerColor.withOpacity(0.2),
+                  child: Icon(
+                    Icons.error,
+                    size: 12,
+                    color: context.dangerColor,
+                  ),
                 ),
               ),
             ),
@@ -388,16 +388,16 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
             child: Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
+                border: Border.all(color: context.surfaceColor, width: 2),
               ),
               child: CircleAvatar(
                 radius: 12,
-                backgroundColor: Colors.grey.shade300,
+                backgroundColor: context.surfaceVariantColor,
                 child: Text(
                   '+$remaining',
                   style: TextStyle(
                     fontSize: 8,
-                    color: Colors.grey.shade700,
+                    color: context.secondaryTextColor,
                     fontWeight: FontWeight.w700,
                   ),
                 ),

@@ -7,6 +7,7 @@ import '../providers/user_provider.dart';
 import 'ollie_ui/ollie_dialog.dart';
 import 'ollie_ui/ollie_button.dart';
 import 'ollie_ui/ollie_toast.dart';
+import 'ollie_ui/theme_extensions.dart';
 
 /// Dialog for viewing and managing time logs for a card
 class TimeLogViewerDialog extends ConsumerStatefulWidget {
@@ -54,12 +55,20 @@ class _TimeLogViewerDialogState extends ConsumerState<TimeLogViewerDialog> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        Colors.blue.shade50,
-                        Colors.blue.shade100.withOpacity(0.5),
+                        Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer.withOpacity(0.3),
+                        Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer.withOpacity(0.5),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.blue.shade200),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outline.withOpacity(0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -147,7 +156,7 @@ class _TimeLogViewerDialogState extends ConsumerState<TimeLogViewerDialog> {
               label,
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey.shade600,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -173,10 +182,14 @@ class _TimeLogViewerDialogState extends ConsumerState<TimeLogViewerDialog> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: log.isActive ? Colors.green.shade50 : Colors.white,
+        color: log.isActive
+            ? Colors.green.shade50
+            : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: log.isActive ? Colors.green.shade200 : Colors.grey.shade200,
+          color: log.isActive
+              ? Colors.green.shade200
+              : Theme.of(context).colorScheme.outline.withOpacity(0.3),
         ),
       ),
       child: Row(
@@ -198,10 +211,10 @@ class _TimeLogViewerDialogState extends ConsumerState<TimeLogViewerDialog> {
                     const SizedBox(width: 8),
                     Text(
                       log.formattedDuration,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF1F2937),
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -232,28 +245,28 @@ class _TimeLogViewerDialogState extends ConsumerState<TimeLogViewerDialog> {
                     Icon(
                       Icons.calendar_today,
                       size: 14,
-                      color: Colors.grey.shade600,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 6),
                     Text(
                       _formatDate(log.startTime),
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.grey.shade600,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(width: 16),
                     Icon(
                       Icons.access_time,
                       size: 14,
-                      color: Colors.grey.shade600,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 6),
                     Text(
                       '${_formatTime(log.startTime)} - ${log.endTime != null ? _formatTime(log.endTime!) : 'ongoing'}',
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.grey.shade600,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -263,7 +276,9 @@ class _TimeLogViewerDialogState extends ConsumerState<TimeLogViewerDialog> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Row(
@@ -271,7 +286,7 @@ class _TimeLogViewerDialogState extends ConsumerState<TimeLogViewerDialog> {
                         Icon(
                           Icons.notes,
                           size: 14,
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 6),
                         Expanded(
@@ -279,7 +294,7 @@ class _TimeLogViewerDialogState extends ConsumerState<TimeLogViewerDialog> {
                             log.notes!,
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey.shade700,
+                              color: Theme.of(context).colorScheme.onSurface,
                               fontStyle: FontStyle.italic,
                             ),
                           ),
@@ -294,14 +309,18 @@ class _TimeLogViewerDialogState extends ConsumerState<TimeLogViewerDialog> {
                     children: [
                       CircleAvatar(
                         radius: 10,
-                        backgroundColor: Colors.blue.shade100,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
                         child: Text(
                           user.name.isNotEmpty
                               ? user.name[0].toUpperCase()
                               : '?',
                           style: TextStyle(
                             fontSize: 9,
-                            color: Colors.blue.shade700,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onPrimaryContainer,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -311,7 +330,7 @@ class _TimeLogViewerDialogState extends ConsumerState<TimeLogViewerDialog> {
                         user.name,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -330,7 +349,7 @@ class _TimeLogViewerDialogState extends ConsumerState<TimeLogViewerDialog> {
               icon: Icon(
                 Icons.more_vert,
                 size: 20,
-                color: Colors.grey.shade600,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -370,20 +389,27 @@ class _TimeLogViewerDialogState extends ConsumerState<TimeLogViewerDialog> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.timer_off, size: 64, color: Colors.grey.shade300),
+          Icon(
+            Icons.timer_off,
+            size: 64,
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
           const SizedBox(height: 16),
           Text(
             'No time logged yet',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'Start the timer or add time manually',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+            style: TextStyle(
+              fontSize: 14,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),

@@ -1,6 +1,7 @@
 // Custom button that feels good to use
 
 import 'package:flutter/material.dart';
+import 'theme_constants.dart';
 
 enum OllieButtonVariant { primary, secondary, outline, danger, text }
 
@@ -114,42 +115,61 @@ class _OllieButtonState extends State<OllieButton>
     super.dispose();
   }
 
-  Color _getBackgroundColor() {
-    if (widget.disabled) return Colors.grey.shade300;
+  Color _getBackgroundColor(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+
+    if (widget.disabled) {
+      return brightness == Brightness.light
+          ? OllieThemeConstants.lightDisabled
+          : OllieThemeConstants.darkDisabled;
+    }
 
     switch (widget.variant) {
       case OllieButtonVariant.primary:
-        return Colors.blue;
+        return OllieThemeConstants.getPrimaryColor(brightness);
       case OllieButtonVariant.secondary:
-        return Colors.grey.shade700;
+        return brightness == Brightness.light
+            ? OllieThemeConstants.lightSecondary
+            : OllieThemeConstants.darkSecondary;
       case OllieButtonVariant.outline:
         return Colors.transparent;
       case OllieButtonVariant.danger:
-        return Colors.red;
+        return brightness == Brightness.light
+            ? OllieThemeConstants.lightDanger
+            : OllieThemeConstants.darkDanger;
       case OllieButtonVariant.text:
         return Colors.transparent;
     }
   }
 
-  Color _getTextColor() {
-    if (widget.disabled) return Colors.grey.shade500;
+  Color _getTextColor(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+
+    if (widget.disabled) {
+      return brightness == Brightness.light
+          ? OllieThemeConstants.lightTextDisabled
+          : OllieThemeConstants.darkTextDisabled;
+    }
 
     switch (widget.variant) {
       case OllieButtonVariant.primary:
-      case OllieButtonVariant.secondary:
       case OllieButtonVariant.danger:
         return Colors.white;
+      case OllieButtonVariant.secondary:
+        return brightness == Brightness.light ? Colors.white : Colors.black;
       case OllieButtonVariant.outline:
-        return Colors.blue;
       case OllieButtonVariant.text:
-        return Colors.blue;
+        return OllieThemeConstants.getPrimaryColor(brightness);
     }
   }
 
-  Border? _getBorder() {
+  Border? _getBorder(BuildContext context) {
     if (widget.variant == OllieButtonVariant.outline) {
+      final brightness = Theme.of(context).brightness;
       return Border.all(
-        color: widget.disabled ? Colors.grey.shade300 : Colors.blue,
+        color: widget.disabled
+            ? OllieThemeConstants.getBorderColor(brightness)
+            : OllieThemeConstants.getPrimaryColor(brightness),
         width: 2,
       );
     }
@@ -171,55 +191,61 @@ class _OllieButtonState extends State<OllieButton>
             ? null
             : () => _controller.reverse(),
         onTap: widget.disabled || widget.loading ? null : widget.onPressed,
-        child: Container(
-          width: widget.width ?? 200,
-          height: widget.height ?? 50,
-          decoration: BoxDecoration(
-            color: _getBackgroundColor(),
-            borderRadius: BorderRadius.circular(10),
-            border: _getBorder(),
-            boxShadow:
-                widget.variant == OllieButtonVariant.text || widget.disabled
-                ? null
-                : [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-          ),
-          child: Center(
-            child: widget.loading
-                ? SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        _getTextColor(),
-                      ),
-                    ),
-                  )
-                : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (widget.icon != null) ...[
-                        Icon(widget.icon, color: _getTextColor(), size: 20),
-                        const SizedBox(width: 8),
-                      ],
-                      Text(
-                        widget.text,
-                        style: TextStyle(
-                          color: _getTextColor(),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+        child: Builder(
+          builder: (context) {
+            final brightness = Theme.of(context).brightness;
+            return Container(
+              width: widget.width ?? 200,
+              height: widget.height ?? 50,
+              decoration: BoxDecoration(
+                color: _getBackgroundColor(context),
+                borderRadius: BorderRadius.circular(
+                  OllieThemeConstants.borderRadiusMedium,
+                ),
+                border: _getBorder(context),
+                boxShadow:
+                    widget.variant == OllieButtonVariant.text || widget.disabled
+                    ? null
+                    : OllieThemeConstants.getShadow(brightness),
+              ),
+              child: Center(
+                child: widget.loading
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            _getTextColor(context),
+                          ),
                         ),
+                      )
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (widget.icon != null) ...[
+                            Icon(
+                              widget.icon,
+                              color: _getTextColor(context),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          Text(
+                            widget.text,
+                            style: TextStyle(
+                              color: _getTextColor(context),
+                              fontSize: OllieThemeConstants.fontSizeBody,
+                              fontWeight:
+                                  OllieThemeConstants.fontWeightSemiBold,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-          ),
+              ),
+            );
+          },
         ),
       ),
     );

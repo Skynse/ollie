@@ -35,7 +35,8 @@ abstract class BoardRepository {
     required String cardId,
     required String sourceColumnId,
     required String targetColumnId,
-    required int targetPosition,
+
+    required String newRank,
   });
   Future<void> reorderCards(String columnId, List<String> cardIds);
 

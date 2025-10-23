@@ -4,14 +4,15 @@ import 'package:go_router/go_router.dart';
 import 'screens/home/homepage.dart';
 import 'screens/board/board_screen.dart';
 import 'providers/auth_provider.dart';
+import 'providers/theme_provider.dart';
 import 'screens/authentication/modern_auth_screen.dart';
 import 'repositories/appwrite/appwrite_config.dart';
+import 'components/ollie_ui/theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Appwrite (for both auth and repositories)
-
   AppwriteConfig.init();
 
   runApp(const ProviderScope(child: OllieApp()));
@@ -23,17 +24,28 @@ class OllieApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final themeModeAsync = ref.watch(themeModeProvider);
 
-    return MaterialApp.router(
-      title: 'Ollie - Kanban Board',
-      debugShowCheckedModeBanner: false,
-
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+    return themeModeAsync.when(
+      data: (themeMode) => MaterialApp.router(
+        title: 'Ollie - Kanban Board',
+        debugShowCheckedModeBanner: false,
+        theme: OllieTheme.lightTheme,
+        darkTheme: OllieTheme.darkTheme,
+        themeMode: themeMode,
+        routerConfig: router,
       ),
-      routerConfig: router,
+      loading: () => MaterialApp(
+        home: Scaffold(body: Center(child: CircularProgressIndicator())),
+      ),
+      error: (_, __) => MaterialApp.router(
+        title: 'Ollie - Kanban Board',
+        debugShowCheckedModeBanner: false,
+        theme: OllieTheme.lightTheme,
+        darkTheme: OllieTheme.darkTheme,
+        themeMode: ThemeMode.system, // Fallback to system
+        routerConfig: router,
+      ),
     );
   }
 }

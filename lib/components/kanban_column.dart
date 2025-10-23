@@ -11,6 +11,7 @@ import 'add_card_dialog.dart';
 import 'enhanced_column_header.dart';
 import 'enhanced_drop_zone.dart';
 import 'ollie_ui/ollie_toast.dart';
+import 'ollie_ui/theme_extensions.dart';
 
 /// A kanban column component displaying a list of cards
 class KanbanColumn extends ConsumerStatefulWidget {
@@ -58,19 +59,13 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
           child: Container(
             width: 300,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.surfaceVariantColor,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: context.borderColor),
               boxShadow:
                   _animationController.isAnimating ||
                       _animationController.value > 0
-                  ? [
-                      BoxShadow(
-                        color: Colors.blue.withOpacity(0.2),
-                        blurRadius: 10,
-                        spreadRadius: 2,
-                      ),
-                    ]
+                  ? context.shadowMedium
                   : [],
             ),
             child: child,
@@ -118,7 +113,7 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
     // We build a list of widgets that includes cards and drop zones between them
     return ListView.builder(
       shrinkWrap: true,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       // We have N cards and N+1 drop zones
       itemCount: cards.length * 2 + 1,
       itemBuilder: (context, index) {
@@ -136,7 +131,7 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
         else {
           final cardIndex = (index - 1) ~/ 2;
           return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(vertical: 0),
             child: KanbanCard(card: cards[cardIndex], boardId: widget.boardId),
           );
         }
@@ -223,13 +218,13 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
         padding: const EdgeInsets.all(12),
         child: Row(
           children: [
-            Icon(Icons.add, size: 18, color: Colors.grey.shade600),
+            Icon(Icons.add, size: 18, color: context.secondaryTextColor),
             const SizedBox(width: 8),
             Text(
               'Add card',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade700,
+                color: context.secondaryTextColor,
                 fontWeight: FontWeight.w500,
               ),
             ),

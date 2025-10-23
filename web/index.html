@@ -41,7 +41,8 @@
         </script>
         <script>
             const clearBrowserStorage = async () => {
-                localStorage.clear();
+                // clear version only in localStorage
+                localStorage.removeItem("app_version");
                 sessionStorage.clear();
                 if ("caches" in window) {
                     const cacheNames = await caches.keys();

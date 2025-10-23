@@ -4,6 +4,7 @@ import '../models/sprint.dart';
 import '../providers/burndown_provider.dart';
 import 'burndown_chart.dart';
 import 'burndown_editor_dialog.dart';
+import 'ollie_ui/theme_extensions.dart';
 
 class SprintDetailsDialog extends ConsumerWidget {
   final Sprint sprint;
@@ -321,7 +322,7 @@ class _InfoItem extends StatelessWidget {
           children: [
             Text(
               label,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 12, color: context.secondaryTextColor),
             ),
             Text(
               value,

@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:ollie/algos/lexorank.dart';
 import '../models/board.dart';
 import '../models/board_column.dart';
 import '../models/card.dart' as model;
@@ -217,81 +219,80 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
   }
 
   Future<void> _handleCardEvent(
-     RealtimeEvent event,
-     BoardState currentState,
-   ) async {
-     final newCardsByColumn = Map<String, List<model.Card>>.from(
-       currentState.columnCards.map(
-         (key, value) => MapEntry(key, List<model.Card>.from(value)),
-       ),
-     );
+    RealtimeEvent event,
+    BoardState currentState,
+  ) async {
+    final newCardsByColumn = Map<String, List<model.Card>>.from(
+      currentState.columnCards.map(
+        (key, value) => MapEntry(key, List<model.Card>.from(value)),
+      ),
+    );
 
-     switch (event.type) {
-       case RealtimeEventType.create:
-         if (event.data != null) {
-           final newCard = model.Card.fromJson(event.data!);
-           final cardList = newCardsByColumn[newCard.columnId] ?? [];
+    switch (event.type) {
+      case RealtimeEventType.create:
+        if (event.data != null) {
+          final newCard = model.Card.fromJson(event.data!);
+          final cardList = newCardsByColumn[newCard.columnId] ?? [];
 
-           // Avoid duplicates if card was already added optimistically
-           if (!cardList.any((c) => c.id == newCard.id)) {
-             cardList.insert(
-               newCard.position.clamp(0, cardList.length),
-               newCard,
-             );
-             newCardsByColumn[newCard.columnId] = cardList;
-             state = AsyncValue.data(
-               currentState.copyWith(columnCards: newCardsByColumn),
-             );
-           }
-         }
-         break;
+          // Avoid duplicates if card was already added optimistically
+          if (!cardList.any((c) => c.id == newCard.id)) {
+            cardList.add(newCard);
+            // Sort by rank to maintain proper order
+            cardList.sort((a, b) => a.rank.compareTo(b.rank));
+            newCardsByColumn[newCard.columnId] = cardList;
+            state = AsyncValue.data(
+              currentState.copyWith(columnCards: newCardsByColumn),
+            );
+          }
+        }
+        break;
 
-       case RealtimeEventType.update:
-         if (event.data != null) {
-           final updatedCard = model.Card.fromJson(event.data!);
+      case RealtimeEventType.update:
+        if (event.data != null) {
+          final updatedCard = model.Card.fromJson(event.data!);
 
-           // Remove the card from its old position in any column
-           newCardsByColumn.forEach((_, cards) {
-             cards.removeWhere((c) => c.id == updatedCard.id);
-           });
+          // Remove the card from its old position in any column
+          newCardsByColumn.forEach((_, cards) {
+            cards.removeWhere((c) => c.id == updatedCard.id);
+          });
 
-           // Add/update the card in its new column and position
-           final targetList = newCardsByColumn[updatedCard.columnId] ?? [];
-           targetList.insert(
-             updatedCard.position.clamp(0, targetList.length),
-             updatedCard,
-           );
-           newCardsByColumn[updatedCard.columnId] = targetList;
+          // Add the card to its new column and sort by rank
+          final targetList = newCardsByColumn[updatedCard.columnId] ?? [];
+          targetList.add(updatedCard);
+          // Sort by rank to maintain proper order
+          targetList.sort((a, b) => a.rank.compareTo(b.rank));
+          newCardsByColumn[updatedCard.columnId] = targetList;
 
-           state = AsyncValue.data(
-             currentState.copyWith(columnCards: newCardsByColumn),
-           );
-         }
-         break;
+          state = AsyncValue.data(
+            currentState.copyWith(columnCards: newCardsByColumn),
+          );
+        }
+        break;
 
-       case RealtimeEventType.delete:
-         final cardId = event.documentId;
-         String? columnId;
+      case RealtimeEventType.delete:
+        final cardId = event.documentId;
+        String? columnId;
 
-         // Find and remove the card
-         for (var entry in newCardsByColumn.entries) {
-           final list = entry.value;
-           final initialLength = list.length;
-           list.removeWhere((c) => c.id == cardId);
-           if (list.length < initialLength) {
-             columnId = entry.key;
-             break;
-           }
-         }
+        // Find and remove the card
+        for (var entry in newCardsByColumn.entries) {
+          final list = entry.value;
+          final initialLength = list.length;
+          list.removeWhere((c) => c.id == cardId);
+          if (list.length < initialLength) {
+            columnId = entry.key;
+            break;
+          }
+        }
 
-         if (columnId != null) {
-           state = AsyncValue.data(
-             currentState.copyWith(columnCards: newCardsByColumn),
-           );
-         }
-         break;
-     }
-   }
+        if (columnId != null) {
+          state = AsyncValue.data(
+            currentState.copyWith(columnCards: newCardsByColumn),
+          );
+        }
+        break;
+    }
+  }
+
   @override
   void dispose() {
     _realtimeSubscription?.cancel();
@@ -468,55 +469,81 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
     required String targetColumnId,
     required int targetPosition,
   }) async {
-    if (state is! AsyncData<BoardState>) return;
-    final originalState = state.asData!.value;
+    final previousState = state;
+    final currentState = state.value;
 
-    String sourceColumnId = '';
-    model.Card? cardToMove;
+    if (currentState == null) return;
 
-    originalState.columnCards.forEach((colId, cards) {
-      final _card = cards.firstWhere(
-        (c) => c.id == card.id,
-        orElse: () => model.Card.empty(),
-      );
-      if (_card.id.isNotEmpty) {
-        sourceColumnId = colId;
-        cardToMove = card;
-      }
-    });
-
-    if (cardToMove == null) return;
-
-    final newCardsByColumn = Map<String, List<model.Card>>.from(
-      originalState.columnCards,
+    final newColumnCards = Map<String, List<model.Card>>.from(
+      currentState.columnCards,
     );
-    final sourceList = List<model.Card>.from(newCardsByColumn[sourceColumnId]!);
-    final targetList = sourceColumnId == targetColumnId
-        ? sourceList
-        : List<model.Card>.from(newCardsByColumn[targetColumnId]!);
 
-    sourceList.removeWhere((c) => c.id == card.id);
+    // Locate source column
+    final sourceColumnId = newColumnCards.entries
+        .firstWhere(
+          (entry) => entry.value.any((c) => c.id == card.id),
+          orElse: () => const MapEntry('', []),
+        )
+        .key;
 
-    final adjustedPosition = targetPosition.clamp(0, targetList.length);
-    targetList.insert(adjustedPosition, card);
+    if (sourceColumnId.isEmpty) return;
 
-    newCardsByColumn[sourceColumnId] = sourceList;
-    newCardsByColumn[targetColumnId] = targetList;
+    // Clone source list and remove the card
+    final sourceCards = List<model.Card>.from(newColumnCards[sourceColumnId]!);
+    sourceCards.removeWhere((c) => c.id == card.id);
 
-    state = AsyncValue.data(
-      originalState.copyWith(columnCards: newCardsByColumn),
+    // Get target cards and sort by rank BEFORE calculating new rank
+    final targetCards = List<model.Card>.from(
+      newColumnCards[targetColumnId] ?? [],
     );
+    // Remove the card from target if it's the same column (already removed from sourceCards)
+    if (sourceColumnId == targetColumnId) {
+      targetCards.removeWhere((c) => c.id == card.id);
+    }
+    targetCards.sort((a, b) => a.rank.compareTo(b.rank));
+
+    // --- LexoRank computation ---
+    String newRank;
+    final clampedPosition = targetPosition.clamp(0, targetCards.length);
+
+    if (targetCards.isEmpty) {
+      newRank = 'U'; // middle baseline
+    } else if (clampedPosition == 0) {
+      // Insert at the beginning
+      newRank = LexoRank.middle('', targetCards.first.rank);
+    } else if (clampedPosition >= targetCards.length) {
+      // Insert at the end
+      newRank = LexoRank.middle(targetCards.last.rank, '');
+    } else {
+      // Insert between two cards
+      final before = targetCards[clampedPosition - 1].rank;
+      final after = targetCards[clampedPosition].rank;
+      newRank = LexoRank.middle(before, after);
+    }
+
+    // Create the moved card with new rank and columnId
+    final movedCard = card.copyWith(columnId: targetColumnId, rank: newRank);
+
+    // Update source and target lists for optimistic UI update
+    newColumnCards[sourceColumnId] = sourceCards;
+    targetCards.insert(clampedPosition, movedCard);
+    newColumnCards[targetColumnId] = targetCards;
+
+    // Optimistically update UI
+    state = AsyncValue.data(currentState.copyWith(columnCards: newColumnCards));
 
     try {
+      // --- Persist to backend ---
       await _repository.moveCard(
         cardId: card.id,
         sourceColumnId: sourceColumnId,
         targetColumnId: targetColumnId,
-        targetPosition: adjustedPosition,
+        newRank: newRank,
       );
-    } catch (e) {
-      state = AsyncValue.data(originalState);
-      print("Failed to move card, rolling back UI. Error: $e");
+    } catch (e, st) {
+      // Rollback on error
+      state = previousState;
+      debugPrint('moveCard failed: $e\n$st');
     }
   }
 
@@ -530,6 +557,21 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
   }) async {
     if (state is! AsyncData<BoardState>) return null;
     final originalState = state.asData!.value;
+
+    // Get existing cards and sort by rank to calculate new rank for the top position
+    final existingCards = List<model.Card>.from(
+      originalState.columnCards[columnId] ?? [],
+    );
+    existingCards.sort((a, b) => a.rank.compareTo(b.rank));
+
+    // Calculate rank for new card at position 0 (top of column)
+    String newRank;
+    if (existingCards.isEmpty) {
+      newRank = 'U'; // middle baseline
+    } else {
+      // Insert before the first card
+      newRank = LexoRank.middle('', existingCards.first.rank);
+    }
 
     final newCardData = model.Card(
       id: '',
@@ -545,6 +587,7 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       createdBy: createdBy,
+      rank: newRank,
     );
 
     try {

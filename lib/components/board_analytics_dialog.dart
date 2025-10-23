@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/board_column.dart';
+import 'ollie_ui/theme_extensions.dart';
 
-class BoardAnalyticsDialog extends ConsumerWidget {
+class BoardAnalyticsDialog extends ConsumerStatefulWidget {
   final String boardId;
   final List<BoardColumn> columns;
 
@@ -13,7 +14,13 @@ class BoardAnalyticsDialog extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BoardAnalyticsDialog> createState() =>
+      _BoardAnalyticsDialogState();
+}
+
+class _BoardAnalyticsDialogState extends ConsumerState<BoardAnalyticsDialog> {
+  @override
+  Widget build(BuildContext context) {
     return Dialog(
       child: Container(
         width: 800,
@@ -24,20 +31,20 @@ class BoardAnalyticsDialog extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Colors.purple.shade700, Colors.purple.shade500],
-                ),
+                color: Theme.of(context).colorScheme.primaryContainer,
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.analytics, color: Colors.white, size: 28),
+                  Icon(
+                    Icons.analytics,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    size: 28,
+                  ),
                   const SizedBox(width: 12),
-                  const Text(
+                  Text(
                     'Board Analytics',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
@@ -45,7 +52,10 @@ class BoardAnalyticsDialog extends ConsumerWidget {
                   const Spacer(),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close, color: Colors.white),
+                    icon: Icon(
+                      Icons.close,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
                     tooltip: 'Close',
                   ),
                 ],
@@ -84,7 +94,7 @@ class BoardAnalyticsDialog extends ConsumerWidget {
     int totalWipLimit = 0;
     int columnsWithWipLimit = 0;
 
-    for (final column in columns) {
+    for (final column in widget.columns) {
       totalCards += column.cardIds.length;
       if (column.wipLimit != null) {
         totalWipLimit += column.wipLimit!;
@@ -107,7 +117,7 @@ class BoardAnalyticsDialog extends ConsumerWidget {
                 icon: Icons.view_column,
                 color: Colors.blue,
                 title: 'Total Columns',
-                value: columns.length.toString(),
+                value: widget.columns.length.toString(),
               ),
             ),
             const SizedBox(width: 12),
@@ -125,9 +135,9 @@ class BoardAnalyticsDialog extends ConsumerWidget {
                 icon: Icons.speed,
                 color: Colors.orange,
                 title: 'Avg Cards/Column',
-                value: columns.isEmpty
+                value: widget.columns.isEmpty
                     ? '0'
-                    : (totalCards / columns.length).toStringAsFixed(1),
+                    : (totalCards / widget.columns.length).toStringAsFixed(1),
               ),
             ),
             const SizedBox(width: 12),
@@ -156,7 +166,7 @@ class BoardAnalyticsDialog extends ConsumerWidget {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-        ...columns.map((column) {
+        ...widget.columns.map((column) {
           final utilizationPercent = column.wipLimit != null
               ? (column.cardIds.length / column.wipLimit! * 100)
                     .clamp(0, 100)
@@ -198,7 +208,9 @@ class BoardAnalyticsDialog extends ConsumerWidget {
                                   borderRadius: BorderRadius.circular(4),
                                   child: LinearProgressIndicator(
                                     value: utilizationPercent / 100,
-                                    backgroundColor: Colors.grey.shade200,
+                                    backgroundColor: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerHighest,
                                     color: utilizationPercent > 100
                                         ? Colors.red
                                         : utilizationPercent > 80
@@ -216,7 +228,7 @@ class BoardAnalyticsDialog extends ConsumerWidget {
                                   fontWeight: FontWeight.w600,
                                   color: utilizationPercent > 100
                                       ? Colors.red
-                                      : Colors.grey.shade700,
+                                      : Theme.of(context).colorScheme.onSurface,
                                 ),
                               ),
                             ],
@@ -241,7 +253,9 @@ class BoardAnalyticsDialog extends ConsumerWidget {
                           'Limit: ${column.wipLimit}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade600,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ),
                     ],
@@ -256,9 +270,9 @@ class BoardAnalyticsDialog extends ConsumerWidget {
   }
 
   Widget _buildCardDistribution(WidgetRef ref) {
-    if (columns.isEmpty) return const SizedBox.shrink();
+    if (widget.columns.isEmpty) return const SizedBox.shrink();
 
-    final maxCards = columns
+    final maxCards = widget.columns
         .map((c) => c.cardIds.length)
         .reduce((a, b) => a > b ? a : b);
 
@@ -275,7 +289,7 @@ class BoardAnalyticsDialog extends ConsumerWidget {
             padding: const EdgeInsets.all(20),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
-              children: columns.map((column) {
+              children: widget.columns.map((column) {
                 final height = maxCards > 0
                     ? (column.cardIds.length / maxCards * 150).clamp(
                         10.0,
@@ -311,7 +325,9 @@ class BoardAnalyticsDialog extends ConsumerWidget {
                           column.name,
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.grey.shade700,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                           textAlign: TextAlign.center,
                           overflow: TextOverflow.ellipsis,
@@ -367,7 +383,10 @@ class _MetricCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               title,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              style: TextStyle(
+                fontSize: 13,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 4),
             Text(

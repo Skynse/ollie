@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ollie/components/ollie_ui/theme_extensions.dart';
 import '../../providers/board_provider.dart';
 import '../../providers/boards_provider.dart';
 import '../../providers/user_provider.dart';
@@ -7,6 +8,7 @@ import '../../providers/sprint_provider.dart';
 import '../../models/board.dart';
 import '../../models/sprint.dart';
 import '../../components/components.dart';
+import '../../components/board_menu_overlay.dart';
 
 /// Main kanban board screen showing columns and cards
 class BoardScreen extends ConsumerStatefulWidget {
@@ -35,9 +37,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
 
     return Scaffold(
       key: _scaffoldKey,
-
-      endDrawer: Drawer(child: _buildBoardDrawer()),
-      backgroundColor: Colors.grey.shade100,
       body: boardState.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => _buildErrorState(error.toString()),
@@ -51,141 +50,156 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     final board = boardState.value?.board;
     final activeSprint = ref.watch(sprintNotifierProvider(widget.boardId));
 
-    return Drawer(
-      backgroundColor: Colors.grey.shade50,
-      child: Column(
-        children: [
-          // Drawer Header - Simplified
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(20, 48, 20, 20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                bottom: BorderSide(color: Colors.grey.shade200, width: 1),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Menu Header
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: context.surfaceColor,
+            border: Border(
+              bottom: BorderSide(color: context.borderColor, width: 1),
+            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    board?.name ?? 'Board Settings',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: context.textColor,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.cancel),
+                    onPressed: () {
+                      BoardMenuOverlay.hide();
+                    },
+                  ),
+                ],
               ),
+              const SizedBox(height: 4),
+              Text(
+                'Board Management',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: context.secondaryTextColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Active Sprint Status Card
+        if (activeSprint != null)
+          Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: context.surfaceColor,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: context.borderColor),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: activeSprint.status == SprintStatus.active
+                            ? context.successColor.withOpacity(0.1)
+                            : context.primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: activeSprint.status == SprintStatus.active
+                              ? context.successColor.withOpacity(0.3)
+                              : context.primaryColor.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Text(
+                        activeSprint.status == SprintStatus.active
+                            ? 'ACTIVE'
+                            : 'PLANNING',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: activeSprint.status == SprintStatus.active
+                              ? context.successColor
+                              : context.primaryColor,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
                 Text(
-                  board?.name ?? 'Board Settings',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1F2937),
+                  activeSprint.name,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: context.textColor,
                   ),
-                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      size: 14,
+                      color: context.secondaryTextColor,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${activeSprint.daysRemaining} days remaining',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.secondaryTextColor,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'Board Management',
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.assignment,
+                      size: 14,
+                      color: context.secondaryTextColor,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${activeSprint.cardIds.length} cards',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.secondaryTextColor,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
 
-          // Active Sprint Status Card
-          if (activeSprint != null)
-            Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: activeSprint.status == SprintStatus.active
-                              ? Colors.green.shade50
-                              : Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color: activeSprint.status == SprintStatus.active
-                                ? Colors.green.shade200
-                                : Colors.blue.shade200,
-                          ),
-                        ),
-                        child: Text(
-                          activeSprint.status == SprintStatus.active
-                              ? 'ACTIVE'
-                              : 'PLANNING',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: activeSprint.status == SprintStatus.active
-                                ? Colors.green.shade700
-                                : Colors.blue.shade700,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    activeSprint.name,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1F2937),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.calendar_today,
-                        size: 14,
-                        color: Colors.grey.shade600,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${activeSprint.daysRemaining} days remaining',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.assignment,
-                        size: 14,
-                        color: Colors.grey.shade600,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${activeSprint.cardIds.length} cards',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-          // Drawer Content
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+        // Menu Content
+        Flexible(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
               children: [
                 // Sprints Section - Moved to top
                 _buildDrawerSection('Sprint'),
@@ -193,7 +207,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                   icon: Icons.view_list,
                   title: 'Manage Sprints',
                   onTap: () {
-                    Navigator.pop(context);
                     _showSprintManagementDialog();
                   },
                 ),
@@ -201,7 +214,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                   icon: Icons.add,
                   title: 'Create Sprint',
                   onTap: () async {
-                    Navigator.pop(context);
                     await showDialog(
                       context: context,
                       builder: (context) =>
@@ -218,7 +230,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                   icon: Icons.edit,
                   title: 'Edit Board',
                   onTap: () {
-                    Navigator.pop(context);
                     _showEditBoardDialog();
                   },
                 ),
@@ -226,7 +237,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                   icon: Icons.view_column,
                   title: 'Manage Columns',
                   onTap: () {
-                    Navigator.pop(context);
                     _showManageColumnsDialog();
                   },
                 ),
@@ -234,7 +244,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                   icon: Icons.analytics,
                   title: 'Analytics',
                   onTap: () {
-                    Navigator.pop(context);
                     _showBoardAnalyticsDialog();
                   },
                 ),
@@ -247,7 +256,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                   icon: Icons.people,
                   title: 'Members',
                   onTap: () {
-                    Navigator.pop(context);
                     _showManageMembersDialog();
                   },
                 ),
@@ -255,7 +263,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                   icon: Icons.person_add,
                   title: 'Invite',
                   onTap: () {
-                    Navigator.pop(context);
                     _showInviteMemberDialog();
                   },
                 ),
@@ -268,7 +275,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                   icon: Icons.file_download,
                   title: 'Export',
                   onTap: () {
-                    Navigator.pop(context);
                     _showExportBoardDialog();
                   },
                 ),
@@ -276,15 +282,14 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                   icon: Icons.archive,
                   title: 'Archive',
                   onTap: () {
-                    Navigator.pop(context);
                     _showArchiveBoardDialog();
                   },
                 ),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -296,7 +301,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          color: Colors.grey.shade500,
+          color: context.secondaryTextColor,
           letterSpacing: 1,
         ),
       ),
@@ -313,24 +318,31 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(6),
       ),
       child: ListTile(
         dense: true,
-        leading: Icon(icon, color: iconColor ?? Colors.grey.shade700, size: 20),
+        leading: Icon(
+          icon,
+          color: iconColor ?? Theme.of(context).listTileTheme.textColor,
+          size: 20,
+        ),
         title: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF1F2937),
+            color: Theme.of(context).listTileTheme.textColor,
           ),
         ),
         subtitle: subtitle != null
             ? Text(
                 subtitle,
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).listTileTheme.textColor,
+                ),
               )
             : null,
         onTap: onTap,
@@ -634,8 +646,10 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+        color: Theme.of(context).scaffoldBackgroundColor,
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).dividerColor),
+        ),
       ),
       child: Row(
         children: [
@@ -644,7 +658,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.arrow_back),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.grey.shade100,
+              backgroundColor: Theme.of(context).cardColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -667,7 +681,10 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                 if (board.description != null && board.description!.isNotEmpty)
                   Text(
                     board.description!,
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).textTheme.bodyMedium!.color,
+                    ),
                   ),
               ],
             ),
@@ -684,14 +701,31 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
           // Board menu
           IconButton(
             onPressed: () {
-              // will have options for editing board details, adding/removing members,
-              // sprint settings mostly
+              // Get the button's position
+              final RenderBox button = context.findRenderObject() as RenderBox;
+              final RenderBox overlay =
+                  Overlay.of(context).context.findRenderObject() as RenderBox;
+              final position = button.localToGlobal(
+                Offset.zero,
+                ancestor: overlay,
+              );
 
-              _scaffoldKey.currentState?.openEndDrawer();
+              // Show floating menu
+              final screenWidth = MediaQuery.of(context).size.width;
+              BoardMenuOverlay.show(
+                context: context,
+                position: Offset(
+                  screenWidth -
+                      320 -
+                      16, // Align to right side with 16px padding
+                  position.dy + 8, // Below the button
+                ),
+                child: _buildBoardDrawer(),
+              );
             },
             icon: const Icon(Icons.more_horiz),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.grey.shade100,
+              backgroundColor: Theme.of(context).drawerTheme.backgroundColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -757,7 +791,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             onPressed: () => _showInviteMemberDialog(),
             icon: const Icon(Icons.person_add, size: 20),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.blue.shade50,
+              backgroundColor: Theme.of(context).cardColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -792,13 +826,13 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: activeSprint != null
-                  ? Colors.green.shade50
-                  : Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(8),
+                  ? context.surfaceColor
+                  : context.surfaceVariantColor,
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: activeSprint != null
-                    ? Colors.green.shade200
-                    : Colors.grey.shade300,
+                    ? context.successColor
+                    : context.borderColor,
               ),
             ),
             child: Row(
@@ -807,9 +841,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                 Icon(
                   Icons.timer,
                   size: 18,
-                  color: activeSprint != null
-                      ? Colors.green.shade700
-                      : Colors.grey.shade700,
+                  color: Theme.of(context).iconTheme.color,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -818,7 +850,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: activeSprint != null
-                        ? Colors.green.shade700
+                        ? Theme.brightnessOf(context) == Brightness.light
+                              ? Colors.black
+                              : Colors.white
                         : Colors.grey.shade700,
                   ),
                 ),
@@ -826,9 +860,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                 Icon(
                   Icons.arrow_drop_down,
                   size: 20,
-                  color: activeSprint != null
-                      ? Colors.green.shade700
-                      : Colors.grey.shade700,
+                  color: Theme.of(context).iconTheme.color,
                 ),
               ],
             ),
@@ -856,9 +888,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                     Icon(
                       isActive ? Icons.play_circle : Icons.schedule,
                       size: 18,
-                      color: isActive
-                          ? Colors.green.shade700
-                          : Colors.grey.shade600,
+                      color: Theme.of(context).iconTheme.color,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -877,7 +907,15 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                             '${sprint.status.toString().split('.').last} - ${sprint.cardIds.length} cards',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.grey.shade600,
+                              color: isActive
+                                  ? Theme.of(context).brightness ==
+                                            Brightness.light
+                                        ? Theme.of(context).primaryColor
+                                        : Colors.white
+                                  : Theme.of(context).brightness ==
+                                        Brightness.light
+                                  ? Colors.grey.shade600
+                                  : Colors.grey.shade400,
                             ),
                           ),
                         ],

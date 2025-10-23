@@ -4,6 +4,7 @@ import 'ollie_ui/ollie_dialog.dart';
 import 'ollie_ui/ollie_textfield.dart';
 import 'ollie_ui/ollie_button.dart';
 import 'ollie_ui/ollie_toast.dart';
+import 'ollie_ui/theme_extensions.dart';
 
 /// Dialog for creating a new card
 class AddCardDialog extends StatefulWidget {
@@ -95,7 +96,7 @@ class _AddCardDialogState extends State<AddCardDialog> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
+              color: context.secondaryTextColor,
             ),
           ),
           const SizedBox(height: 8),
@@ -110,7 +111,9 @@ class _AddCardDialogState extends State<AddCardDialog> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.white : Colors.grey.shade700,
+                      color: isSelected
+                          ? context.surfaceColor
+                          : context.secondaryTextColor,
                     ),
                   ),
                   selected: isSelected,
@@ -122,11 +125,11 @@ class _AddCardDialogState extends State<AddCardDialog> {
                           }
                         },
                   selectedColor: _getPriorityColor(priority),
-                  backgroundColor: Colors.grey.shade100,
+                  backgroundColor: context.surfaceVariantColor,
                   side: BorderSide(
                     color: isSelected
                         ? _getPriorityColor(priority)
-                        : Colors.grey.shade300,
+                        : context.borderColor,
                   ),
                 ),
               );

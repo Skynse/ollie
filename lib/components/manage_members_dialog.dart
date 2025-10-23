@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/user_provider.dart';
 import 'ollie_ui/ollie_toast.dart';
+import 'ollie_ui/theme_extensions.dart';
 
-class ManageMembersDialog extends ConsumerWidget {
+class ManageMembersDialog extends ConsumerStatefulWidget {
   final String boardId;
   final List<String> memberIds;
   final String createdBy;
@@ -20,7 +21,13 @@ class ManageMembersDialog extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ManageMembersDialog> createState() =>
+      _ManageMembersDialogState();
+}
+
+class _ManageMembersDialogState extends ConsumerState<ManageMembersDialog> {
+  @override
+  Widget build(BuildContext context) {
     return Dialog(
       child: Container(
         width: 600,
@@ -31,12 +38,12 @@ class ManageMembersDialog extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                color: context.primaryColor.withOpacity(0.1),
+                border: Border(bottom: BorderSide(color: context.borderColor)),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.people, color: Colors.blue.shade700),
+                  Icon(Icons.people, color: context.primaryColor),
                   const SizedBox(width: 12),
                   const Text(
                     'Manage Members',
@@ -54,14 +61,14 @@ class ManageMembersDialog extends ConsumerWidget {
 
             // Member list
             Expanded(
-              child: memberIds.isEmpty
+              child: widget.memberIds.isEmpty
                   ? _buildEmptyState()
                   : ListView.builder(
                       padding: const EdgeInsets.all(16),
-                      itemCount: memberIds.length,
+                      itemCount: widget.memberIds.length,
                       itemBuilder: (context, index) {
-                        final memberId = memberIds[index];
-                        final isOwner = memberId == createdBy;
+                        final memberId = widget.memberIds[index];
+                        final isOwner = memberId == widget.createdBy;
                         return _MemberTile(
                           key: ValueKey(memberId),
                           memberId: memberId,
@@ -90,7 +97,7 @@ class ManageMembersDialog extends ConsumerWidget {
                   FilledButton.icon(
                     onPressed: () {
                       Navigator.pop(context);
-                      onInviteMore();
+                      widget.onInviteMore();
                     },
                     icon: const Icon(Icons.person_add),
                     label: const Text('Invite Members'),
@@ -109,20 +116,24 @@ class ManageMembersDialog extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.people_outline, size: 64, color: Colors.grey.shade400),
+          Icon(
+            Icons.people_outline,
+            size: 64,
+            color: context.secondaryTextColor,
+          ),
           const SizedBox(height: 16),
           Text(
             'No members yet',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
+              color: context.secondaryTextColor,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'Invite people to collaborate on this board',
-            style: TextStyle(color: Colors.grey.shade600),
+            style: TextStyle(color: context.secondaryTextColor),
           ),
         ],
       ),
@@ -161,7 +172,7 @@ class ManageMembersDialog extends ConsumerWidget {
 
     if (confirmed == true && context.mounted) {
       try {
-        await onRemoveMember(memberId);
+        await widget.onRemoveMember(memberId);
         if (context.mounted) {
           OllieToast.success(context, 'Member removed successfully');
         }
@@ -195,11 +206,11 @@ class _MemberTile extends ConsumerWidget {
         margin: const EdgeInsets.only(bottom: 8),
         child: ListTile(
           leading: CircleAvatar(
-            backgroundColor: Colors.blue.shade100,
+            backgroundColor: context.primaryColor.withOpacity(0.2),
             child: Text(
               user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
               style: TextStyle(
-                color: Colors.blue.shade700,
+                color: context.primaryColor,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -218,16 +229,18 @@ class _MemberTile extends ConsumerWidget {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.amber.shade100,
+                    color: context.primaryColor.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.amber.shade300),
+                    border: Border.all(
+                      color: context.primaryColor.withOpacity(0.3),
+                    ),
                   ),
                   child: Text(
                     'Owner',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: Colors.amber.shade900,
+                      color: context.primaryColor,
                     ),
                   ),
                 ),
@@ -238,11 +251,11 @@ class _MemberTile extends ConsumerWidget {
           trailing: isOwner
               ? Tooltip(
                   message: 'Board owner cannot be removed',
-                  child: Icon(Icons.lock, color: Colors.grey.shade400),
+                  child: Icon(Icons.lock, color: context.disabledColor),
                 )
               : IconButton(
                   onPressed: onRemove,
-                  icon: Icon(Icons.remove_circle, color: Colors.red.shade400),
+                  icon: Icon(Icons.remove_circle, color: context.dangerColor),
                   tooltip: 'Remove member',
                 ),
         ),
@@ -250,12 +263,12 @@ class _MemberTile extends ConsumerWidget {
       loading: () => Card(
         margin: const EdgeInsets.only(bottom: 8),
         child: ListTile(
-          leading: CircleAvatar(backgroundColor: Colors.grey.shade200),
-          title: Container(height: 16, width: 100, color: Colors.grey.shade200),
+          leading: CircleAvatar(backgroundColor: context.borderColor),
+          title: Container(height: 16, width: 100, color: context.borderColor),
           subtitle: Container(
             height: 12,
             width: 150,
-            color: Colors.grey.shade200,
+            color: context.borderColor,
           ),
         ),
       ),
@@ -263,8 +276,8 @@ class _MemberTile extends ConsumerWidget {
         margin: const EdgeInsets.only(bottom: 8),
         child: ListTile(
           leading: CircleAvatar(
-            backgroundColor: Colors.red.shade100,
-            child: Icon(Icons.error, color: Colors.red.shade700),
+            backgroundColor: context.dangerColor.withOpacity(0.2),
+            child: Icon(Icons.error, color: context.dangerColor),
           ),
           title: const Text('Failed to load user'),
           subtitle: Text(error.toString()),

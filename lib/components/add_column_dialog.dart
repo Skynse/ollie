@@ -3,6 +3,7 @@ import 'ollie_ui/ollie_dialog.dart';
 import 'ollie_ui/ollie_textfield.dart';
 import 'ollie_ui/ollie_button.dart';
 import 'ollie_ui/ollie_toast.dart';
+import 'ollie_ui/theme_extensions.dart';
 
 /// Dialog for creating a new kanban column
 class AddColumnDialog extends StatefulWidget {
@@ -92,7 +93,7 @@ class _AddColumnDialogState extends State<AddColumnDialog> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
+              color: context.secondaryTextColor,
             ),
           ),
           const SizedBox(height: 8),
@@ -113,12 +114,14 @@ class _AddColumnDialogState extends State<AddColumnDialog> {
                     color: Color(colorOption['value']),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: isSelected ? Colors.blue : Colors.grey.shade300,
+                      color: isSelected
+                          ? context.primaryColor
+                          : context.borderColor,
                       width: isSelected ? 3 : 1,
                     ),
                   ),
                   child: isSelected
-                      ? const Icon(Icons.check, color: Colors.white, size: 20)
+                      ? Icon(Icons.check, color: context.surfaceColor, size: 20)
                       : null,
                 ),
               );

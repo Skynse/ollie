@@ -12,6 +12,7 @@ import '../models/sprint.dart';
 import '../providers/board_provider.dart';
 import '../providers/sprint_provider.dart';
 import '../providers/user_provider.dart';
+import 'ollie_ui/theme_extensions.dart';
 
 /// Comprehensive dialog for editing all card properties
 class EditCardDialog extends ConsumerStatefulWidget {
@@ -268,7 +269,7 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
       style: TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.w600,
-        color: Colors.grey.shade700,
+        color: context.secondaryTextColor,
       ),
     );
   }
@@ -289,13 +290,13 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
             },
             selectedColor: _getPriorityColor(priority),
             labelStyle: TextStyle(
-              color: isSelected ? Colors.white : Colors.black,
+              color: isSelected ? context.surfaceColor : context.textColor,
               fontWeight: FontWeight.bold,
             ),
             side: BorderSide(
               color: isSelected
                   ? _getPriorityColor(priority)
-                  : Colors.grey.shade300,
+                  : context.borderColor,
             ),
           ),
         );
@@ -309,13 +310,17 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300, width: 1.5),
+          border: Border.all(color: context.borderColor, width: 1.5),
           borderRadius: BorderRadius.circular(12),
-          color: Colors.grey.shade50,
+          color: context.surfaceVariantColor,
         ),
         child: Row(
           children: [
-            Icon(Icons.calendar_today, size: 16, color: Colors.grey.shade700),
+            Icon(
+              Icons.calendar_today,
+              size: 16,
+              color: context.secondaryTextColor,
+            ),
             const SizedBox(width: 8),
             Text(
               _selectedDueDate != null
@@ -324,15 +329,19 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
               style: TextStyle(
                 fontSize: 16,
                 color: _selectedDueDate != null
-                    ? Colors.black87
-                    : Colors.grey.shade500,
+                    ? context.textColor
+                    : context.secondaryTextColor,
               ),
             ),
             const Spacer(),
             if (_selectedDueDate != null)
               InkWell(
                 onTap: () => setState(() => _selectedDueDate = null),
-                child: Icon(Icons.clear, size: 18, color: Colors.grey.shade600),
+                child: Icon(
+                  Icons.clear,
+                  size: 18,
+                  color: context.secondaryTextColor,
+                ),
               ),
           ],
         ),
@@ -364,9 +373,9 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300, width: 1.5),
+            border: Border.all(color: context.borderColor, width: 1.5),
             borderRadius: BorderRadius.circular(12),
-            color: Colors.grey.shade50,
+            color: context.surfaceVariantColor,
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String?>(
@@ -386,8 +395,8 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
                               : Icons.schedule,
                           size: 16,
                           color: sprint.status == SprintStatus.active
-                              ? Colors.green.shade700
-                              : Colors.grey.shade600,
+                              ? context.successColor
+                              : context.secondaryTextColor,
                         ),
                         const SizedBox(width: 8),
                         Text(sprint.name),
@@ -406,7 +415,7 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (_, __) => Text(
         'Failed to load sprints',
-        style: TextStyle(color: Colors.red.shade600),
+        style: TextStyle(color: context.dangerColor),
       ),
     );
   }
@@ -440,13 +449,15 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
                 },
                 avatar: CircleAvatar(
                   backgroundColor: isSelected
-                      ? Colors.blue.shade700
-                      : Colors.grey.shade300,
+                      ? context.primaryColor
+                      : context.borderColor,
                   child: Text(
                     user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
                     style: TextStyle(
                       fontSize: 12,
-                      color: isSelected ? Colors.white : Colors.grey.shade700,
+                      color: isSelected
+                          ? context.surfaceColor
+                          : context.secondaryTextColor,
                     ),
                   ),
                 ),
@@ -460,7 +471,7 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (_, __) => Text(
         'Failed to load members',
-        style: TextStyle(color: Colors.red.shade600),
+        style: TextStyle(color: context.dangerColor),
       ),
     );
   }
