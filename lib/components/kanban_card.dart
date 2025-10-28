@@ -95,21 +95,16 @@ class _KanbanCardState extends ConsumerState<KanbanCard> {
             }
           });
         },
-        feedback: Material(
-          elevation: 8,
-          borderRadius: BorderRadius.circular(8),
-          child: SizedBox(
-            width: 280,
-            child: Opacity(
-              opacity: 0.8,
-              child: _buildCardContent(context, ref),
-            ),
+        feedback: Transform.rotate(
+          angle: 0.05, // ~3 degrees tilt
+          child: Material(
+            elevation: 8,
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(width: 280, child: _buildCardContent(context, ref)),
           ),
         ),
-        childWhenDragging: Opacity(
-          opacity: 0.3,
-          child: _buildCardContent(context, ref),
-        ),
+        childWhenDragging:
+            const SizedBox.shrink(), // Hide original card when dragging
         child: _buildCardContent(context, ref),
       ),
     );

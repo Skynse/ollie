@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ollie/components/edit_column_dialog.dart';
@@ -9,7 +10,6 @@ import '../providers/auth_provider.dart';
 import 'kanban_card.dart';
 import 'add_card_dialog.dart';
 import 'enhanced_column_header.dart';
-import 'enhanced_drop_zone.dart';
 import 'ollie_ui/ollie_toast.dart';
 import 'ollie_ui/theme_extensions.dart';
 
@@ -28,6 +28,7 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
+  String? _hoveredCardId;
 
   @override
   void initState() {
@@ -110,32 +111,181 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
   }
 
   Widget _buildCardList(List<model.Card> cards) {
-    // We build a list of widgets that includes cards and drop zones between them
-    return ListView.builder(
+    if (cards.isEmpty) {
+      return DragTarget<model.Card>(
+        onWillAcceptWithDetails: (details) => true,
+        onAcceptWithDetails: (details) async {
+          await ref
+              .read(boardNotifierProvider(widget.boardId).notifier)
+              .moveCard(
+                card: details.data,
+                targetColumnId: widget.column.id,
+                targetPosition: 0,
+              );
+        },
+        builder: (context, candidateData, rejectedData) {
+          final isHovering = candidateData.isNotEmpty;
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            height: isHovering ? 100 : 50,
+            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            decoration: isHovering
+                ? BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        context.primaryColor.withOpacity(0.1),
+                        context.primaryColor.withOpacity(0.05),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: context.primaryColor.withOpacity(0.5),
+                      width: 2,
+                    ),
+                  )
+                : BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: context.borderColor.withOpacity(0.3),
+                      width: 1,
+                      style: BorderStyle.solid,
+                    ),
+                  ),
+            child: Center(
+              child: Text(
+                isHovering ? 'Drop here' : 'No cards',
+                style: TextStyle(
+                  color: isHovering
+                      ? context.primaryColor
+                      : context.secondaryTextColor,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    return ListView(
       shrinkWrap: true,
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-      // We have N cards and N+1 drop zones
-      itemCount: cards.length * 2 + 1,
-      itemBuilder: (context, index) {
-        // Even indices are drop zones
-        if (index.isEven) {
-          final dropPosition = index ~/ 2;
-          return _buildDropZone(
-            cards: cards,
-            position: dropPosition,
-            isTop: index == 0,
-            isBottom: index == cards.length * 2,
+      children: [
+        ...cards.asMap().entries.map((entry) {
+          final cardIndex = entry.key;
+          final card = entry.value;
+
+          // Check if we should show space above this card
+          final hoveredIndex = _hoveredCardId != null
+              ? cards.indexWhere((c) => c.id == _hoveredCardId)
+              : -1;
+          final showSpaceAbove = hoveredIndex >= 0 && cardIndex == hoveredIndex;
+
+          return DragTarget<model.Card>(
+            key: ValueKey(card.id),
+            onWillAcceptWithDetails: (details) {
+              // Accept all cards except itself
+              if (details.data.id != card.id) {
+                // Set hovered state immediately when accepting
+                if (_hoveredCardId != card.id) {
+                  setState(() {
+                    _hoveredCardId = card.id;
+                  });
+                }
+                return true;
+              }
+              return false;
+            },
+            onLeave: (data) {
+              // Clear hovered state when card leaves
+              if (_hoveredCardId == card.id) {
+                setState(() {
+                  _hoveredCardId = null;
+                });
+              }
+            },
+            onAcceptWithDetails: (details) async {
+              // Clear hover state
+              setState(() {
+                _hoveredCardId = null;
+              });
+
+              // Drop before this card
+              await ref
+                  .read(boardNotifierProvider(widget.boardId).notifier)
+                  .moveCard(
+                    card: details.data,
+                    targetColumnId: widget.column.id,
+                    targetPosition: cardIndex,
+                  );
+            },
+            builder: (context, candidateData, rejectedData) {
+              return Padding(
+                padding: EdgeInsets.only(
+                  top: showSpaceAbove ? 80.0 : 0.0,
+                  left: 4,
+                  right: 4,
+                  bottom: 4,
+                ),
+                child: KanbanCard(card: card, boardId: widget.boardId),
+              );
+            },
           );
-        }
-        // Odd indices are the cards themselves
-        else {
-          final cardIndex = (index - 1) ~/ 2;
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 0),
-            child: KanbanCard(card: cards[cardIndex], boardId: widget.boardId),
-          );
-        }
-      },
+        }),
+        // Drop zone at bottom for cross-column drops
+        DragTarget<model.Card>(
+          onWillAcceptWithDetails: (details) {
+            // Only accept cards from other columns
+            return details.data.columnId != widget.column.id;
+          },
+          onAcceptWithDetails: (details) async {
+            // Drop at the end
+            await ref
+                .read(boardNotifierProvider(widget.boardId).notifier)
+                .moveCard(
+                  card: details.data,
+                  targetColumnId: widget.column.id,
+                  targetPosition: cards.length,
+                );
+          },
+          builder: (context, candidateData, rejectedData) {
+            final isHovering = candidateData.isNotEmpty;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              height: isHovering ? 60 : 8,
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: isHovering
+                  ? BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          context.primaryColor.withOpacity(0.1),
+                          context.primaryColor.withOpacity(0.05),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: context.primaryColor.withOpacity(0.5),
+                        width: 2,
+                      ),
+                    )
+                  : null,
+              child: isHovering
+                  ? Center(
+                      child: Icon(
+                        Icons.add_rounded,
+                        color: context.primaryColor,
+                        size: 20,
+                      ),
+                    )
+                  : null,
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -145,32 +295,6 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
 
   void _onDragLeave() {
     _animationController.reverse();
-  }
-
-  Widget _buildDropZone({
-    required List<model.Card> cards,
-    required int position,
-    bool isTop = false,
-    bool isBottom = false,
-  }) {
-    return EnhancedDropZone(
-      cards: cards,
-      position: position,
-      isTop: isTop,
-      isBottom: isBottom,
-      columnId: widget.column.id,
-      onAccept: (card, targetColumnId, targetPosition) async {
-        await ref
-            .read(boardNotifierProvider(widget.boardId).notifier)
-            .moveCard(
-              card: card,
-              targetColumnId: targetColumnId,
-              targetPosition: targetPosition,
-            );
-      },
-      onDragEnter: _onDragEnter,
-      onDragLeave: _onDragLeave,
-    );
   }
 
   Future<void> _editColumn(BoardColumn column) async {

@@ -13,6 +13,7 @@ class EnhancedDropZone extends StatefulWidget {
   onAccept;
   final VoidCallback onDragEnter;
   final VoidCallback onDragLeave;
+  final bool forceExpanded;
 
   const EnhancedDropZone({
     super.key,
@@ -24,6 +25,7 @@ class EnhancedDropZone extends StatefulWidget {
     required this.onAccept,
     required this.onDragEnter,
     required this.onDragLeave,
+    this.forceExpanded = false,
   });
 
   @override
@@ -56,7 +58,7 @@ class _EnhancedDropZoneState extends State<EnhancedDropZone> {
         await widget.onAccept(draggedCard, widget.columnId, widget.position);
       },
       builder: (context, candidateData, rejectedData) {
-        final isHovering = candidateData.isNotEmpty;
+        final isHovering = candidateData.isNotEmpty || widget.forceExpanded;
 
         if (isHovering) {
           return _buildHoverState();

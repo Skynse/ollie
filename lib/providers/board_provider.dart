@@ -488,23 +488,34 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
 
     if (sourceColumnId.isEmpty) return;
 
-    // Clone source list and remove the card
+    // Clone source list and find original index BEFORE removing
     final sourceCards = List<model.Card>.from(newColumnCards[sourceColumnId]!);
+    final originalIndex = sourceCards.indexWhere((c) => c.id == card.id);
     sourceCards.removeWhere((c) => c.id == card.id);
 
     // Get target cards and sort by rank BEFORE calculating new rank
     final targetCards = List<model.Card>.from(
       newColumnCards[targetColumnId] ?? [],
     );
-    // Remove the card from target if it's the same column (already removed from sourceCards)
+    // Remove the card from target if it's the same column
     if (sourceColumnId == targetColumnId) {
       targetCards.removeWhere((c) => c.id == card.id);
     }
     targetCards.sort((a, b) => a.rank.compareTo(b.rank));
 
     // --- LexoRank computation ---
+    // For same-column moves, targetPosition is based on the original list (before removal)
+    // When moving down, we need to adjust because the card being moved affects indices
+    int adjustedPosition = targetPosition;
+    if (sourceColumnId == targetColumnId &&
+        originalIndex != -1 &&
+        targetPosition > originalIndex) {
+      // Moving down: the target position included the dragged card's slot, so subtract 1
+      adjustedPosition = targetPosition - 1;
+    }
+
     String newRank;
-    final clampedPosition = targetPosition.clamp(0, targetCards.length);
+    final clampedPosition = adjustedPosition.clamp(0, targetCards.length);
 
     if (targetCards.isEmpty) {
       newRank = 'U'; // middle baseline
@@ -544,6 +555,46 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
       // Rollback on error
       state = previousState;
       debugPrint('moveCard failed: $e\n$st');
+    }
+  }
+
+  /// Rebalance ranks for all cards in a column
+  /// This fixes duplicate ranks by redistributing them evenly
+  Future<void> rebalanceColumnRanks(String columnId) async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    final cards = List<model.Card>.from(
+      currentState.columnCards[columnId] ?? [],
+    );
+
+    if (cards.length <= 1) return; // Nothing to rebalance
+
+    // Sort by current rank to preserve order
+    cards.sort((a, b) => a.rank.compareTo(b.rank));
+
+    // Redistribute ranks evenly across the space
+    // Use base-36 arithmetic to create evenly spaced ranks
+    final step = 'ZZZZZZZZZZ'; // Max rank value
+    final stepNum = LexoRank.toBase36(step) ~/ BigInt.from(cards.length + 1);
+
+    for (int i = 0; i < cards.length; i++) {
+      final rankNum = stepNum * BigInt.from(i + 1);
+      final newRank = LexoRank.fromBase36(rankNum);
+
+      if (cards[i].rank != newRank) {
+        // Update in backend
+        try {
+          await _repository.moveCard(
+            cardId: cards[i].id,
+            sourceColumnId: columnId,
+            targetColumnId: columnId,
+            newRank: newRank,
+          );
+        } catch (e) {
+          debugPrint('Failed to rebalance card ${cards[i].id}: $e');
+        }
+      }
     }
   }
 

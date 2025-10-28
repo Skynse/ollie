@@ -92,7 +92,8 @@ class LexoRank {
     return result;
   }
 
-  static BigInt _toBase36(String s) {
+  // Made public for rebalancing operations
+  static BigInt toBase36(String s) {
     if (s.isEmpty) return BigInt.zero;
 
     BigInt num = BigInt.zero;
@@ -106,7 +107,7 @@ class LexoRank {
     return num;
   }
 
-  static String _fromBase36(BigInt num) {
+  static String fromBase36(BigInt num) {
     if (num == BigInt.zero) return _minChar;
 
     var result = '';
@@ -118,4 +119,8 @@ class LexoRank {
     }
     return result;
   }
+
+  // Keep private versions for internal use
+  static BigInt _toBase36(String s) => toBase36(s);
+  static String _fromBase36(BigInt num) => fromBase36(num);
 }

@@ -122,6 +122,27 @@ class _EnhancedColumnHeaderState extends ConsumerState<EnhancedColumnHeader> {
                         onTap: widget.onEdit,
                       ),
                       OllieMenuItem(
+                        title: 'Rebalance Card Ranks',
+                        icon: Icons.sync,
+                        onTap: () async {
+                          await ref
+                              .read(
+                                boardNotifierProvider(widget.boardId).notifier,
+                              )
+                              .rebalanceColumnRanks(widget.column.id);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Card ranks rebalanced successfully',
+                                ),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                      OllieMenuItem(
                         title: 'Delete Column',
                         icon: Icons.delete_outline,
                         onTap: widget.onDelete,
