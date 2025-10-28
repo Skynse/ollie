@@ -13,6 +13,7 @@ import '../providers/board_provider.dart';
 import '../providers/sprint_provider.dart';
 import '../providers/user_provider.dart';
 import 'ollie_ui/theme_extensions.dart';
+import 'card_timer_widget.dart';
 
 /// Comprehensive dialog for editing all card properties
 class EditCardDialog extends ConsumerStatefulWidget {
@@ -257,6 +258,12 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
             _buildSectionTitle('Assignees'),
             const SizedBox(height: 8),
             _buildAssigneeSelector(),
+            const SizedBox(height: 20),
+
+            // Time Tracking
+            _buildSectionTitle('Time Tracking'),
+            const SizedBox(height: 8),
+            CardTimerWidget(card: widget.card),
           ],
         ),
       ),

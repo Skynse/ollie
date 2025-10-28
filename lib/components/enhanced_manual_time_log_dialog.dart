@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/time_log.dart';
 import '../providers/sprint_provider.dart';
 import 'ollie_ui/ollie_dialog.dart';
 import 'ollie_ui/ollie_button.dart';
@@ -13,12 +14,14 @@ class EnhancedManualTimeLogDialog extends ConsumerStatefulWidget {
   final String cardId;
   final String userId;
   final String? sprintId;
+  final TimeLog? existingLog;
 
   const EnhancedManualTimeLogDialog({
     super.key,
     required this.cardId,
     required this.userId,
     this.sprintId,
+    this.existingLog,
   });
 
   @override
@@ -35,6 +38,26 @@ class _EnhancedManualTimeLogDialogState
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _startTime = TimeOfDay.now();
   TimeOfDay? _endTime;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // If editing existing log, populate fields
+    if (widget.existingLog != null) {
+      final log = widget.existingLog!;
+      final duration = log.endTime?.difference(log.startTime) ?? Duration.zero;
+
+      _hoursController.text = duration.inHours.toString();
+      _minutesController.text = (duration.inMinutes % 60).toString();
+      _notesController.text = log.notes ?? '';
+      _selectedDate = log.startTime;
+      _startTime = TimeOfDay.fromDateTime(log.startTime);
+      if (log.endTime != null) {
+        _endTime = TimeOfDay.fromDateTime(log.endTime!);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -142,23 +165,47 @@ class _EnhancedManualTimeLogDialogState
             )
           : startDateTime.add(Duration(minutes: totalMinutes));
 
-      await ref
-          .read(sprintNotifierProvider(widget.sprintId ?? '').notifier)
-          .logManualTime(
-            cardId: widget.cardId,
-            userId: widget.userId,
-            durationMinutes: totalMinutes,
-            notes: _notesController.text.trim().isEmpty
-                ? null
-                : _notesController.text.trim(),
-            sprintId: widget.sprintId,
-            startTime: startDateTime,
-            endTime: endDateTime,
-          );
+      if (widget.existingLog != null) {
+        // Update existing log
+        final updatedLog = widget.existingLog!.copyWith(
+          startTime: startDateTime,
+          endTime: endDateTime,
+          notes: _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim(),
+        );
 
-      if (mounted) {
-        Navigator.pop(context);
-        OllieToast.success(context, 'Time logged: ${hours}h ${minutes}m');
+        await ref.read(sprintRepositoryProvider).updateTimeLog(updatedLog);
+
+        // Refresh sprint data
+        if (widget.sprintId != null) {
+          ref.invalidate(sprintNotifierProvider(widget.sprintId!));
+        }
+
+        if (mounted) {
+          Navigator.pop(context);
+          OllieToast.success(context, 'Time log updated');
+        }
+      } else {
+        // Create new log
+        await ref
+            .read(sprintNotifierProvider(widget.sprintId ?? '').notifier)
+            .logManualTime(
+              cardId: widget.cardId,
+              userId: widget.userId,
+              durationMinutes: totalMinutes,
+              notes: _notesController.text.trim().isEmpty
+                  ? null
+                  : _notesController.text.trim(),
+              sprintId: widget.sprintId,
+              startTime: startDateTime,
+              endTime: endDateTime,
+            );
+
+        if (mounted) {
+          Navigator.pop(context);
+          OllieToast.success(context, 'Time logged: ${hours}h ${minutes}m');
+        }
       }
     } catch (e) {
       if (mounted) {
