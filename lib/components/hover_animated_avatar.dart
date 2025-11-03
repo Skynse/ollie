@@ -6,7 +6,7 @@ import 'ollie_ui/theme_extensions.dart';
 class HoverAnimatedAvatar extends ConsumerStatefulWidget {
   final User user;
 
-  const HoverAnimatedAvatar({required this.user});
+  const HoverAnimatedAvatar({super.key, required this.user});
 
   @override
   ConsumerState<HoverAnimatedAvatar> createState() =>

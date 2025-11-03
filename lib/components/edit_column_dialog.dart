@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:ollie/components/manage_columns_dialog.dart';
 import 'package:ollie/models/board_column.dart';
 import 'ollie_ui/theme_extensions.dart';
 
 class EditColumnDialog extends StatefulWidget {
   final BoardColumn column;
 
-  const EditColumnDialog({required this.column});
+  const EditColumnDialog({super.key, required this.column});
 
   @override
   State<EditColumnDialog> createState() => _EditColumnDialogState();

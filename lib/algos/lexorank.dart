@@ -63,7 +63,7 @@ class LexoRank {
     }
 
     // Last char is maximum, append middle char
-    return s + 'U';
+    return '${s}U';
   }
 
   /// Returns a rank between [a] and [b]
@@ -80,7 +80,7 @@ class LexoRank {
     // If they're adjacent or same, we need more precision
     if (bNum - aNum <= BigInt.one) {
       // Append middle character to [a] to create space
-      return a + 'U';
+      return '${a}U';
     }
 
     final midNum = (aNum + bNum) ~/ BigInt.from(2);

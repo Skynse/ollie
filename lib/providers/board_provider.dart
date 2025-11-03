@@ -643,7 +643,6 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
 
     try {
       final createdCard = await _repository.createCard(newCardData);
-      if (createdCard == null) return null;
 
       final newCardsByColumn = Map<String, List<model.Card>>.from(
         originalState.columnCards,

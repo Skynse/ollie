@@ -5,7 +5,6 @@ import 'package:ollie/components/ollie_ui/ollie_button.dart';
 import 'package:ollie/components/ollie_ui/ollie_dialog.dart';
 import 'package:ollie/components/ollie_ui/ollie_textfield.dart';
 import 'package:ollie/components/ollie_ui/ollie_toast.dart';
-import 'package:ollie/providers/boards_provider.dart';
 import '../models/card.dart' as model;
 import '../models/priority.dart';
 import '../models/sprint.dart';

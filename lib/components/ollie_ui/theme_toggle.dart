@@ -213,7 +213,7 @@ class ThemeSwitch extends ConsumerWidget {
           onChanged: (_) {
             ref.read(themeModeProvider.notifier).toggleTheme(context);
           },
-          activeColor: OllieThemeConstants.getPrimaryColor(brightness),
+          activeThumbColor: OllieThemeConstants.getPrimaryColor(brightness),
         ),
         if (showLabels) ...[
           const SizedBox(width: OllieThemeConstants.spacingSmall),

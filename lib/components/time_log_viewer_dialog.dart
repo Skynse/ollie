@@ -7,7 +7,6 @@ import '../providers/user_provider.dart';
 import 'ollie_ui/ollie_dialog.dart';
 import 'ollie_ui/ollie_button.dart';
 import 'ollie_ui/ollie_toast.dart';
-import 'ollie_ui/theme_extensions.dart';
 
 /// Dialog for viewing and managing time logs for a card
 class TimeLogViewerDialog extends ConsumerStatefulWidget {
@@ -487,6 +486,6 @@ class _TimeLogViewerDialogState extends ConsumerState<TimeLogViewerDialog> {
         ? 12
         : time.hour;
     final period = time.hour >= 12 ? 'PM' : 'AM';
-    return '${hour}:${time.minute.toString().padLeft(2, '0')} $period';
+    return '$hour:${time.minute.toString().padLeft(2, '0')} $period';
   }
 }

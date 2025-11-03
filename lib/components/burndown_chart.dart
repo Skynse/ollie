@@ -1,6 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'ollie_ui/theme_extensions.dart';
 
 /// Data point for the burndown chart
 class BurndownDataPoint {

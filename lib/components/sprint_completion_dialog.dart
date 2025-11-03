@@ -8,7 +8,6 @@ import 'burndown_editor_dialog.dart';
 import 'ollie_ui/ollie_dialog.dart';
 import 'ollie_ui/ollie_button.dart';
 import 'ollie_ui/ollie_toast.dart';
-import 'ollie_ui/theme_extensions.dart';
 
 /// Dialog for completing a sprint with burndown review and adjustments
 class SprintCompletionDialog extends ConsumerStatefulWidget {

@@ -34,14 +34,14 @@ class _SprintManagementDialogState
 
     return sprintsAsync.when(
       loading: () => Dialog(
-        child: Container(
+        child: SizedBox(
           width: 700,
           height: 400,
           child: const Center(child: CircularProgressIndicator()),
         ),
       ),
       error: (error, _) => Dialog(
-        child: Container(
+        child: SizedBox(
           width: 700,
           height: 400,
           child: Center(child: Text('Error loading sprints: $error')),

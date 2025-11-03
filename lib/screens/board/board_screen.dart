@@ -7,10 +7,8 @@ import '../../providers/user_provider.dart';
 import '../../providers/sprint_provider.dart';
 import '../../models/board.dart';
 import '../../models/sprint.dart';
-import '../../models/card.dart' as model;
 import '../../components/components.dart';
 import '../../components/board_menu_overlay.dart';
-import '../../components/card_timer_widget.dart';
 import '../../utils/responsive.dart';
 
 /// Main kanban board screen showing columns and cards

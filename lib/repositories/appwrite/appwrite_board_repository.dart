@@ -1,7 +1,4 @@
 import 'package:appwrite/appwrite.dart';
-import 'package:appwrite/models.dart';
-import 'package:ollie/algos/lexorank.dart';
-import 'package:ollie/repositories/appwrite/appwrite_config.dart';
 import '../../models/board.dart';
 import '../../models/board_column.dart';
 import '../../models/card.dart';
@@ -236,6 +233,7 @@ class AppwriteBoardRepository implements BoardRepository {
     );
   }
 
+  @override
   Future<void> moveCard({
     required String cardId,
     required String sourceColumnId,

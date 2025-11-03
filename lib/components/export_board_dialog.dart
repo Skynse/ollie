@@ -6,7 +6,6 @@ import '../models/board.dart';
 import '../models/board_column.dart';
 import '../providers/boards_provider.dart';
 import 'ollie_ui/ollie_toast.dart';
-import 'ollie_ui/theme_extensions.dart';
 
 enum ExportFormat { json, csv }
 

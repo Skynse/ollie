@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/board_column.dart';
-import 'ollie_ui/theme_extensions.dart';
 
 class BoardAnalyticsDialog extends ConsumerStatefulWidget {
   final String boardId;

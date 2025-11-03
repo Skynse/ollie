@@ -8,7 +8,6 @@ import '../providers/burndown_provider.dart';
 import 'ollie_ui/ollie_dialog.dart';
 import 'ollie_ui/ollie_button.dart';
 import 'ollie_ui/ollie_toast.dart';
-import 'ollie_ui/theme_extensions.dart';
 
 /// Dialog for editing burndown data at sprint completion
 class BurndownEditorDialog extends ConsumerStatefulWidget {
@@ -284,7 +283,7 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              'D${index}',
+              'D$index',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,

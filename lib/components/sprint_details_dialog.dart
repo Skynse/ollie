@@ -6,7 +6,6 @@ import '../providers/sprint_provider.dart';
 import '../utils/responsive.dart';
 import 'burndown_chart.dart';
 import 'burndown_editor_dialog.dart';
-import 'ollie_ui/theme_extensions.dart';
 
 class SprintDetailsDialog extends ConsumerStatefulWidget {
   final String sprintId;
