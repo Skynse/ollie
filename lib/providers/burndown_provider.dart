@@ -35,27 +35,25 @@ final sprintBurndownProvider =
         }
       }
 
-      // Calculate total estimated hours
-      final totalEstimatedHours = cards.fold<double>(
-        0,
-        (sum, card) => sum + (card.estimatedHours ?? 0),
-      );
+      // Use sprint's target hours
+      final targetHours = sprint.targetHours;
 
-      // If no estimates, use target hours from sprint
-      final targetHours = totalEstimatedHours > 0
-          ? totalEstimatedHours
-          : sprint.targetHours;
-
-      // Get all time logs for cards in this sprint
+      // Get time logs per card to calculate remaining work
+      final Map<String, double> cardLoggedHours = {};
       final Map<DateTime, double> dailyLoggedHours = {};
 
       for (final card in cards) {
         try {
           final timeLogs = await repository.getTimeLogsByCard(card.id);
 
-          // Group time logs by date and sum hours
+          // Group time logs by date and sum hours per card
+          // Include ALL time logs for cards in this sprint
           for (final log in timeLogs) {
-            if (log.sprintId == sprintId && !log.isActive) {
+            if (!log.isActive) {
+              // Track total logged per card
+              cardLoggedHours[card.id] =
+                  (cardLoggedHours[card.id] ?? 0) + log.durationHours;
+
               // Use the end time's date (when work was completed)
               final logDate = log.endTime ?? log.startTime;
               final dateKey = DateTime(
@@ -90,7 +88,7 @@ final sprintBurndownProvider =
 
       double remainingHours = targetHours;
 
-      // Add initial point (day 0)
+      // Add initial point (day 0) - start with target hours
       dataPoints.add(
         BurndownDataPoint(
           date: currentDate,
@@ -129,80 +127,86 @@ final sprintBurndownProvider =
     });
 
 /// Provider for burndown summary statistics
-final sprintBurndownStatsProvider =
-    FutureProvider.family<BurndownStats, String>((ref, sprintId) async {
-      final repository = ref.read(sprintRepositoryProvider);
-      final boardRepository = ref.read(boardRepositoryProvider);
+final sprintBurndownStatsProvider = FutureProvider.family<BurndownStats, String>((
+  ref,
+  sprintId,
+) async {
+  final repository = ref.read(sprintRepositoryProvider);
+  final boardRepository = ref.read(boardRepositoryProvider);
 
-      final sprint = await repository.getSprint(sprintId);
+  final sprint = await repository.getSprint(sprintId);
 
-      // Get all cards in the sprint
-      final cards = <Card>[];
-      for (final cardId in sprint.cardIds) {
-        try {
-          final card = await boardRepository.getCard(cardId);
-          cards.add(card);
-        } catch (e) {
-          continue;
-        }
-      }
+  // Get all cards in the sprint
+  final cards = <Card>[];
+  for (final cardId in sprint.cardIds) {
+    try {
+      final card = await boardRepository.getCard(cardId);
+      cards.add(card);
+    } catch (e) {
+      continue;
+    }
+  }
 
-      // Calculate stats
-      final totalEstimatedHours = cards.fold<double>(
-        0,
-        (sum, card) => sum + (card.estimatedHours ?? 0),
-      );
+  // Use sprint's target hours
+  final targetHours = sprint.targetHours;
 
-      double totalLoggedHours = 0;
-      for (final card in cards) {
-        try {
-          final timeLogs = await repository.getTimeLogsByCard(card.id);
-          totalLoggedHours += timeLogs
-              .where((log) => log.sprintId == sprintId && !log.isActive)
-              .fold<double>(0, (sum, log) => sum + log.durationHours);
-        } catch (e) {
-          continue;
-        }
-      }
+  // Calculate logged hours and remaining work per card
+  final Map<String, double> cardLoggedHours = {};
+  for (final card in cards) {
+    try {
+      final timeLogs = await repository.getTimeLogsByCard(card.id);
+      // Count ALL time logs for this card (not filtered by sprint)
+      final logged = timeLogs
+          .where((log) => !log.isActive)
+          .fold<double>(0, (sum, log) => sum + log.durationHours);
+      cardLoggedHours[card.id] = logged;
+    } catch (e) {
+      continue;
+    }
+  }
 
-      final targetHours = totalEstimatedHours > 0
-          ? totalEstimatedHours
-          : sprint.targetHours;
-      final remainingHours = (targetHours - totalLoggedHours).clamp(
-        0.0,
-        targetHours,
-      );
-      final percentComplete = targetHours > 0
-          ? (totalLoggedHours / targetHours * 100).toDouble()
-          : 0.0;
+  // Total logged hours
+  final totalLoggedHours = cardLoggedHours.values.fold<double>(
+    0,
+    (sum, hours) => sum + hours,
+  );
 
-      // Calculate if on track
-      final now = DateTime.now();
-      final sprintDuration = sprint.endDate.difference(sprint.startDate).inDays;
-      final daysElapsed = now
-          .difference(sprint.startDate)
-          .inDays
-          .clamp(0, sprintDuration);
-      final expectedProgress = sprintDuration > 0
-          ? daysElapsed / sprintDuration
-          : 0;
-      final actualProgress = targetHours > 0
-          ? totalLoggedHours / targetHours
-          : 0;
+  // Calculate remaining work: for each card, use (estimate - logged) or estimate
+  double remainingHours = 0;
+  for (final card in cards) {
+    final estimated = card.estimatedHours ?? 0;
+    final logged = cardLoggedHours[card.id] ?? 0;
+    remainingHours += (estimated - logged).clamp(0, estimated);
+  }
 
-      final isOnTrack =
-          actualProgress >= expectedProgress - 0.1; // 10% tolerance
+  final percentComplete = targetHours > 0
+      ? (totalLoggedHours / targetHours * 100).toDouble()
+      : 0.0;
 
-      return BurndownStats(
-        targetHours: targetHours.toDouble(),
-        loggedHours: totalLoggedHours.toDouble(),
-        remainingHours: remainingHours,
-        percentComplete: percentComplete,
-        isOnTrack: isOnTrack,
-        daysRemaining: sprint.daysRemaining.toInt(),
-        cardsCount: cards.length,
-      );
-    });
+  // Calculate if on track
+  final now = DateTime.now();
+  final sprintDuration = sprint.endDate.difference(sprint.startDate).inDays;
+  final daysElapsed = now
+      .difference(sprint.startDate)
+      .inDays
+      .clamp(0, sprintDuration);
+  final expectedProgress = sprintDuration > 0
+      ? daysElapsed / sprintDuration
+      : 0;
+  final actualProgress = targetHours > 0 ? totalLoggedHours / targetHours : 0;
+
+  final isOnTrack = actualProgress >= expectedProgress - 0.1; // 10% tolerance
+
+  return BurndownStats(
+    targetHours: targetHours.toDouble(),
+    loggedHours: totalLoggedHours.toDouble(),
+    remainingHours: remainingHours,
+    percentComplete: percentComplete,
+    isOnTrack: isOnTrack,
+    daysRemaining: sprint.daysRemaining.toInt(),
+    cardsCount: cards.length,
+  );
+});
 
 /// Burndown statistics
 class BurndownStats {
