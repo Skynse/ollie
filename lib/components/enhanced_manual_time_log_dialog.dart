@@ -336,13 +336,32 @@ class _EnhancedManualTimeLogDialogState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'End Time (Optional)',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: context.textColor,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            'End Time (Optional)',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: context.textColor,
+                            ),
+                          ),
+                          if (_endTime != null) ...[
+                            const SizedBox(width: 8),
+                            InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _endTime = null;
+                                });
+                              },
+                              child: Icon(
+                                Icons.close,
+                                size: 16,
+                                color: context.secondaryTextColor,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 8),
                       InkWell(

@@ -84,10 +84,10 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
               // Card content
               Padding(
                 padding: EdgeInsets.fromLTRB(
-                  widget.card.priority != Priority.low ? 16 : 12,
-                  12,
-                  12,
-                  12,
+                  widget.card.priority != Priority.low ? 12 : 8,
+                  8,
+                  8,
+                  8,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,12 +100,13 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
                           child: Text(
                             widget.card.title,
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 13,
                               fontWeight: FontWeight.w600,
                               color: context.textColor,
                               height: 1.3,
+                              letterSpacing: -0.1,
                             ),
-                            maxLines: 3,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -114,7 +115,7 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
                             padding: const EdgeInsets.only(left: 4),
                             child: Icon(
                               Icons.priority_high,
-                              size: 16,
+                              size: 14,
                               color: priorityColor,
                             ),
                           ),
@@ -124,20 +125,20 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
                     // Card description (if exists)
                     if (widget.card.description != null &&
                         widget.card.description!.isNotEmpty) ...[
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       Text(
                         widget.card.description!,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 11,
                           color: context.secondaryTextColor,
-                          height: 1.4,
+                          height: 1.3,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
 
                     // Card metadata
                     _buildMetadata(),
@@ -201,21 +202,21 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
     final priorityText = widget.card.priority.toString().split('.').last;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
         color: priorityColor.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(color: priorityColor.withOpacity(0.3), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.flag_rounded, size: 12, color: priorityColor),
-          const SizedBox(width: 4),
+          Icon(Icons.flag_rounded, size: 10, color: priorityColor),
+          const SizedBox(width: 3),
           Text(
             priorityText[0].toUpperCase() + priorityText.substring(1),
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: FontWeight.w600,
               color: priorityColor,
             ),
@@ -251,10 +252,10 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
         color: chipColor,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(
           color: isOverdue
               ? Colors.red.shade200
@@ -267,12 +268,12 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(iconData, size: 11, color: textColor),
-          const SizedBox(width: 4),
+          Icon(iconData, size: 10, color: textColor),
+          const SizedBox(width: 3),
           Text(
             _formatDueDate(dueDate),
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: FontWeight.w600,
               color: textColor,
             ),
@@ -284,24 +285,24 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
 
   Widget _buildCommentCount() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
         color: context.surfaceVariantColor,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             Icons.chat_bubble_outline,
-            size: 12,
+            size: 10,
             color: context.secondaryTextColor,
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 3),
           Text(
             '${widget.card.commentCount}',
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 10,
               color: context.secondaryTextColor,
               fontWeight: FontWeight.w600,
             ),
@@ -331,15 +332,15 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
                 child: Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: context.surfaceColor, width: 2),
+                    border: Border.all(color: context.surfaceColor, width: 1.5),
                   ),
                   child: CircleAvatar(
-                    radius: 12,
+                    radius: 10,
                     backgroundColor: context.primaryColor.withOpacity(0.2),
                     child: Text(
                       user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
                       style: TextStyle(
-                        fontSize: 9,
+                        fontSize: 8,
                         color: context.primaryColor,
                         fontWeight: FontWeight.w700,
                       ),
@@ -350,24 +351,24 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
               loading: () => Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: context.surfaceColor, width: 2),
+                  border: Border.all(color: context.surfaceColor, width: 1.5),
                 ),
                 child: CircleAvatar(
-                  radius: 12,
+                  radius: 10,
                   backgroundColor: context.borderColor,
                 ),
               ),
               error: (_, __) => Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: context.surfaceColor, width: 2),
+                  border: Border.all(color: context.surfaceColor, width: 1.5),
                 ),
                 child: CircleAvatar(
-                  radius: 12,
+                  radius: 10,
                   backgroundColor: context.dangerColor.withOpacity(0.2),
                   child: Icon(
                     Icons.error,
-                    size: 12,
+                    size: 10,
                     color: context.dangerColor,
                   ),
                 ),
@@ -377,19 +378,19 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
         }),
         if (remaining > 0)
           Transform.translate(
-            offset: Offset(displayedIds.length * -8.0, 0),
+            offset: Offset(displayedIds.length * -6.0, 0),
             child: Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: context.surfaceColor, width: 2),
+                border: Border.all(color: context.surfaceColor, width: 1.5),
               ),
               child: CircleAvatar(
-                radius: 12,
+                radius: 10,
                 backgroundColor: context.surfaceVariantColor,
                 child: Text(
                   '+$remaining',
                   style: TextStyle(
-                    fontSize: 8,
+                    fontSize: 7,
                     color: context.secondaryTextColor,
                     fontWeight: FontWeight.w700,
                   ),

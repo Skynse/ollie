@@ -50,103 +50,36 @@ class _BurndownChartState extends State<BurndownChart> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Title and legend
-        Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Row(
-            children: [
-              Text(
-                widget.title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const Spacer(),
-              _buildLegend(),
-            ],
-          ),
-        ),
+        // Legend
+        _buildLegend(),
+        const SizedBox(height: 16),
 
         // Chart
         SizedBox(
-          height: 300,
+          height: 320,
           child: Padding(
-            padding: const EdgeInsets.only(right: 16, top: 8),
+            padding: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
             child: LineChart(
               _buildChartData(),
               duration: const Duration(milliseconds: 250),
             ),
           ),
         ),
-
-        // Stats summary
-        const SizedBox(height: 16),
-        _buildStats(),
       ],
     );
   }
 
   Widget _buildLegend() {
     return Row(
-      mainAxisSize: MainAxisSize.min,
       children: [
         _LegendItem(
-          color: widget.idealLineColor,
+          color: const Color(0xff94a3b8),
           label: 'Ideal',
           isDashed: true,
         ),
-        const SizedBox(width: 16),
-        _LegendItem(color: widget.actualLineColor, label: 'Actual'),
+        const SizedBox(width: 20),
+        _LegendItem(color: const Color(0xff3b82f6), label: 'Actual'),
       ],
-    );
-  }
-
-  Widget _buildStats() {
-    final latestPoint = widget.dataPoints.lastOrNull;
-    final remaining = latestPoint?.actualHours ?? widget.targetHours;
-    final completed = widget.targetHours - remaining;
-    final percentComplete = (completed / widget.targetHours * 100).clamp(
-      0,
-      100,
-    );
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Expanded(
-              child: _StatItem(
-                label: 'Target Hours',
-                value: widget.targetHours.toStringAsFixed(1),
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-            Expanded(
-              child: _StatItem(
-                label: 'Completed',
-                value: completed.toStringAsFixed(1),
-                color: Colors.green,
-              ),
-            ),
-            Expanded(
-              child: _StatItem(
-                label: 'Remaining',
-                value: remaining.toStringAsFixed(1),
-                color: Colors.orange,
-              ),
-            ),
-            Expanded(
-              child: _StatItem(
-                label: 'Progress',
-                value: '${percentComplete.toInt()}%',
-                color: Theme.of(context).colorScheme.secondary,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -160,36 +93,30 @@ class _BurndownChartState extends State<BurndownChart> {
         show: true,
         drawVerticalLine: true,
         horizontalInterval: widget.targetHours / 5,
-        verticalInterval: durationDays / 7,
         getDrawingHorizontalLine: (value) {
-          return FlLine(
-            color: Theme.of(context).colorScheme.outlineVariant,
-            strokeWidth: 1,
-          );
+          return FlLine(color: Colors.grey.shade200, strokeWidth: 1);
         },
         getDrawingVerticalLine: (value) {
-          return FlLine(
-            color: Theme.of(context).colorScheme.outlineVariant,
-            strokeWidth: 1,
-          );
+          return FlLine(color: Colors.grey.shade200, strokeWidth: 1);
         },
       ),
       titlesData: FlTitlesData(
         leftTitles: AxisTitles(
-          axisNameWidget: const Text(
-            'Hours Remaining',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-          ),
           sideTitles: SideTitles(
             showTitles: true,
-            reservedSize: 50,
+            reservedSize: 42,
             interval: widget.targetHours / 5,
             getTitlesWidget: (value, meta) {
-              return Text(
-                value.toInt().toString(),
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 12,
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Text(
+                  value.toInt().toString(),
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.right,
                 ),
               );
             },
@@ -200,22 +127,22 @@ class _BurndownChartState extends State<BurndownChart> {
         ),
         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         bottomTitles: AxisTitles(
-          axisNameWidget: const Text(
-            'Days',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-          ),
           sideTitles: SideTitles(
             showTitles: true,
-            reservedSize: 32,
-            interval: (durationDays / 7).ceilToDouble(),
+            reservedSize: 28,
+            interval: durationDays > 14 ? (durationDays / 7).ceilToDouble() : 2,
             getTitlesWidget: (value, meta) {
+              // Don't show label if it's beyond the max
+              if (value > durationDays) return const SizedBox.shrink();
+
               return Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
-                  'Day ${value.toInt()}',
+                  value.toInt().toString(),
                   style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: Colors.grey.shade600,
                     fontSize: 11,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               );
@@ -225,20 +152,18 @@ class _BurndownChartState extends State<BurndownChart> {
       ),
       borderData: FlBorderData(
         show: true,
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-        ),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
       ),
       lineBarsData: [
         // Ideal line
         LineChartBarData(
           spots: idealPoints,
           isCurved: false,
-          color: widget.idealLineColor,
+          color: const Color(0xff94a3b8),
           barWidth: 2,
           isStrokeCapRound: true,
           dotData: const FlDotData(show: false),
-          dashArray: [5, 5],
+          dashArray: [6, 4],
           belowBarData: BarAreaData(show: false),
         ),
         // Actual line
@@ -246,15 +171,16 @@ class _BurndownChartState extends State<BurndownChart> {
           LineChartBarData(
             spots: actualPoints,
             isCurved: true,
-            color: widget.actualLineColor,
-            barWidth: 3,
+            curveSmoothness: 0.3,
+            color: const Color(0xff3b82f6),
+            barWidth: 2.5,
             isStrokeCapRound: true,
             dotData: FlDotData(
               show: true,
               getDotPainter: (spot, percent, barData, index) {
                 return FlDotCirclePainter(
-                  radius: 4,
-                  color: widget.actualLineColor,
+                  radius: 3,
+                  color: const Color(0xff3b82f6),
                   strokeWidth: 2,
                   strokeColor: Colors.white,
                 );
@@ -262,7 +188,7 @@ class _BurndownChartState extends State<BurndownChart> {
             ),
             belowBarData: BarAreaData(
               show: true,
-              color: widget.actualLineColor.withOpacity(0.1),
+              color: const Color(0xff3b82f6).withOpacity(0.08),
             ),
           ),
       ],
@@ -270,6 +196,7 @@ class _BurndownChartState extends State<BurndownChart> {
       maxX: durationDays.toDouble(),
       minY: 0,
       maxY: widget.targetHours * 1.1,
+      clipData: const FlClipData.all(),
       lineTouchData: LineTouchData(
         touchTooltipData: LineTouchTooltipData(
           getTooltipItems: (touchedSpots) {
@@ -425,41 +352,4 @@ class _DashedLinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _StatItem extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-
-  const _StatItem({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-      ],
-    );
-  }
 }

@@ -254,7 +254,10 @@ class _ColumnTile extends StatelessWidget {
         leading: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.drag_handle, color: context.secondaryTextColor),
+            Icon(
+              Icons.drag_handle,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(width: 8),
             Container(
               width: 32,
@@ -280,12 +283,18 @@ class _ColumnTile extends StatelessWidget {
           children: [
             IconButton(
               onPressed: onEdit,
-              icon: Icon(Icons.edit, color: context.primaryColor),
+              icon: Icon(
+                Icons.edit,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               tooltip: 'Edit column',
             ),
             IconButton(
               onPressed: onDelete,
-              icon: Icon(Icons.delete, color: context.dangerColor),
+              icon: Icon(
+                Icons.delete,
+                color: Theme.of(context).colorScheme.error,
+              ),
               tooltip: 'Delete column',
             ),
           ],

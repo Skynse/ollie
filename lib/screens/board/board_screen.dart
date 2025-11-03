@@ -11,6 +11,7 @@ import '../../models/card.dart' as model;
 import '../../components/components.dart';
 import '../../components/board_menu_overlay.dart';
 import '../../components/card_timer_widget.dart';
+import '../../utils/responsive.dart';
 
 /// Main kanban board screen showing columns and cards
 class BoardScreen extends ConsumerStatefulWidget {
@@ -338,6 +339,10 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             color: Theme.of(context).listTileTheme.textColor,
           ),
         ),
+        onTap: () {
+          BoardMenuOverlay.hide();
+          onTap();
+        },
         subtitle: subtitle != null
             ? Text(
                 subtitle,
@@ -347,7 +352,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                 ),
               )
             : null,
-        onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
       ),
@@ -441,16 +445,10 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   }
 
   void _showManageMembersDialog() {
-    final boardState = ref.read(boardNotifierProvider(widget.boardId));
-    if (!boardState.hasValue) return;
-    final board = boardState.value!.board;
-
     showDialog(
       context: context,
       builder: (context) => ManageMembersDialog(
         boardId: widget.boardId,
-        memberIds: board.memberIds,
-        createdBy: board.createdBy,
         onRemoveMember: (userId) async {
           final repository = ref.read(boardRepositoryProvider);
           await repository.removeMember(widget.boardId, userId);
@@ -513,48 +511,26 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     );
   }
 
-  void _showSprintManagementDialog() async {
-    void refreshDialog() {
-      // Force refresh by invalidating providers
-      ref.invalidate(boardSprintsProvider(widget.boardId));
-      ref.invalidate(sprintNotifierProvider(widget.boardId));
-    }
-
-    final sprintsAsync = ref.read(boardSprintsProvider(widget.boardId));
-
-    sprintsAsync.when(
-      data: (sprints) async {
-        final activeSprint = ref.read(sprintNotifierProvider(widget.boardId));
-
-        await showDialog(
-          context: context,
-          builder: (context) => SprintManagementDialog(
-            sprints: sprints,
-            activeSprint: activeSprint,
-            onStartSprint: (sprintId) async {
-              await ref
-                  .read(sprintNotifierProvider(widget.boardId).notifier)
-                  .startSprint(sprintId);
-            },
-            onCompleteSprint: (sprintId) async {
-              await ref
-                  .read(sprintNotifierProvider(widget.boardId).notifier)
-                  .completeSprint(sprintId);
-            },
-            onDeleteSprint: (sprintId) async {
-              final repository = ref.read(sprintRepositoryProvider);
-              await repository.deleteSprint(sprintId);
-            },
-            onRefresh: refreshDialog,
-          ),
-        );
-      },
-      loading: () {
-        OllieToast.info(context, 'Loading sprints...');
-      },
-      error: (error, _) {
-        OllieToast.error(context, 'Failed to load sprints: $error');
-      },
+  void _showSprintManagementDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => SprintManagementDialog(
+        boardId: widget.boardId,
+        onStartSprint: (sprintId) async {
+          await ref
+              .read(sprintNotifierProvider(widget.boardId).notifier)
+              .startSprint(sprintId);
+        },
+        onCompleteSprint: (sprintId) async {
+          await ref
+              .read(sprintNotifierProvider(widget.boardId).notifier)
+              .completeSprint(sprintId);
+        },
+        onDeleteSprint: (sprintId) async {
+          final repository = ref.read(sprintRepositoryProvider);
+          await repository.deleteSprint(sprintId);
+        },
+      ),
     );
   }
 
@@ -645,102 +621,169 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   }
 
   Widget _buildHeader(Board board) {
+    final isMobile = context.isMobile;
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 12 : 16,
+        vertical: isMobile ? 8 : 10,
+      ),
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
         border: Border(
           bottom: BorderSide(color: Theme.of(context).dividerColor),
         ),
       ),
-      child: Row(
-        children: [
-          // Back button
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back),
-            style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context).cardColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
+      child: isMobile ? _buildMobileHeader(board) : _buildDesktopHeader(board),
+    );
+  }
+
+  Widget _buildDesktopHeader(Board board) {
+    return Row(
+      children: [
+        // Back button
+        IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back, size: 20),
+          style: IconButton.styleFrom(
+            backgroundColor: Theme.of(context).cardColor,
+            padding: const EdgeInsets.all(8),
+            minimumSize: const Size(36, 36),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6),
             ),
           ),
-          const SizedBox(width: 16),
+        ),
+        const SizedBox(width: 12),
 
-          // Board info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+        // Board info
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                board.name,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              if (board.description != null && board.description!.isNotEmpty)
                 Text(
-                  board.name,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+                  board.description!,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(context).textTheme.bodyMedium!.color,
                   ),
                 ),
-                if (board.description != null && board.description!.isNotEmpty)
-                  Text(
-                    board.description!,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Theme.of(context).textTheme.bodyMedium!.color,
-                    ),
-                  ),
-              ],
-            ),
+            ],
           ),
+        ),
 
-          // Sprint selector
-          _buildSprintSelector(),
-          const SizedBox(width: 16),
+        // Sprint selector
+        _buildSprintSelector(),
+        const SizedBox(width: 12),
 
-          // Members avatars
-          _buildMembersAvatars(board.memberIds),
-          const SizedBox(width: 8),
+        // Members avatars
+        _buildMembersAvatars(board.memberIds),
+        const SizedBox(width: 8),
 
-          // Board menu
-          IconButton(
-            onPressed: () {
-              // Get the button's position
-              final RenderBox button = context.findRenderObject() as RenderBox;
-              final RenderBox overlay =
-                  Overlay.of(context).context.findRenderObject() as RenderBox;
-              final position = button.localToGlobal(
-                Offset.zero,
-                ancestor: overlay,
-              );
+        // Board menu
+        _buildMenuButton(),
+      ],
+    );
+  }
 
-              // Show floating menu
-              final screenWidth = MediaQuery.of(context).size.width;
-              BoardMenuOverlay.show(
-                context: context,
-                position: Offset(
-                  screenWidth -
-                      320 -
-                      16, // Align to right side with 16px padding
-                  position.dy + 8, // Below the button
+  Widget _buildMobileHeader(Board board) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Top row: Back button, title, menu
+        Row(
+          children: [
+            // Back button
+            IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.arrow_back, size: 20),
+              style: IconButton.styleFrom(
+                backgroundColor: Theme.of(context).cardColor,
+                padding: const EdgeInsets.all(6),
+                minimumSize: const Size(32, 32),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                child: _buildBoardDrawer(),
-              );
-            },
-            icon: const Icon(Icons.more_horiz),
-            style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context).drawerTheme.backgroundColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
               ),
             ),
+            const SizedBox(width: 8),
+
+            // Board title
+            Expanded(
+              child: Text(
+                board.name,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.3,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+
+            // Board menu
+            _buildMenuButton(),
+          ],
+        ),
+
+        // Second row: Sprint selector and members
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(child: _buildSprintSelector()),
+            const SizedBox(width: 8),
+            _buildMembersAvatars(board.memberIds, compact: true),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMenuButton() {
+    return IconButton(
+      onPressed: () {
+        // Get the button's position
+        final RenderBox button = context.findRenderObject() as RenderBox;
+        final RenderBox overlay =
+            Overlay.of(context).context.findRenderObject() as RenderBox;
+        final position = button.localToGlobal(Offset.zero, ancestor: overlay);
+
+        // Show floating menu
+        final screenWidth = MediaQuery.of(context).size.width;
+        final menuWidth = context.isMobile ? screenWidth - 32 : 320;
+        BoardMenuOverlay.show(
+          context: context,
+          position: Offset(
+            context.isMobile ? 16 : screenWidth - menuWidth - 16,
+            position.dy + 8,
           ),
-        ],
+          child: _buildBoardDrawer(),
+        );
+      },
+      icon: const Icon(Icons.more_horiz),
+      style: IconButton.styleFrom(
+        backgroundColor: Theme.of(context).drawerTheme.backgroundColor,
+        padding: const EdgeInsets.all(8),
+        minimumSize: const Size(36, 36),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
       ),
     );
   }
 
-  Widget _buildMembersAvatars(List<String> memberIds) {
-    final displayedIds = memberIds.take(3).toList();
+  Widget _buildMembersAvatars(List<String> memberIds, {bool compact = false}) {
+    final displayedIds = memberIds.take(compact ? 2 : 3).toList();
     final remaining = memberIds.length - displayedIds.length;
+    final avatarSize = compact ? 12.0 : 16.0;
 
     return Row(
       children: [
@@ -757,13 +800,17 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                     child: HoverAnimatedAvatar(user: user),
                   ),
                   loading: () => CircleAvatar(
-                    radius: 16,
+                    radius: avatarSize,
                     backgroundColor: Colors.grey.shade200,
                   ),
                   error: (_, __) => CircleAvatar(
-                    radius: 16,
+                    radius: avatarSize,
                     backgroundColor: Colors.red.shade100,
-                    child: Icon(Icons.error, size: 16, color: Colors.red),
+                    child: Icon(
+                      Icons.error,
+                      size: avatarSize,
+                      color: Colors.red,
+                    ),
                   ),
                 ),
               );
@@ -774,33 +821,34 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
           Padding(
             padding: const EdgeInsets.only(left: 4),
             child: CircleAvatar(
-              radius: 16,
+              radius: avatarSize,
               backgroundColor: Colors.grey.shade300,
               child: Text(
                 '+$remaining',
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: compact ? 8 : 10,
                   color: Colors.grey.shade700,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
           ),
-        // Invite button
-        Padding(
-          padding: const EdgeInsets.only(left: 8),
-          child: IconButton(
-            onPressed: () => _showInviteMemberDialog(),
-            icon: const Icon(Icons.person_add, size: 20),
-            style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context).cardColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+        // Invite button (hide on compact mobile)
+        if (!compact)
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: IconButton(
+              onPressed: () => _showInviteMemberDialog(),
+              icon: const Icon(Icons.person_add, size: 20),
+              style: IconButton.styleFrom(
+                backgroundColor: Theme.of(context).cardColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
+              tooltip: 'Invite member',
             ),
-            tooltip: 'Invite member',
           ),
-        ),
       ],
     );
   }
@@ -825,12 +873,12 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         return PopupMenuButton<String>(
           tooltip: 'Sprint Management',
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: activeSprint != null
                   ? context.surfaceColor
                   : context.surfaceVariantColor,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(6),
               border: Border.all(
                 color: activeSprint != null
                     ? context.successColor
@@ -842,14 +890,14 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
               children: [
                 Icon(
                   Icons.timer,
-                  size: 18,
+                  size: 16,
                   color: Theme.of(context).iconTheme.color,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 Text(
                   activeSprint?.name ?? 'No Active Sprint',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: activeSprint != null
                         ? Theme.brightnessOf(context) == Brightness.light
@@ -858,10 +906,10 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                         : Colors.grey.shade700,
                   ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 3),
                 Icon(
                   Icons.arrow_drop_down,
-                  size: 20,
+                  size: 18,
                   color: Theme.of(context).iconTheme.color,
                 ),
               ],
@@ -984,21 +1032,43 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
 
   Widget _buildKanbanBoard(BoardState state) {
     final columns = state.columns;
+    final isMobile = context.isMobile;
 
+    if (isMobile) {
+      // Mobile: Vertical scrolling list
+      return ListView.builder(
+        padding: const EdgeInsets.all(12),
+        itemCount: columns.length + 1, // +1 for add button
+        itemBuilder: (context, index) {
+          if (index == columns.length) {
+            return _buildAddColumnButton();
+          }
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: KanbanColumn(
+              column: columns[index],
+              boardId: state.board.id,
+            ),
+          );
+        },
+      );
+    }
+
+    // Desktop: Horizontal scrolling
     return Scrollbar(
       controller: _scrollController,
       thumbVisibility: true,
       child: SingleChildScrollView(
         controller: _scrollController,
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Render each column
             ...columns.map(
               (column) => Padding(
-                padding: const EdgeInsets.only(right: 16),
+                padding: const EdgeInsets.only(right: 12),
                 child: KanbanColumn(column: column, boardId: state.board.id),
               ),
             ),
@@ -1012,8 +1082,10 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   }
 
   Widget _buildAddColumnButton() {
+    final isMobile = context.isMobile;
+
     return Container(
-      width: 300,
+      width: isMobile ? double.infinity : 280,
       padding: const EdgeInsets.all(16),
       child: OllieButton.outline(
         text: 'Add Column',

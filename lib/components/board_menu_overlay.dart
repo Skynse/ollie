@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ollie/components/ollie_ui/theme_extensions.dart';
+import '../utils/responsive.dart';
 
 /// Custom floating menu overlay for board settings
 class BoardMenuOverlay extends StatelessWidget {
@@ -71,28 +72,36 @@ class _PositionedMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
+    final isMobile = context.isMobile;
 
     // Calculate position ensuring menu stays on screen
     double left = position.dx;
     double top = position.dy;
 
-    // Menu width (estimated)
-    const menuWidth = 320.0;
+    // Menu width (responsive)
+    final menuWidth = isMobile ? screenSize.width - 32.0 : 320.0;
     const menuMaxHeight = 600.0;
 
-    // Adjust if too far right
-    if (left + menuWidth > screenSize.width) {
-      left = screenSize.width - menuWidth - 16;
-    }
+    if (isMobile) {
+      // Mobile: Full width, positioned from top
+      left = 16.0;
+      top = 60.0; // Below header
+    } else {
+      // Desktop: Calculate optimal position
+      // Adjust if too far right
+      if (left + menuWidth > screenSize.width) {
+        left = screenSize.width - menuWidth - 16;
+      }
 
-    // Adjust if too far down
-    if (top + menuMaxHeight > screenSize.height) {
-      top = screenSize.height - menuMaxHeight - 16;
-    }
+      // Adjust if too far down
+      if (top + menuMaxHeight > screenSize.height) {
+        top = screenSize.height - menuMaxHeight - 16;
+      }
 
-    // Keep some padding from edges
-    left = left.clamp(16.0, screenSize.width - menuWidth - 16);
-    top = top.clamp(16.0, screenSize.height - 100);
+      // Keep some padding from edges
+      left = left.clamp(16.0, screenSize.width - menuWidth - 16);
+      top = top.clamp(16.0, screenSize.height - 100);
+    }
 
     return Positioned(
       left: left,
@@ -115,7 +124,9 @@ class _PositionedMenu extends StatelessWidget {
           shadowColor: Colors.black.withOpacity(0.3),
           child: Container(
             width: menuWidth,
-            constraints: BoxConstraints(maxHeight: menuMaxHeight),
+            constraints: BoxConstraints(
+              maxHeight: isMobile ? screenSize.height * 0.8 : menuMaxHeight,
+            ),
             decoration: BoxDecoration(
               color: context.surfaceColor,
               borderRadius: BorderRadius.circular(12),

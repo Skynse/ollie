@@ -38,6 +38,15 @@ final boardSprintsProvider = FutureProvider.family<List<Sprint>, String>((
   return await repository.getSprintsByBoard(boardId);
 });
 
+/// Provider for a single sprint by ID
+final sprintProvider = FutureProvider.family<Sprint, String>((
+  ref,
+  sprintId,
+) async {
+  final repository = ref.read(sprintRepositoryProvider);
+  return await repository.getSprint(sprintId);
+});
+
 /// Provider for active sprint in a board
 final activeSprintProvider = FutureProvider.family<Sprint?, String>((
   ref,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ollie/components/ollie_ui/theme_extensions.dart';
 import 'package:ollie/components/ollie_ui/theme_toggle.dart';
+import '../../../utils/responsive.dart';
 
 /// Top bar for the homepage with search, sorting, and view controls
 class HomeTopBar extends StatelessWidget {
@@ -14,6 +15,7 @@ class HomeTopBar extends StatelessWidget {
   final bool isGridView;
   final Function(bool) onViewChanged;
   final VoidCallback onCreateBoard;
+  final VoidCallback? onMenuTap;
 
   const HomeTopBar({
     super.key,
@@ -27,10 +29,17 @@ class HomeTopBar extends StatelessWidget {
     required this.isGridView,
     required this.onViewChanged,
     required this.onCreateBoard,
+    this.onMenuTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = context.isMobile;
+
+    if (isMobile) {
+      return _buildMobileTopBar(context);
+    }
+
     return Container(
       height: 80,
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
@@ -227,6 +236,134 @@ class HomeTopBar extends StatelessWidget {
             ),
           ),
           ThemeToggle(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileTopBar(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: context.surfaceColor.withOpacity(0.95),
+        border: Border(bottom: BorderSide(color: context.borderColor)),
+        boxShadow: context.shadowSmall,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Row 1: Title and Create button
+          Row(
+            children: [
+              // Menu button for mobile
+              if (onMenuTap != null)
+                IconButton(
+                  onPressed: onMenuTap,
+                  icon: const Icon(Icons.menu, size: 20),
+                  style: IconButton.styleFrom(
+                    padding: const EdgeInsets.all(8),
+                    minimumSize: const Size(36, 36),
+                  ),
+                  tooltip: 'Menu',
+                ),
+              Expanded(
+                child: Text(
+                  selectedView == 'my-projects' ? 'My Projects' : 'Shared',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                    color: context.textColor,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: onCreateBoard,
+                icon: const Icon(Icons.add, size: 20),
+                style: IconButton.styleFrom(
+                  backgroundColor: context.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.all(8),
+                  minimumSize: const Size(36, 36),
+                ),
+                tooltip: 'New Board',
+              ),
+              const SizedBox(width: 4),
+              ThemeToggle(),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Row 2: Search and controls
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: searchController,
+                  onChanged: onSearchChanged,
+                  decoration: InputDecoration(
+                    hintText: 'Search...',
+                    hintStyle: TextStyle(
+                      color: context.secondaryTextColor.withOpacity(0.6),
+                      fontSize: 13,
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: context.secondaryTextColor.withOpacity(0.6),
+                      size: 18,
+                    ),
+                    suffixIcon: searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(
+                              Icons.close,
+                              color: context.secondaryTextColor.withOpacity(
+                                0.6,
+                              ),
+                              size: 16,
+                            ),
+                            onPressed: onSearchClear,
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: context.surfaceVariantColor,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    isDense: true,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // View toggle
+              Container(
+                decoration: BoxDecoration(
+                  color: context.surfaceVariantColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _ViewToggleButton(
+                      icon: Icons.grid_view_rounded,
+                      isSelected: isGridView,
+                      onTap: () => onViewChanged(true),
+                    ),
+                    _ViewToggleButton(
+                      icon: Icons.view_list_rounded,
+                      isSelected: !isGridView,
+                      onTap: () => onViewChanged(false),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

@@ -1,21 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/user_provider.dart';
+import '../providers/board_provider.dart';
 import 'ollie_ui/ollie_toast.dart';
 import 'ollie_ui/theme_extensions.dart';
 
 class ManageMembersDialog extends ConsumerStatefulWidget {
   final String boardId;
-  final List<String> memberIds;
-  final String createdBy;
   final Future<void> Function(String userId) onRemoveMember;
   final VoidCallback onInviteMore;
 
   const ManageMembersDialog({
     super.key,
     required this.boardId,
-    required this.memberIds,
-    required this.createdBy,
     required this.onRemoveMember,
     required this.onInviteMore,
   });
@@ -28,6 +25,41 @@ class ManageMembersDialog extends ConsumerStatefulWidget {
 class _ManageMembersDialogState extends ConsumerState<ManageMembersDialog> {
   @override
   Widget build(BuildContext context) {
+    final boardAsync = ref.watch(boardNotifierProvider(widget.boardId));
+
+    return boardAsync.when(
+      data: (boardState) => _buildDialog(
+        context,
+        boardState.board.memberIds,
+        boardState.board.createdBy,
+      ),
+      loading: () => Dialog(
+        child: Container(
+          width: 600,
+          height: 400,
+          alignment: Alignment.center,
+          child: const CircularProgressIndicator(),
+        ),
+      ),
+      error: (error, _) => Dialog(
+        child: Container(
+          width: 600,
+          height: 400,
+          alignment: Alignment.center,
+          child: Text(
+            'Failed to load board: ${error.toString()}',
+            style: const TextStyle(color: Colors.red),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDialog(
+    BuildContext context,
+    List<String> memberIds,
+    String createdBy,
+  ) {
     return Dialog(
       child: Container(
         width: 600,
@@ -61,14 +93,14 @@ class _ManageMembersDialogState extends ConsumerState<ManageMembersDialog> {
 
             // Member list
             Expanded(
-              child: widget.memberIds.isEmpty
+              child: memberIds.isEmpty
                   ? _buildEmptyState()
                   : ListView.builder(
                       padding: const EdgeInsets.all(16),
-                      itemCount: widget.memberIds.length,
+                      itemCount: memberIds.length,
                       itemBuilder: (context, index) {
-                        final memberId = widget.memberIds[index];
-                        final isOwner = memberId == widget.createdBy;
+                        final memberId = memberIds[index];
+                        final isOwner = memberId == createdBy;
                         return _MemberTile(
                           key: ValueKey(memberId),
                           memberId: memberId,

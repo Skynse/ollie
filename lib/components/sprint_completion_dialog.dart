@@ -12,9 +12,9 @@ import 'ollie_ui/theme_extensions.dart';
 
 /// Dialog for completing a sprint with burndown review and adjustments
 class SprintCompletionDialog extends ConsumerStatefulWidget {
-  final Sprint sprint;
+  final String sprintId;
 
-  const SprintCompletionDialog({super.key, required this.sprint});
+  const SprintCompletionDialog({super.key, required this.sprintId});
 
   @override
   ConsumerState<SprintCompletionDialog> createState() =>
@@ -27,21 +27,49 @@ class _SprintCompletionDialogState
 
   @override
   Widget build(BuildContext context) {
-    final statsAsync = ref.watch(sprintBurndownStatsProvider(widget.sprint.id));
-    final burndownAsync = ref.watch(sprintBurndownProvider(widget.sprint.id));
+    final sprintAsync = ref.watch(sprintProvider(widget.sprintId));
+    final statsAsync = ref.watch(sprintBurndownStatsProvider(widget.sprintId));
+    final burndownAsync = ref.watch(sprintBurndownProvider(widget.sprintId));
 
+    return sprintAsync.when(
+      data: (sprint) =>
+          _buildDialog(context, sprint, statsAsync, burndownAsync),
+      loading: () => const OllieDialog(
+        title: 'Loading Sprint...',
+        width: 900,
+        content: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, _) => OllieDialog(
+        title: 'Error',
+        width: 900,
+        content: Center(
+          child: Text(
+            'Failed to load sprint: ${error.toString()}',
+            style: const TextStyle(color: Colors.red),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDialog(
+    BuildContext context,
+    Sprint sprint,
+    AsyncValue<BurndownStats> statsAsync,
+    AsyncValue<List<BurndownDataPoint>> burndownAsync,
+  ) {
     return OllieDialog(
-      title: 'Complete Sprint - ${widget.sprint.name}',
-      width: 900,
+      title: 'Complete Sprint - ${sprint.name}',
+      width: 800,
       content: SizedBox(
-        height: 650,
+        height: 600,
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Sprint summary header
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -55,7 +83,7 @@ class _SprintCompletionDialogState
                       ).colorScheme.primaryContainer.withOpacity(0.5),
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: Theme.of(
                       context,
@@ -70,29 +98,29 @@ class _SprintCompletionDialogState
                         Icon(
                           Icons.event,
                           color: Theme.of(context).colorScheme.primary,
-                          size: 24,
+                          size: 18,
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                widget.sprint.name,
+                                sprint.name,
                                 style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
                                   color: Theme.of(
                                     context,
                                   ).colorScheme.onSurface,
                                 ),
                               ),
-                              if (widget.sprint.goal != null) ...[
-                                const SizedBox(height: 4),
+                              if (sprint.goal != null) ...[
+                                const SizedBox(height: 3),
                                 Text(
-                                  widget.sprint.goal!,
+                                  sprint.goal!,
                                   style: TextStyle(
-                                    fontSize: 14,
+                                    fontSize: 13,
                                     color: Theme.of(
                                       context,
                                     ).colorScheme.onSurfaceVariant,
@@ -104,24 +132,24 @@ class _SprintCompletionDialogState
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
                         _buildInfoChip(
                           Icons.calendar_today,
-                          '${_formatDate(widget.sprint.startDate)} - ${_formatDate(widget.sprint.endDate)}',
+                          '${_formatDate(sprint.startDate)} - ${_formatDate(sprint.endDate)}',
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 8),
                         _buildInfoChip(
                           Icons.schedule,
-                          '${widget.sprint.durationDays} days',
+                          '${sprint.durationDays} days',
                         ),
                       ],
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
               // Statistics cards
               statsAsync.when(
@@ -131,12 +159,12 @@ class _SprintCompletionDialogState
                     Text(
                       'Sprint Statistics',
                       style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                         color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
                         Expanded(
@@ -148,7 +176,7 @@ class _SprintCompletionDialogState
                             null,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: _buildStatCard(
                             'Hours Logged',
@@ -158,7 +186,7 @@ class _SprintCompletionDialogState
                             null,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: _buildStatCard(
                             'Remaining',
@@ -170,7 +198,7 @@ class _SprintCompletionDialogState
                             null,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: _buildStatCard(
                             'Completion',
@@ -189,7 +217,7 @@ class _SprintCompletionDialogState
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (_, __) => const SizedBox.shrink(),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
               // Burndown chart
               Column(
@@ -201,8 +229,8 @@ class _SprintCompletionDialogState
                       Text(
                         'Burndown Chart',
                         style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                           color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
@@ -211,36 +239,45 @@ class _SprintCompletionDialogState
                           final result = await showDialog<bool>(
                             context: context,
                             builder: (context) =>
-                                BurndownEditorDialog(sprint: widget.sprint),
+                                BurndownEditorDialog(sprint: sprint),
                           );
 
                           if (result == true && mounted) {
                             // Refresh burndown data
                             ref.invalidate(
-                              sprintBurndownProvider(widget.sprint.id),
+                              sprintBurndownProvider(widget.sprintId),
                             );
                             ref.invalidate(
-                              sprintBurndownStatsProvider(widget.sprint.id),
+                              sprintBurndownStatsProvider(widget.sprintId),
                             );
                           }
                         },
-                        icon: const Icon(Icons.edit, size: 16),
-                        label: const Text('Edit Burndown Data'),
+                        icon: const Icon(Icons.edit, size: 14),
+                        label: const Text(
+                          'Edit Data',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   burndownAsync.when(
                     data: (dataPoints) {
                       if (dataPoints.isEmpty) {
                         return Container(
-                          height: 250,
+                          height: 200,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
                             color: Theme.of(
                               context,
                             ).colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(8),
                             border: Border.all(
                               color: Theme.of(
                                 context,
@@ -250,6 +287,7 @@ class _SprintCompletionDialogState
                           child: Text(
                             'Sprint hasn\'t started yet',
                             style: TextStyle(
+                              fontSize: 13,
                               color: Theme.of(
                                 context,
                               ).colorScheme.onSurfaceVariant,
@@ -258,11 +296,11 @@ class _SprintCompletionDialogState
                         );
                       }
                       return Container(
-                        height: 250,
-                        padding: const EdgeInsets.all(16),
+                        height: 200,
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(8),
                           border: Border.all(
                             color: Theme.of(
                               context,
@@ -271,35 +309,38 @@ class _SprintCompletionDialogState
                         ),
                         child: BurndownChart(
                           dataPoints: dataPoints,
-                          targetHours: widget.sprint.targetHours,
-                          startDate: widget.sprint.startDate,
-                          endDate: widget.sprint.endDate,
+                          targetHours: sprint.targetHours,
+                          startDate: sprint.startDate,
+                          endDate: sprint.endDate,
                         ),
                       );
                     },
                     loading: () => Container(
-                      height: 250,
+                      height: 200,
                       alignment: Alignment.center,
                       child: const CircularProgressIndicator(),
                     ),
                     error: (error, _) => Container(
-                      height: 250,
+                      height: 200,
                       alignment: Alignment.center,
-                      child: Text('Error loading burndown: $error'),
+                      child: Text(
+                        'Error loading burndown: $error',
+                        style: TextStyle(fontSize: 13),
+                      ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
               // Completion notes
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Theme.of(
                     context,
                   ).colorScheme.tertiaryContainer.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: Theme.of(
                       context,
@@ -311,13 +352,14 @@ class _SprintCompletionDialogState
                     Icon(
                       Icons.info_outline,
                       color: Theme.of(context).colorScheme.tertiary,
+                      size: 18,
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         'Completing this sprint will mark it as done and remove it from the active sprint list. You can still view historical data and burndown charts.',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 12,
                           color: Theme.of(
                             context,
                           ).colorScheme.onTertiaryContainer,
@@ -340,7 +382,7 @@ class _SprintCompletionDialogState
         ),
         OllieButton(
           text: 'Complete Sprint',
-          onPressed: _completeSprint,
+          onPressed: () => _completeSprint(sprint),
           loading: _isCompleting,
           width: null,
         ),
@@ -350,20 +392,20 @@ class _SprintCompletionDialogState
 
   Widget _buildInfoChip(IconData icon, String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 6),
+          Icon(icon, size: 12, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 5),
           Text(
             text,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
               color: Theme.of(context).colorScheme.primary,
             ),
@@ -381,31 +423,31 @@ class _SprintCompletionDialogState
     String? subtitle,
   ) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
         ),
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
+          Icon(icon, color: color, size: 18),
+          const SizedBox(height: 6),
           Text(
             value,
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 20,
               fontWeight: FontWeight.w700,
               color: color,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
             ),
@@ -414,7 +456,7 @@ class _SprintCompletionDialogState
           if (subtitle != null) ...[
             const SizedBox(height: 4),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(4),
@@ -422,7 +464,7 @@ class _SprintCompletionDialogState
               child: Text(
                 subtitle,
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: 9,
                   fontWeight: FontWeight.w600,
                   color: color,
                 ),
@@ -434,13 +476,13 @@ class _SprintCompletionDialogState
     );
   }
 
-  Future<void> _completeSprint() async {
+  Future<void> _completeSprint(Sprint sprint) async {
     setState(() => _isCompleting = true);
 
     try {
       await ref
-          .read(sprintNotifierProvider(widget.sprint.boardId).notifier)
-          .completeSprint(widget.sprint.id);
+          .read(sprintNotifierProvider(sprint.boardId).notifier)
+          .completeSprint(sprint.id);
 
       if (mounted) {
         Navigator.pop(context, true);

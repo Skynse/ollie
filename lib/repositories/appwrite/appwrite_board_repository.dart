@@ -160,7 +160,17 @@ class AppwriteBoardRepository implements BoardRepository {
 
   @override
   Future<void> reorderColumns(String boardId, List<String> columnIds) async {
-    // Update each column's position
+    // First, set all positions to a high temporary value to avoid conflicts
+    for (int i = 0; i < columnIds.length; i++) {
+      await databases.updateDocument(
+        databaseId: databaseId,
+        collectionId: columnsCollection,
+        documentId: columnIds[i],
+        data: {'position': i + 1000}, // Temporary high value
+      );
+    }
+
+    // Then, set the actual positions
     for (int i = 0; i < columnIds.length; i++) {
       await databases.updateDocument(
         databaseId: databaseId,

@@ -1,26 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/sprint.dart';
+import '../providers/sprint_provider.dart';
 import 'sprint_details_dialog.dart';
 import 'ollie_ui/ollie_toast.dart';
 import 'ollie_ui/theme_extensions.dart';
 
 class SprintManagementDialog extends ConsumerStatefulWidget {
-  final List<Sprint> sprints;
-  final Sprint? activeSprint;
+  final String boardId;
   final Future<void> Function(String sprintId) onStartSprint;
   final Future<void> Function(String sprintId) onCompleteSprint;
   final Future<void> Function(String sprintId) onDeleteSprint;
-  final VoidCallback onRefresh;
 
   const SprintManagementDialog({
     super.key,
-    required this.sprints,
-    this.activeSprint,
+    required this.boardId,
     required this.onStartSprint,
     required this.onCompleteSprint,
     required this.onDeleteSprint,
-    required this.onRefresh,
   });
 
   @override
@@ -32,7 +29,32 @@ class _SprintManagementDialogState
     extends ConsumerState<SprintManagementDialog> {
   @override
   Widget build(BuildContext context) {
-    final sortedSprints = List<Sprint>.from(widget.sprints)
+    final sprintsAsync = ref.watch(boardSprintsProvider(widget.boardId));
+    final activeSprint = ref.watch(sprintNotifierProvider(widget.boardId));
+
+    return sprintsAsync.when(
+      loading: () => Dialog(
+        child: Container(
+          width: 700,
+          height: 400,
+          child: const Center(child: CircularProgressIndicator()),
+        ),
+      ),
+      error: (error, _) => Dialog(
+        child: Container(
+          width: 700,
+          height: 400,
+          child: Center(child: Text('Error loading sprints: $error')),
+        ),
+      ),
+      data: (sprints) {
+        return _buildDialog(sprints, activeSprint);
+      },
+    );
+  }
+
+  Widget _buildDialog(List<Sprint> sprints, Sprint? activeSprint) {
+    final sortedSprints = List<Sprint>.from(sprints)
       ..sort((a, b) {
         // Active first, then planning, then completed
         if (a.status == SprintStatus.active) return -1;
@@ -56,29 +78,26 @@ class _SprintManagementDialogState
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: context.successColor.withOpacity(0.1),
+                color: context.surfaceColor,
                 border: Border(bottom: BorderSide(color: context.borderColor)),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.timer, color: context.successColor),
-                  const SizedBox(width: 12),
+                  Icon(Icons.timer, color: context.primaryColor, size: 20),
+                  const SizedBox(width: 10),
                   const Text(
                     'Sprint Management',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                   const Spacer(),
                   IconButton(
-                    onPressed: widget.onRefresh,
-                    icon: const Icon(Icons.refresh),
-                    tooltip: 'Refresh',
-                  ),
-                  IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
+                    icon: const Icon(Icons.close, size: 20),
                     tooltip: 'Close',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
                 ],
               ),
@@ -86,17 +105,17 @@ class _SprintManagementDialogState
 
             // Sprint list
             Expanded(
-              child: widget.sprints.isEmpty
+              child: sprints.isEmpty
                   ? _buildEmptyState()
                   : ListView.builder(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(12),
                       itemCount: sortedSprints.length,
                       itemBuilder: (context, index) {
                         final sprint = sortedSprints[index];
                         return _SprintTile(
                           key: ValueKey(sprint.id),
                           sprint: sprint,
-                          isActive: sprint.id == widget.activeSprint?.id,
+                          isActive: sprint.id == activeSprint?.id,
                           onStart: sprint.status == SprintStatus.planning
                               ? () => _confirmStartSprint(context, sprint)
                               : null,
@@ -123,22 +142,22 @@ class _SprintManagementDialogState
         children: [
           Icon(
             Icons.timer_outlined,
-            size: 64,
+            size: 48,
             color: context.secondaryTextColor,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Text(
             'No sprints yet',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 14,
               fontWeight: FontWeight.w600,
               color: context.secondaryTextColor,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             'Create a sprint to start organizing your work',
-            style: TextStyle(color: context.secondaryTextColor),
+            style: TextStyle(fontSize: 13, color: context.secondaryTextColor),
           ),
         ],
       ),
@@ -173,7 +192,6 @@ class _SprintManagementDialogState
         await widget.onStartSprint(sprint.id);
         if (context.mounted) {
           OllieToast.success(context, 'Sprint started successfully');
-          widget.onRefresh();
         }
       } catch (e) {
         if (context.mounted) {
@@ -213,7 +231,6 @@ class _SprintManagementDialogState
         await widget.onCompleteSprint(sprint.id);
         if (context.mounted) {
           OllieToast.success(context, 'Sprint completed successfully');
-          widget.onRefresh();
         }
       } catch (e) {
         if (context.mounted) {
@@ -254,7 +271,6 @@ class _SprintManagementDialogState
         await widget.onDeleteSprint(sprint.id);
         if (context.mounted) {
           OllieToast.success(context, 'Sprint deleted successfully');
-          widget.onRefresh();
         }
       } catch (e) {
         if (context.mounted) {
@@ -336,7 +352,7 @@ class _SprintTile extends StatelessWidget {
   void _showSprintDetails(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => SprintDetailsDialog(sprint: sprint),
+      builder: (context) => SprintDetailsDialog(sprintId: sprint.id),
     );
   }
 
@@ -345,108 +361,111 @@ class _SprintTile extends StatelessWidget {
     final statusColor = _getStatusColor();
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: isActive ? 4 : 1,
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: isActive ? 2 : 0,
       child: Container(
-        decoration: isActive
-            ? BoxDecoration(
-                border: Border.all(color: Colors.green.shade300, width: 2),
-                borderRadius: BorderRadius.circular(4),
-              )
-            : null,
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isActive
+                ? statusColor.withOpacity(0.3)
+                : context.borderColor,
+            width: 1,
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(_getStatusIcon(), color: statusColor, size: 24),
+                  Icon(_getStatusIcon(), color: statusColor, size: 18),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       sprint.name,
                       style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
+                      horizontal: 8,
+                      vertical: 3,
                     ),
                     decoration: BoxDecoration(
                       color: statusColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(6),
                       border: Border.all(color: statusColor.withOpacity(0.3)),
                     ),
                     child: Text(
                       _getStatusText(),
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
                         color: _getStatusTextColor(),
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
               if (sprint.goal != null && sprint.goal!.isNotEmpty) ...[
+                const SizedBox(height: 6),
                 Text(
                   sprint.goal!,
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
-                const SizedBox(height: 8),
               ],
+              const SizedBox(height: 8),
               Row(
                 children: [
                   Icon(
                     Icons.calendar_today,
-                    size: 16,
+                    size: 14,
                     color: context.secondaryTextColor,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     _getDateRange(),
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 12,
                       color: context.secondaryTextColor,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Icon(
                     Icons.timer,
-                    size: 16,
+                    size: 14,
                     color: context.secondaryTextColor,
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    '${sprint.durationDays} day(s)',
+                    '${sprint.durationDays}d',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 12,
                       color: context.secondaryTextColor,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Icon(
                     Icons.style,
-                    size: 16,
+                    size: 14,
                     color: context.secondaryTextColor,
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    '${sprint.cardIds.length} card(s)',
+                    '${sprint.cardIds.length}',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 12,
                       color: context.secondaryTextColor,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -454,36 +473,65 @@ class _SprintTile extends StatelessWidget {
                   if (sprint.status != SprintStatus.planning)
                     TextButton.icon(
                       onPressed: () => _showSprintDetails(context),
-                      icon: const Icon(Icons.show_chart, size: 18),
-                      label: const Text('View Details'),
+                      icon: const Icon(Icons.show_chart, size: 16),
+                      label: const Text(
+                        'Details',
+                        style: TextStyle(fontSize: 13),
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                      ),
                     ),
                   const Spacer(),
                   if (onStart != null)
                     FilledButton.icon(
                       onPressed: onStart,
-                      icon: const Icon(Icons.play_arrow, size: 18),
-                      label: const Text('Start Sprint'),
+                      icon: const Icon(Icons.play_arrow, size: 16),
+                      label: const Text(
+                        'Start',
+                        style: TextStyle(fontSize: 13),
+                      ),
                       style: FilledButton.styleFrom(
                         backgroundColor: Colors.green,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                       ),
                     ),
                   if (onComplete != null) ...[
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     FilledButton.icon(
                       onPressed: onComplete,
-                      icon: const Icon(Icons.check, size: 18),
-                      label: const Text('Complete'),
+                      icon: const Icon(Icons.check, size: 16),
+                      label: const Text(
+                        'Complete',
+                        style: TextStyle(fontSize: 13),
+                      ),
                       style: FilledButton.styleFrom(
                         backgroundColor: Colors.blue,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                       ),
                     ),
                   ],
                   if (onDelete != null) ...[
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     IconButton(
                       onPressed: onDelete,
-                      icon: Icon(Icons.delete, color: context.dangerColor),
+                      icon: Icon(
+                        Icons.delete_outline,
+                        color: context.dangerColor,
+                        size: 18,
+                      ),
                       tooltip: 'Delete sprint',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
                     ),
                   ],
                 ],

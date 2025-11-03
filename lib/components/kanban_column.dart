@@ -7,6 +7,7 @@ import '../models/board_column.dart';
 import '../models/card.dart' as model;
 import '../providers/board_provider.dart';
 import '../providers/auth_provider.dart';
+import '../utils/responsive.dart';
 import 'kanban_card.dart';
 import 'add_card_dialog.dart';
 import 'enhanced_column_header.dart';
@@ -55,13 +56,15 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
     return AnimatedBuilder(
       animation: _scaleAnimation,
       builder: (context, child) {
+        final isMobile = context.isMobile;
+
         return Transform.scale(
           scale: _scaleAnimation.value,
           child: Container(
-            width: 300,
+            width: isMobile ? double.infinity : 280,
             decoration: BoxDecoration(
               color: context.surfaceVariantColor,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(color: context.borderColor),
               boxShadow:
                   _animationController.isAnimating ||
@@ -73,39 +76,65 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
           ),
         );
       },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Column header
-          EnhancedColumnHeader(
-            column: widget.column,
-            boardId: widget.boardId,
-            onEdit: () => _editColumn(widget.column),
-            onDelete: () => _deleteColumn(),
-          ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = context.isMobile;
 
-          // Cards list
-          Flexible(
-            // Use the new boardStateAsync value
-            child: boardStateAsync.when(
-              // The main loading/error state is now handled at the screen level,
-              // but we can still show a small indicator here.
-              loading: () => const Center(
-                child: CircularProgressIndicator(strokeWidth: 2),
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Column header
+              EnhancedColumnHeader(
+                column: widget.column,
+                boardId: widget.boardId,
+                onEdit: () => _editColumn(widget.column),
+                onDelete: () => _deleteColumn(),
               ),
-              error: (err, st) => Center(child: Text('Error')),
-              data: (boardState) {
-                // Get the cards for THIS specific column from the map
-                final columnCards =
-                    boardState.columnCards[widget.column.id] ?? [];
-                return _buildCardList(columnCards);
-              },
-            ),
-          ),
 
-          // Add card button
-          _buildAddCardButton(context, ref),
-        ],
+              // Cards list - conditionally use Flexible based on layout
+              if (isMobile)
+                // Mobile: No Flexible (inside ListView with unbounded height)
+                boardStateAsync.when(
+                  loading: () => const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                  error: (err, st) => const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Text('Error'),
+                    ),
+                  ),
+                  data: (boardState) {
+                    final columnCards =
+                        boardState.columnCards[widget.column.id] ?? [];
+                    return _buildCardList(columnCards);
+                  },
+                )
+              else
+                // Desktop: With Flexible (inside horizontal scroll with bounded height)
+                Flexible(
+                  child: boardStateAsync.when(
+                    loading: () => const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    error: (err, st) => const Center(child: Text('Error')),
+                    data: (boardState) {
+                      final columnCards =
+                          boardState.columnCards[widget.column.id] ?? [];
+                      return _buildCardList(columnCards);
+                    },
+                  ),
+                ),
+
+              // Add card button
+              _buildAddCardButton(context, ref),
+            ],
+          );
+        },
       ),
     );
   }
@@ -224,7 +253,7 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
             builder: (context, candidateData, rejectedData) {
               return Padding(
                 padding: EdgeInsets.only(
-                  top: showSpaceAbove ? 80.0 : 0.0,
+                  top: showSpaceAbove ? 100.0 : 0.0,
                   left: 4,
                   right: 4,
                   bottom: 4,
@@ -234,11 +263,11 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
             },
           );
         }),
-        // Drop zone at bottom for cross-column drops
+        // Drop zone at bottom for all drops (including same column reordering)
         DragTarget<model.Card>(
           onWillAcceptWithDetails: (details) {
-            // Only accept cards from other columns
-            return details.data.columnId != widget.column.id;
+            // Accept all cards
+            return true;
           },
           onAcceptWithDetails: (details) async {
             // Drop at the end
@@ -254,8 +283,8 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
             final isHovering = candidateData.isNotEmpty;
             return AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              height: isHovering ? 60 : 8,
-              margin: const EdgeInsets.symmetric(horizontal: 8),
+              height: isHovering ? 80 : 40,
+              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               decoration: isHovering
                   ? BoxDecoration(
                       gradient: LinearGradient(

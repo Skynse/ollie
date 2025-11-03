@@ -10,6 +10,7 @@ import 'package:ollie/screens/home/widgets/board_card.dart';
 import 'package:ollie/screens/home/widgets/home_state_widgets.dart';
 import 'package:ollie/screens/home/widgets/user_menu_panel.dart';
 import 'package:ollie/screens/home/dialogs/create_board_dialog.dart';
+import '../../utils/responsive.dart';
 
 /// Trello-like homepage with sidebar navigation
 class HomePage extends ConsumerStatefulWidget {
@@ -20,6 +21,7 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String _selectedView = 'my-projects';
   bool _isUserMenuOpen = false;
   final TextEditingController _searchController = TextEditingController();
@@ -89,31 +91,37 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final currentUser = authState.user;
+    final isMobile = context.isMobile;
 
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: isMobile
+          ? _buildMobileDrawer(currentUser, authState.isLoading)
+          : null,
       body: Stack(
         children: [
           Row(
             children: [
-              // Sidebar
-              HomeSidebar(
-                selectedView: _selectedView,
-                onViewChanged: (view) => setState(() => _selectedView = view),
-                user: currentUser,
-                isLoadingAuth: authState.isLoading,
-                myProjectsCount: _getMyProjectsCount(),
-                sharedProjectsCount: _getSharedProjectsCount(),
-                onUserMenuTap: () =>
-                    setState(() => _isUserMenuOpen = !_isUserMenuOpen),
-              ),
+              // Sidebar (hide on mobile)
+              if (!isMobile)
+                HomeSidebar(
+                  selectedView: _selectedView,
+                  onViewChanged: (view) => setState(() => _selectedView = view),
+                  user: currentUser,
+                  isLoadingAuth: authState.isLoading,
+                  myProjectsCount: _getMyProjectsCount(),
+                  sharedProjectsCount: _getSharedProjectsCount(),
+                  onUserMenuTap: () =>
+                      setState(() => _isUserMenuOpen = !_isUserMenuOpen),
+                ),
 
               // Main content area
               Expanded(child: _buildMainContent()),
             ],
           ),
 
-          // User menu overlay panel
-          if (_isUserMenuOpen)
+          // User menu overlay panel (desktop only)
+          if (_isUserMenuOpen && !isMobile)
             UserMenuPanel(
               user: currentUser,
               onClose: () => setState(() => _isUserMenuOpen = false),
@@ -122,6 +130,62 @@ class _HomePageState extends ConsumerState<HomePage> {
                 setState(() => _isUserMenuOpen = false);
               },
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileDrawer(dynamic user, bool isLoadingAuth) {
+    return Drawer(
+      child: HomeSidebar(
+        selectedView: _selectedView,
+        onViewChanged: (view) {
+          setState(() => _selectedView = view);
+          Navigator.pop(context); // Close drawer
+        },
+        user: user,
+        isLoadingAuth: isLoadingAuth,
+        myProjectsCount: _getMyProjectsCount(),
+        sharedProjectsCount: _getSharedProjectsCount(),
+        onUserMenuTap: () {
+          Navigator.pop(context); // Close drawer
+          _showMobileUserMenu();
+        },
+      ),
+    );
+  }
+
+  void _showMobileUserMenu() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(ref.read(authProvider).user?.name ?? 'User'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              ref.read(authProvider).user?.email ?? '',
+              style: TextStyle(
+                color: Theme.of(context).textTheme.bodyMedium?.color,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Logout'),
+              onTap: () {
+                Navigator.pop(context);
+                ref.read(authProvider.notifier).logout();
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );
@@ -155,6 +219,9 @@ class _HomePageState extends ConsumerState<HomePage> {
             isGridView: _isGridView,
             onViewChanged: (isGrid) => setState(() => _isGridView = isGrid),
             onCreateBoard: () => _showCreateBoardDialog(context),
+            onMenuTap: context.isMobile
+                ? () => _scaffoldKey.currentState?.openDrawer()
+                : null,
           ),
 
           // Content
@@ -255,13 +322,15 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _buildBoardsGrid(List<Board> boards) {
+    final isMobile = context.isMobile;
+
     return GridView.builder(
-      padding: const EdgeInsets.all(32),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 380,
-        crossAxisSpacing: 20,
-        mainAxisSpacing: 20,
-        childAspectRatio: 1.8,
+      padding: EdgeInsets.all(isMobile ? 12 : 32),
+      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: isMobile ? double.infinity : 380,
+        crossAxisSpacing: isMobile ? 12 : 20,
+        mainAxisSpacing: isMobile ? 12 : 20,
+        childAspectRatio: isMobile ? 2.5 : 1.8,
       ),
       itemCount: boards.length,
       itemBuilder: (context, index) {
@@ -271,8 +340,10 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _buildBoardsList(List<Board> boards) {
+    final isMobile = context.isMobile;
+
     return ListView.builder(
-      padding: const EdgeInsets.all(32),
+      padding: EdgeInsets.all(isMobile ? 12 : 32),
       itemCount: boards.length,
       itemBuilder: (context, index) {
         return BoardListItem(board: boards[index], index: index);

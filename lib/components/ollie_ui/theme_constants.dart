@@ -42,33 +42,31 @@ class OllieThemeConstants {
   static const Color darkSuccess = Color(0xFF66BB6A); // Lighter green
 
   // divider
-  static const Color darkDivider = Color(0xFF1F2329); // Darker divider
-  // Backgrounds - Zed-inspired dark bluish-black
+  static const Color darkDivider = Color(0xFF2d2d2d); // Softer divider
+  // Backgrounds - Softer dark gray theme
   static const Color darkBackground = Color(
-    0xFF0A0E14,
-  ); // Very dark blue-black (main bg)
-  static const Color darkSurface = Color(
-    0xFF0F131A,
-  ); // Slightly lighter blue-black (cards/surfaces)
+    0xFF1a1a1a,
+  ); // Softer dark gray (main bg)
+  static const Color darkSurface = Color(0xFF242424); // Cards/surfaces
   static const Color darkSurfaceVariant = Color(
-    0xFF1A1F29,
+    0xFF2d2d2d,
   ); // Elevated surfaces
 
   // Text colors
-  static const Color darkTextPrimary = Color(0xFFE6E6E8); // Off-white text
-  static const Color darkTextSecondary = Color(0xFF8B9198); // Gray text
-  static const Color darkTextDisabled = Color(0xFF4D5563); // Dimmed text
+  static const Color darkTextPrimary = Color(0xFFe5e5e5); // Light gray text
+  static const Color darkTextSecondary = Color(0xFF9ca3af); // Medium gray text
+  static const Color darkTextDisabled = Color(0xFF6b7280); // Dimmed text
 
   // Border colors
-  static const Color darkBorder = Color(0xFF1F2329); // Subtle dark borders
+  static const Color darkBorder = Color(0xFF404040); // Visible borders
   static const Color darkBorderFocus = darkPrimary;
 
   // State colors
-  static const Color darkHover = Color(0xFF141923); // Slightly lighter on hover
+  static const Color darkHover = Color(0xFF2a2a2a); // Slightly lighter on hover
   static const Color darkPressed = Color(
-    0xFF1A1F29,
+    0xFF303030,
   ); // Slightly more elevation when pressed
-  static const Color darkDisabled = Color(0xFF1F2329); // Disabled state
+  static const Color darkDisabled = Color(0xFF383838); // Disabled state
 
   // ========== SHARED CONSTANTS ==========
 
