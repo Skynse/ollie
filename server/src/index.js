@@ -112,14 +112,20 @@ function handleCursorMove(ws, message) {
 }
 
 function handleLeaveBoard(ws) {
+  console.log(
+    `handleLeaveBoard called - boardId: ${ws.boardId}, userId: ${ws.userId}`,
+  );
+
   if (ws.boardId && ws.userId) {
     const connectionsInBoard = boardConnections.get(ws.boardId);
     if (connectionsInBoard) {
       connectionsInBoard.delete(ws.userId);
+      console.log(`Removed user ${ws.userId} from board ${ws.boardId}`);
 
       // Notify others that this user left
       connectionsInBoard.forEach((conn) => {
         if (conn.readyState === 1) {
+          console.log(`Notifying about removal of ${ws.userId}`);
           conn.send(
             JSON.stringify({
               type: "cursor-remove",
@@ -132,8 +138,11 @@ function handleLeaveBoard(ws) {
       // Clean up empty board maps
       if (connectionsInBoard.size === 0) {
         boardConnections.delete(ws.boardId);
+        console.log(`Deleted empty board ${ws.boardId}`);
       }
     }
+  } else {
+    console.log("handleLeaveBoard: boardId or userId not set");
   }
 }
 

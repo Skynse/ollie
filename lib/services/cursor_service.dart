@@ -69,6 +69,7 @@ class CursorService {
 
   void _handleMessage(Map<String, dynamic> message) {
     final type = message['type'] as String?;
+    print('WebSocket received: $type');
 
     switch (type) {
       case 'cursors-state':
@@ -127,9 +128,9 @@ class CursorService {
       color: color,
     );
 
-    // Throttle updates to once every 50ms
+    // Light throttle to avoid flooding (16ms = ~60fps)
     _updateTimer?.cancel();
-    _updateTimer = Timer(const Duration(milliseconds: 50), () {
+    _updateTimer = Timer(const Duration(milliseconds: 16), () {
       _sendCursorUpdate();
     });
   }
