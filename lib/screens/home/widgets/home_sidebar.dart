@@ -85,7 +85,7 @@ class HomeSidebar extends StatelessWidget {
             ),
           ),
 
-          const Divider(height: 1),
+          const Divider(height: 7),
 
           // Navigation items
           Expanded(
