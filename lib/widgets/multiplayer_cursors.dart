@@ -82,9 +82,16 @@ class _MultiplayerCursorsState extends ConsumerState<MultiplayerCursors> {
 
   @override
   void dispose() {
+    print('MultiplayerCursors disposing for board ${widget.boardId}');
     final cursorService = ref.read(cursorServiceProvider);
     cursorService.unsubscribe();
     super.dispose();
+  }
+
+  @override
+  void deactivate() {
+    print('MultiplayerCursors deactivating for board ${widget.boardId}');
+    super.deactivate();
   }
 
   @override

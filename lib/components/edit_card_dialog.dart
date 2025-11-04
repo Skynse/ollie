@@ -360,11 +360,6 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
 
     return sprintsAsync.when(
       data: (sprints) {
-        final sprintIds = sprints.map((s) => s.id).toSet();
-        if (_selectedSprintId != null &&
-            !sprintIds.contains(_selectedSprintId)) {
-          _selectedSprintId = null;
-        }
         // Deduplicate sprints by ID to avoid duplicate dropdown values
         final seenIds = <String>{};
         final availableSprints = sprints
@@ -375,6 +370,20 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
               return true;
             })
             .toList();
+
+        // Validate selected sprint ID exists in available sprints
+        final sprintIds = availableSprints.map((s) => s.id).toSet();
+        if (_selectedSprintId != null &&
+            !sprintIds.contains(_selectedSprintId)) {
+          // Sprint no longer exists or is completed, clear selection
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _selectedSprintId = null;
+              });
+            }
+          });
+        }
 
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
