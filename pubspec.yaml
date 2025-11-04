@@ -40,6 +40,8 @@ dependencies:
   fl_chart: ^1.1.1
   flutter_animate: ^4.5.2
   shared_preferences: ^2.5.3
+  crypto: ^3.0.3
+  web_socket_channel: ^3.0.1
 
 dev_dependencies:
   flutter_test:

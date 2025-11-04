@@ -10,6 +10,7 @@ import '../../models/sprint.dart';
 import '../../components/components.dart';
 import '../../components/board_menu_overlay.dart';
 import '../../utils/responsive.dart';
+import '../../widgets/multiplayer_cursors.dart';
 
 /// Main kanban board screen showing columns and cards
 class BoardScreen extends ConsumerStatefulWidget {
@@ -607,14 +608,17 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   }
 
   Widget _buildBoardView(BoardState state) {
-    return Column(
-      children: [
-        // Board header
-        _buildHeader(state.board),
+    return MultiplayerCursors(
+      boardId: widget.boardId,
+      child: Column(
+        children: [
+          // Board header
+          _buildHeader(state.board),
 
-        // Kanban columns
-        Expanded(child: _buildKanbanBoard(state)),
-      ],
+          // Kanban columns
+          Expanded(child: _buildKanbanBoard(state)),
+        ],
+      ),
     );
   }
 
