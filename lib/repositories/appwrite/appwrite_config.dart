@@ -16,6 +16,9 @@ class AppwriteConfig {
   static const String databaseId =
       '68f0c0100009393371fd'; // Change this to your database ID
 
+  // Export app URL from Environment
+  static String get appUrl => Environment.appUrl;
+
   /// Initialize Appwrite client
   static void init() {
     if (_client != null) return; // Already initialized
@@ -145,11 +148,24 @@ class AppwriteConfig {
     }
   }
 
-  static Future<void> resetPassword(String email) async {
+  static Future<void> resetPassword(String email, String redirectUrl) async {
     try {
-      await account.createRecovery(
-        email: email,
-        url: '${Environment.appwritePublicEndpoint}/reset-password',
+      await account.createRecovery(email: email, url: redirectUrl);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  static Future<void> completePasswordRecovery({
+    required String userId,
+    required String secret,
+    required String newPassword,
+  }) async {
+    try {
+      await account.updateRecovery(
+        userId: userId,
+        secret: secret,
+        password: newPassword,
       );
     } catch (e) {
       rethrow;

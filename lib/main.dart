@@ -6,6 +6,7 @@ import 'screens/board/board_screen.dart';
 import 'providers/auth_provider.dart';
 import 'providers/theme_provider.dart';
 import 'screens/authentication/modern_auth_screen.dart';
+import 'screens/authentication/password_reset_screen.dart';
 import 'repositories/appwrite/appwrite_config.dart';
 import 'components/ollie_ui/theme.dart';
 
@@ -58,9 +59,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuthenticated = authState.isAuthenticated;
       final isLoading = authState.isLoading;
       final isLoginRoute = state.matchedLocation == '/login';
+      final isResetRoute = state.matchedLocation.startsWith('/reset-password');
 
       // Still loading, stay put
       if (isLoading) return null;
+
+      // Allow password reset page without authentication
+      if (isResetRoute) return null;
 
       // Not authenticated, redirect to login
       if (!isAuthenticated && !isLoginRoute) {
@@ -79,6 +84,23 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/login',
         builder: (context, state) => const ModernAuthScreen(),
+      ),
+      GoRoute(
+        path: '/reset-password',
+        builder: (context, state) {
+          final userId = state.uri.queryParameters['userId'];
+          final secret = state.uri.queryParameters['secret'];
+
+          // If missing parameters, redirect to login
+          if (userId == null || secret == null) {
+            Future.microtask(() => context.go('/login'));
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          return PasswordResetScreen(userId: userId, secret: secret);
+        },
       ),
       GoRoute(path: '/', builder: (context, state) => const HomePage()),
       GoRoute(

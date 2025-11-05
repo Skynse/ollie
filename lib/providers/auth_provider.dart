@@ -68,8 +68,8 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   Future<void> resetPassword(String email) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
-      await AppwriteConfig.resetPassword(email);
-      // Maybe show a success message?
+      final redirectUrl = '${AppwriteConfig.appUrl}/reset-password';
+      await AppwriteConfig.resetPassword(email, redirectUrl);
       state = state.copyWith(isLoading: false);
     } catch (e) {
       state = AuthState.error(e.toString());
