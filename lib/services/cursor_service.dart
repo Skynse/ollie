@@ -17,7 +17,7 @@ class CursorService {
   CursorPosition? _pendingPosition;
 
   // Update this to your server URL (localhost for dev, Digital Ocean for prod)
-  static const String serverUrl = 'ws://137.184.120.233:3000';
+  static const String serverUrl = 'wss://137.184.120.233:3000';
 
   /// Subscribe to cursor updates for a specific board
   void subscribeToBoard(
