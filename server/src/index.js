@@ -1,13 +1,36 @@
 const express = require("express");
 const { createServer } = require("http");
+const { createServer: createHttpsServer } = require("https");
+const { readFileSync } = require("fs");
 const { WebSocketServer } = require("ws");
 const cors = require("cors");
 
 const app = express();
 app.use(cors());
 
-const httpServer = createServer(app);
-const wss = new WebSocketServer({ server: httpServer });
+// Create server based on SSL configuration
+let server;
+const useSSL = process.env.SSL_CERT_PATH && process.env.SSL_KEY_PATH;
+
+if (useSSL) {
+  try {
+    const options = {
+      cert: readFileSync(process.env.SSL_CERT_PATH),
+      key: readFileSync(process.env.SSL_KEY_PATH),
+    };
+    server = createHttpsServer(options, app);
+    console.log("Running in HTTPS/WSS mode");
+  } catch (error) {
+    console.error("Failed to load SSL certificates:", error.message);
+    console.log("Falling back to HTTP/WS mode");
+    server = createServer(app);
+  }
+} else {
+  server = createServer(app);
+  console.log("Running in HTTP/WS mode (no SSL certificates configured)");
+}
+
+const wss = new WebSocketServer({ server });
 
 // Store active connections per board
 const boardConnections = new Map();
@@ -175,6 +198,9 @@ app.get("/health", (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
-httpServer.listen(PORT, () => {
-  console.log(`Ollie Real-time WebSocket Server running on port ${PORT}`);
+server.listen(PORT, () => {
+  const protocol = useSSL ? "HTTPS/WSS" : "HTTP/WS";
+  console.log(
+    `Ollie Real-time WebSocket Server running on port ${PORT} (${protocol})`,
+  );
 });
