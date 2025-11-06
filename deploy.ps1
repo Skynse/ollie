@@ -9,6 +9,9 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+Write-Host "`nCopying vercel.json to build output..." -ForegroundColor Cyan
+Copy-Item -Path "vercel.json" -Destination "build/web/vercel.json" -Force
+
 Write-Host "`nDeploying to Vercel..." -ForegroundColor Cyan
 vercel deploy --prod --cwd build/web
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ollie/providers/auth_provider.dart';
 import '../../components/ollie_ui/ollie_button.dart';
 import '../../components/ollie_ui/ollie_textfield.dart';
 import '../../components/ollie_ui/theme_extensions.dart';
@@ -31,6 +32,12 @@ class _PasswordResetScreenState extends ConsumerState<PasswordResetScreen> {
   bool _isLoading = false;
   bool _isSuccess = false;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    print('PasswordResetScreen initialized with userId: ${widget.userId}');
+  }
 
   @override
   void dispose() {
@@ -78,10 +85,13 @@ class _PasswordResetScreenState extends ConsumerState<PasswordResetScreen> {
         _isSuccess = true;
       });
 
-      // Redirect to login after 2 seconds
+      // Check auth status (updateRecovery creates a session automatically)
+      await ref.read(authProvider.notifier).checkAuthStatus();
+
+      // Redirect to home after 2 seconds
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) {
-          context.go('/login');
+          context.go('/');
         }
       });
     } catch (e) {
@@ -155,7 +165,7 @@ class _PasswordResetScreenState extends ConsumerState<PasswordResetScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Redirecting to login...',
+          'Logging you in...',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
         ),

@@ -174,8 +174,8 @@ if ! command -v docker-compose &> /dev/null; then
 fi
 
 # Deploy
-docker-compose down
-docker-compose up -d --build
+docker compose down
+docker compose up -d --build
 
 echo ""
 echo "⏳ Waiting for service to start..."
@@ -184,7 +184,7 @@ sleep 10
 # Check logs
 echo ""
 echo "📋 Service logs (checking for SSL mode):"
-docker-compose logs | tail -20
+docker compose logs | tail -20
 
 echo ""
 echo "================================"

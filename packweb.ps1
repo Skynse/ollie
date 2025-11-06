@@ -1,5 +1,10 @@
 flutter build web --release
 cd build/web
+
+# Clean up old hashed files
+Remove-Item -Path "main.*.dart.js" -ErrorAction SilentlyContinue
+Remove-Item -Path "flutter_bootstrap.*.js" -ErrorAction SilentlyContinue
+
 $HASH = (Get-FileHash main.dart.js -Algorithm MD5).Hash.ToLower()
 Rename-Item -Path main.dart.js -NewName main.$HASH.dart.js
 Rename-Item -Path flutter_bootstrap.js -NewName flutter_bootstrap.$HASH.js
@@ -15,5 +20,9 @@ Rename-Item -Path flutter_bootstrap.js -NewName flutter_bootstrap.$HASH.js
 $timestamp = Get-Date -UFormat %s
 $jsonObject = @{ version = "$timestamp" }
 $jsonObject | ConvertTo-Json -Compress | Set-Content -Path version.json
+
+# Copy vercel.json from project root
+Copy-Item -Path "../../vercel.json" -Destination "vercel.json" -Force
+
 vercel deploy --prod
 cd ../../

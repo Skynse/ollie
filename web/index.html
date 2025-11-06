@@ -62,16 +62,29 @@
                             cache: "no-cache",
                         },
                     );
+
+                    // Check if response is actually JSON
+                    const contentType = res.headers.get("content-type");
+                    if (
+                        !contentType ||
+                        !contentType.includes("application/json")
+                    ) {
+                        console.warn(
+                            "Version check returned non-JSON response, clearing cache",
+                        );
+                        await clearBrowserStorage();
+                        location.reload(true);
+                        return;
+                    }
+
                     const { version: latestVersion } = await res.json();
                     const currentVersion = localStorage.getItem("app_version");
                     if (!currentVersion) {
                         localStorage.setItem("app_version", latestVersion);
                     } else if (currentVersion !== latestVersion) {
-                        if (confirm("🔄 New version available. Reload now?")) {
-                            await clearBrowserStorage();
-                            localStorage.setItem("app_version", latestVersion);
-                            location.reload(true);
-                        }
+                        await clearBrowserStorage();
+                        localStorage.setItem("app_version", latestVersion);
+                        location.reload(true);
                     }
                 } catch (e) {
                     console.warn("Version check failed:", e);

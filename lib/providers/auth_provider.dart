@@ -79,4 +79,8 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   void clearError() {
     state = state.copyWith(errorMessage: null);
   }
+
+  Future<void> checkAuthStatus() async {
+    await _checkAuthStatus();
+  }
 }
