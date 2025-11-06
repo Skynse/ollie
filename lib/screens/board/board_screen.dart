@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ollie/components/ollie_ui/theme_extensions.dart';
 import '../../providers/board_provider.dart';
 import '../../providers/boards_provider.dart';
@@ -416,20 +417,22 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       builder: (context) => ArchiveBoardDialog(
         boardName: board.name,
         onConfirm: () async {
+          final navigator = Navigator.of(context);
+          final scaffoldMessenger = ScaffoldMessenger.of(context);
           BoardMenuOverlay.hide();
 
           try {
             await ref.read(boardsProvider.notifier).archiveBoard(board.id);
 
-            if (mounted) {
-              OllieToast.success(context, 'Board archived successfully');
-              // Navigate back to homepage using GoRouter
-              context.go('/');
-            }
+            scaffoldMessenger.showSnackBar(
+              const SnackBar(content: Text('Board archived successfully')),
+            );
+            // Navigate back to homepage
+            navigator.pushReplacementNamed('/');
           } catch (e) {
-            if (mounted) {
-              OllieToast.error(context, 'Failed to archive board');
-            }
+            scaffoldMessenger.showSnackBar(
+              const SnackBar(content: Text('Failed to archive board')),
+            );
           }
         },
       ),
