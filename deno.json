@@ -1,5 +1,6 @@
 {
-  "imports": {
-    "firebase-tools": "npm:firebase-tools@^14.20.0"
+  "tasks": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm install && npm run build"
   }
 }

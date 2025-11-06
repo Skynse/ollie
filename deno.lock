@@ -8,10 +8,5 @@
       "integrity": "sha512-PjzNqArWzGN8k1nROPTNW0UTYQ7bCJG6/eLsCAn1+cYX+jax8hbPZgB6//ZNolwTedBNTWgrFciyRUOa6Inh8Q==",
       "bin": true
     }
-  },
-  "workspace": {
-    "dependencies": [
-      "npm:firebase-tools@^14.20.0"
-    ]
   }
 }
