@@ -19,40 +19,38 @@
 <div class="landing">
     <!-- Hero Section -->
     <section class="hero" class:visible={isVisible}>
+        <div class="hero-background">
+            <img
+                src="/images/board.png"
+                alt="Ollie Kanban Board"
+                class="hero-bg-image"
+            />
+            <div class="hero-overlay"></div>
+        </div>
         <div class="container">
             <div class="hero-content">
-                <h1 class="hero-title">
-                    Team collaboration,<br />
-                    <span class="gradient-text">simplified</span>
-                </h1>
-                <p class="hero-subtitle">
-                    Ollie brings your team together with real-time kanban
-                    boards, multiplayer cursors, and sprint tracking. Built for
-                    modern agile teams.
-                </p>
-                <div class="hero-cta">
-                    <a
-                        href="https://app.ollieboard.dev"
-                        class="btn btn-primary"
-                    >
-                        Launch App
-                    </a>
-                    <a href="#features" class="btn btn-secondary">
-                        Learn More
-                    </a>
-                </div>
-                <p class="hero-note">
-                    A Popshuvit product • Free for internal teams
-                </p>
-            </div>
-            <div class="hero-visual">
-                <div class="screenshot-container">
-                    <img
-                        src="/images/board.png"
-                        alt="Ollie Kanban Board"
-                        class="screenshot"
-                    />
-                    <div class="screenshot-glow"></div>
+                <div class="glass-card">
+                    <h1 class="hero-title">
+                        Team collaboration,<br />
+                        <span class="highlight-text">simplified</span>
+                    </h1>
+                    <p class="hero-subtitle">
+                        Ollie brings your team together with real-time kanban
+                        boards, multiplayer cursors, and sprint tracking. Built
+                        for modern agile teams.
+                    </p>
+                    <div class="hero-cta">
+                        <a
+                            href="https://app.ollieboard.dev"
+                            class="btn btn-primary"
+                        >
+                            Launch App
+                        </a>
+                        <a href="#features" class="btn btn-secondary">
+                            Learn More
+                        </a>
+                    </div>
+                    <p class="hero-note">This product is in beta.</p>
                 </div>
             </div>
         </div>
@@ -258,6 +256,7 @@
         transition:
             opacity 0.8s ease,
             transform 0.8s ease;
+        overflow: hidden;
     }
 
     .hero.visible {
@@ -265,15 +264,47 @@
         transform: translateY(0);
     }
 
+    .hero-background {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+    }
+
+    .hero-bg-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: blur(8px) brightness(0.7);
+    }
+
+    .hero-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+    }
+
     .hero .container {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 4rem;
+        position: relative;
+        z-index: 1;
+        display: flex;
+        justify-content: center;
         align-items: center;
     }
 
     .hero-content {
-        max-width: 600px;
+        max-width: 800px;
+        width: 100%;
+    }
+
+    /* Glassmorphism Card */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 24px;
+        padding: 3rem;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     }
 
     .hero-title {
@@ -282,18 +313,16 @@
         line-height: 1.1;
         margin-bottom: 1.5rem;
         letter-spacing: -0.02em;
+        color: white;
     }
 
-    .gradient-text {
-        background: linear-gradient(135deg, #3b82f6 0%, #ec4899 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+    .highlight-text {
+        color: #3b82f6;
     }
 
     .hero-subtitle {
         font-size: 1.25rem;
-        color: #666;
+        color: rgba(255, 255, 255, 0.9);
         margin-bottom: 2rem;
         line-height: 1.6;
     }
@@ -305,7 +334,7 @@
     }
 
     .hero-note {
-        color: #999;
+        color: rgba(255, 255, 255, 0.7);
         font-size: 0.9rem;
     }
 
@@ -323,7 +352,7 @@
     }
 
     .btn-primary {
-        background: linear-gradient(135deg, #3b82f6 0%, #ec4899 100%);
+        background: #3b82f6;
         color: white;
         box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
     }
@@ -358,7 +387,7 @@
         grid-template-columns: repeat(3, 1fr);
         gap: 1.5rem;
         padding: 2rem;
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        background: #3b82f6;
         border-radius: 24px;
         position: relative;
     }
@@ -386,7 +415,7 @@
 
     .card-header {
         height: 12px;
-        background: linear-gradient(90deg, #3b82f6 0%, #ec4899 100%);
+        background: #3b82f6;
         border-radius: 6px;
         margin-bottom: 0.75rem;
     }
@@ -539,7 +568,7 @@
     /* CTA Section */
     .cta {
         padding: 6rem 0;
-        background: linear-gradient(135deg, #3b82f6 0%, #ec4899 100%);
+        background: #3b82f6;
         color: white;
     }
 

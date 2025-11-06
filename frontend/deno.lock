@@ -1,6 +1,7 @@
 {
   "version": "5",
   "specifiers": {
+    "npm:@deno/svelte-adapter@0.1": "0.1.0_@sveltejs+kit@2.46.4__@sveltejs+vite-plugin-svelte@6.2.1___svelte@5.39.11____acorn@8.15.0___vite@7.1.12____picomatch@4.0.3__svelte@5.39.11___acorn@8.15.0__vite@7.1.12___picomatch@4.0.3__acorn@8.15.0_@sveltejs+vite-plugin-svelte@6.2.1__svelte@5.39.11___acorn@8.15.0__vite@7.1.12___picomatch@4.0.3_svelte@5.39.11__acorn@8.15.0_vite@7.1.12__picomatch@4.0.3",
     "npm:@sveltejs/adapter-auto@^6.1.0": "6.1.1_@sveltejs+kit@2.46.4__@sveltejs+vite-plugin-svelte@6.2.1___svelte@5.39.11____acorn@8.15.0___vite@7.1.12____picomatch@4.0.3__svelte@5.39.11___acorn@8.15.0__vite@7.1.12___picomatch@4.0.3__acorn@8.15.0_@sveltejs+vite-plugin-svelte@6.2.1__svelte@5.39.11___acorn@8.15.0__vite@7.1.12___picomatch@4.0.3_svelte@5.39.11__acorn@8.15.0_vite@7.1.12__picomatch@4.0.3",
     "npm:@sveltejs/kit@^2.43.2": "2.46.4_@sveltejs+vite-plugin-svelte@6.2.1__svelte@5.39.11___acorn@8.15.0__vite@7.1.12___picomatch@4.0.3_svelte@5.39.11__acorn@8.15.0_vite@7.1.12__picomatch@4.0.3_acorn@8.15.0",
     "npm:@sveltejs/vite-plugin-svelte@^6.2.0": "6.2.1_svelte@5.39.11__acorn@8.15.0_vite@7.1.12__picomatch@4.0.3",
@@ -10,6 +11,19 @@
     "npm:vite@^7.1.7": "7.1.12_picomatch@4.0.3"
   },
   "npm": {
+    "@deno/experimental-route-config@0.0.5": {
+      "integrity": "sha512-0PN4qij3sC3Qm8WbiOBGlOQz8WtB0AENGkzsTHOYyPenf40iW7OGFid8QT3L8lGApnz3t6ufET0c2XgagV8Jjw==",
+      "dependencies": [
+        "urlpattern-polyfill"
+      ]
+    },
+    "@deno/svelte-adapter@0.1.0_@sveltejs+kit@2.46.4__@sveltejs+vite-plugin-svelte@6.2.1___svelte@5.39.11____acorn@8.15.0___vite@7.1.12____picomatch@4.0.3__svelte@5.39.11___acorn@8.15.0__vite@7.1.12___picomatch@4.0.3__acorn@8.15.0_@sveltejs+vite-plugin-svelte@6.2.1__svelte@5.39.11___acorn@8.15.0__vite@7.1.12___picomatch@4.0.3_svelte@5.39.11__acorn@8.15.0_vite@7.1.12__picomatch@4.0.3": {
+      "integrity": "sha512-fx4Kj1lSx1rJvjtPr3cXO7qKveI1vUyGW8jX+clJHQEqEeIDnEcBW0FpMZEVORPlay2SGydQWSGbwh4j2iENzg==",
+      "dependencies": [
+        "@deno/experimental-route-config",
+        "@sveltejs/kit"
+      ]
+    },
     "@esbuild/aix-ppc64@0.25.12": {
       "integrity": "sha512-Hhmwd6CInZ3dwpuGTF8fJG6yoWmsToE+vYgD4nytZVxcu1ulHpUQRAB1UJ8+N1Am3Mz4+xOByoQoSZf4D+CpkA==",
       "os": ["aix"],
@@ -580,6 +594,9 @@
       "integrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==",
       "bin": true
     },
+    "urlpattern-polyfill@10.1.0": {
+      "integrity": "sha512-IGjKp/o0NL3Bso1PymYURCJxMPNAf/ILOpendP9f5B6e1rTJgdgiOvgfoT8VxCAdY+Wisb9uhGaJJf3yZ2V9nw=="
+    },
     "vite@7.1.12_picomatch@4.0.3": {
       "integrity": "sha512-ZWyE8YXEXqJrrSLvYgrRP7p62OziLW7xI5HYGWFzOvupfAlrLvURSzv/FyGyy0eidogEM3ujU+kUG1zuHgb6Ug==",
       "dependencies": [
@@ -611,6 +628,7 @@
   "workspace": {
     "packageJson": {
       "dependencies": [
+        "npm:@deno/svelte-adapter@0.1",
         "npm:@sveltejs/adapter-auto@^6.1.0",
         "npm:@sveltejs/kit@^2.43.2",
         "npm:@sveltejs/vite-plugin-svelte@^6.2.0",
