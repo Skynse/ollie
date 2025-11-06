@@ -417,7 +417,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       builder: (context) => ArchiveBoardDialog(
         boardName: board.name,
         onConfirm: () async {
-          final navigator = Navigator.of(context);
+          final goRouter = GoRouter.of(context);
           final scaffoldMessenger = ScaffoldMessenger.of(context);
           BoardMenuOverlay.hide();
 
@@ -428,7 +428,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
               const SnackBar(content: Text('Board archived successfully')),
             );
             // Navigate back to homepage
-            navigator.pushReplacementNamed('/');
+            goRouter.go('/');
           } catch (e) {
             scaffoldMessenger.showSnackBar(
               const SnackBar(content: Text('Failed to archive board')),
