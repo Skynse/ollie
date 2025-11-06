@@ -526,7 +526,7 @@ class _ModernAuthScreenState extends ConsumerState<ModernAuthScreen>
 
   Widget _buildFooter() {
     return Text(
-      'Threadbearers internal tool',
+      'Powered by Popshuvit',
       textAlign: TextAlign.center,
       style: TextStyle(fontSize: 12, color: Colors.grey.shade500, height: 1.5),
     );
