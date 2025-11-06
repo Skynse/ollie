@@ -14,6 +14,8 @@ abstract class BoardRepository {
   Future<Board> createBoard(Board board);
   Future<Board> updateBoard(Board board);
   Future<void> deleteBoard(String boardId);
+  Future<void> archiveBoard(String boardId);
+  Future<void> unarchiveBoard(String boardId);
   Future<void> addMember(String boardId, String userId);
   Future<void> removeMember(String boardId, String userId);
   // Column operations

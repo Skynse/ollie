@@ -122,6 +122,34 @@ class BoardsNotifier extends StateNotifier<BoardsState> {
     }
   }
 
+  /// Archive a board - called ONLY on user action
+  Future<void> archiveBoard(String boardId) async {
+    state = state.copyWith(isLoading: true);
+    try {
+      await _repository.archiveBoard(boardId);
+      await fetchBoards(); // Refetch after archiving
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Failed to archive board: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Unarchive a board - called ONLY on user action
+  Future<void> unarchiveBoard(String boardId) async {
+    state = state.copyWith(isLoading: true);
+    try {
+      await _repository.unarchiveBoard(boardId);
+      await fetchBoards(); // Refetch after unarchiving
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Failed to unarchive board: ${e.toString()}',
+      );
+    }
+  }
+
   void clearError() {
     state = state.copyWith(errorMessage: null);
   }

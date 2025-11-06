@@ -11,6 +11,7 @@ import '../../components/components.dart';
 import '../../components/board_menu_overlay.dart';
 import '../../utils/responsive.dart';
 import '../../widgets/multiplayer_cursors.dart';
+import '../home/dialogs/archive_board_dialog.dart';
 
 /// Main kanban board screen showing columns and cards
 class BoardScreen extends ConsumerStatefulWidget {
@@ -412,33 +413,25 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Archive Board'),
-        content: Text(
-          'Are you sure you want to archive "${board.name}"?\n\n'
-          'The board will be hidden from your active boards list. '
-          'You can restore it later from archived boards.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              // Archive functionality would be implemented in repository
-              // For now, show a message that this is coming soon
-              OllieToast.info(
-                context,
-                'Archive functionality coming soon. '
-                'Board archiving will be implemented in the next update.',
-              );
-            },
-            style: FilledButton.styleFrom(backgroundColor: Colors.orange),
-            child: const Text('Archive'),
-          ),
-        ],
+      builder: (context) => ArchiveBoardDialog(
+        boardName: board.name,
+        onConfirm: () async {
+          BoardMenuOverlay.hide();
+
+          try {
+            await ref.read(boardsProvider.notifier).archiveBoard(board.id);
+
+            if (mounted) {
+              OllieToast.success(context, 'Board archived successfully');
+              // Navigate back to homepage using GoRouter
+              context.go('/');
+            }
+          } catch (e) {
+            if (mounted) {
+              OllieToast.error(context, 'Failed to archive board');
+            }
+          }
+        },
       ),
     );
   }

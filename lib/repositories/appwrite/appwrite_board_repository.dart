@@ -77,6 +77,26 @@ class AppwriteBoardRepository implements BoardRepository {
   }
 
   @override
+  Future<void> archiveBoard(String boardId) async {
+    await databases.updateDocument(
+      databaseId: databaseId,
+      collectionId: boardsCollection,
+      documentId: boardId,
+      data: {'archived': true},
+    );
+  }
+
+  @override
+  Future<void> unarchiveBoard(String boardId) async {
+    await databases.updateDocument(
+      databaseId: databaseId,
+      collectionId: boardsCollection,
+      documentId: boardId,
+      data: {'archived': false},
+    );
+  }
+
+  @override
   Future<void> addMember(String boardId, String userId) async {
     final board = await getBoard(boardId);
     final updatedMemberIds = [...board.memberIds, userId];

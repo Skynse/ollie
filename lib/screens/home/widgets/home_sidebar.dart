@@ -9,6 +9,7 @@ class HomeSidebar extends StatelessWidget {
   final bool isLoadingAuth;
   final int myProjectsCount;
   final int sharedProjectsCount;
+  final int archivedProjectsCount;
   final VoidCallback onUserMenuTap;
 
   const HomeSidebar({
@@ -19,6 +20,7 @@ class HomeSidebar extends StatelessWidget {
     required this.isLoadingAuth,
     required this.myProjectsCount,
     required this.sharedProjectsCount,
+    required this.archivedProjectsCount,
     required this.onUserMenuTap,
   });
 
@@ -102,9 +104,21 @@ class HomeSidebar extends StatelessWidget {
                 _SidebarItem(
                   icon: Icons.people_outline,
                   label: 'Shared with Me',
-                  isSelected: selectedView == 'shared',
-                  onTap: () => onViewChanged('shared'),
+                  isSelected: selectedView == 'shared-projects',
+                  onTap: () => onViewChanged('shared-projects'),
                   count: sharedProjectsCount,
+                ),
+                const SizedBox(height: 8),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Divider(height: 1),
+                ),
+                _SidebarItem(
+                  icon: Icons.archive_outlined,
+                  label: 'Archived',
+                  isSelected: selectedView == 'archived',
+                  onTap: () => onViewChanged('archived'),
+                  count: archivedProjectsCount,
                 ),
               ],
             ),
