@@ -1,21 +1,4 @@
-# Build with environment variables
-$ENV_FILE = ".env"
-
-if (-not (Test-Path $ENV_FILE)) {
-    Write-Host "Error: $ENV_FILE file not found. Please create one from .env.example" -ForegroundColor Red
-    exit 1
-}
-
-# Read .env file and build dart-define arguments
-$dartDefines = @()
-Get-Content $ENV_FILE | ForEach-Object {
-    $line = $_.Trim()
-    if ($line -and -not $line.StartsWith("#")) {
-        $dartDefines += "--dart-define=$line"
-    }
-}
-
-flutter build web --release $($dartDefines -join ' ')
+flutter build web --release
 cd build/web
 
 # Clean up old hashed files

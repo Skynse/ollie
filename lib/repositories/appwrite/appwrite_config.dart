@@ -12,8 +12,9 @@ class AppwriteConfig {
   static Account? _account;
   static models.User? _currentUser;
 
-  // Database ID - read from environment configuration
-  static String get databaseId => Environment.appwriteDatabaseId;
+  // Database ID - create this in your Appwrite console
+  static const String databaseId =
+      '68f0c0100009393371fd'; // Change this to your database ID
 
   // Export app URL from Environment
   static String get appUrl => Environment.appUrl;
