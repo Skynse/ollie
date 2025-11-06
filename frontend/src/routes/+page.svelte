@@ -14,6 +14,7 @@
         name="description"
         content="Simple, collaborative kanban boards for agile teams. Real-time updates, multiplayer cursors, and sprint management."
     />
+    <link rel="icon" type="image/png" href="/images/icon.png" />
 </svelte:head>
 
 <div class="landing">
@@ -30,6 +31,10 @@
         <div class="container">
             <div class="hero-content">
                 <div class="glass-card">
+                    <div class="brand-logo">
+                        <img src="/images/icon.png" alt="Ollie" />
+                        <h2>Ollie</h2>
+                    </div>
                     <h1 class="hero-title">
                         Team collaboration,<br />
                         <span class="highlight-text">simplified</span>
@@ -170,7 +175,10 @@
         <div class="container">
             <div class="footer-content">
                 <div class="footer-brand">
-                    <h3>Ollie</h3>
+                    <div class="footer-logo">
+                        <img src="/images/icon.png" alt="Ollie" />
+                        <h3>Ollie</h3>
+                    </div>
                     <p>Simple kanban boards for agile teams</p>
                 </div>
                 <div class="footer-links">
@@ -305,6 +313,27 @@
         border-radius: 24px;
         padding: 3rem;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Brand Logo */
+    .brand-logo {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .brand-logo img {
+        width: 64px;
+        height: 64px;
+        border-radius: 12px;
+    }
+
+    .brand-logo h2 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: white;
+        margin: 0;
     }
 
     .hero-title {
@@ -612,9 +641,22 @@
         margin-bottom: 3rem;
     }
 
+    .footer-logo {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .footer-logo img {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+    }
+
     .footer-brand h3 {
         font-size: 1.5rem;
-        margin-bottom: 0.5rem;
+        margin: 0;
     }
 
     .footer-brand p {
