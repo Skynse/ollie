@@ -36,7 +36,6 @@ class _PasswordResetScreenState extends ConsumerState<PasswordResetScreen> {
   @override
   void initState() {
     super.initState();
-    print('PasswordResetScreen initialized with userId: ${widget.userId}');
   }
 
   @override

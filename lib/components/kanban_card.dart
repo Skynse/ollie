@@ -43,6 +43,21 @@ class _KanbanCardState extends ConsumerState<KanbanCard> {
             });
           },
         ),
+        // toggle complete, ? depending on if completed or not string changes
+        OllieMenuItem(
+          title: widget.card.completed ? 'Mark Incomplete' : 'Mark Complete',
+          icon: widget.card.completed
+              ? Icons.check_box_outline_blank
+              : Icons.check_box,
+          onTap: () async {
+            final updatedCard = widget.card.copyWith(
+              completed: !widget.card.completed,
+            );
+            await ref
+                .read(boardNotifierProvider(widget.boardId).notifier)
+                .updateCard(updatedCard: updatedCard);
+          },
+        ),
         OllieMenuItem(
           title: 'Change Members',
           icon: Icons.group_outlined,

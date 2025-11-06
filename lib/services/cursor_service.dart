@@ -43,14 +43,14 @@ class CursorService {
             final message = jsonDecode(data as String) as Map<String, dynamic>;
             _handleMessage(message);
           } catch (e) {
-            print('Error parsing WebSocket message: $e');
+            // Error parsing WebSocket message
           }
         },
         onError: (error) {
-          print('WebSocket error: $error');
+          // WebSocket error
         },
         onDone: () {
-          print('WebSocket connection closed');
+          // WebSocket connection closed
         },
       );
 
@@ -63,13 +63,12 @@ class CursorService {
         'color': color.value,
       });
     } catch (e) {
-      print('Failed to connect to WebSocket server: $e');
+      // Failed to connect to WebSocket server
     }
   }
 
   void _handleMessage(Map<String, dynamic> message) {
     final type = message['type'] as String?;
-    print('WebSocket received: $type');
 
     switch (type) {
       case 'cursors-state':
@@ -157,7 +156,7 @@ class CursorService {
     try {
       _channel?.sink.add(jsonEncode(message));
     } catch (e) {
-      print('Error sending message: $e');
+      // Error sending message
     }
   }
 

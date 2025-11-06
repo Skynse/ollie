@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,27 +22,32 @@ class MultiplayerCursors extends ConsumerStatefulWidget {
 
 class _MultiplayerCursorsState extends ConsumerState<MultiplayerCursors> {
   final Map<String, CursorPosition> _cursors = {};
+  StreamSubscription<Map<String, CursorPosition>>? _cursorSubscription;
+  CursorService? _cursorService;
 
   @override
   void initState() {
     super.initState();
+    // Store the cursor service reference to avoid using ref after dispose
+    _cursorService = ref.read(cursorServiceProvider);
     _subscribeToCursors();
   }
 
   void _subscribeToCursors() {
-    final cursorService = ref.read(cursorServiceProvider);
+    if (_cursorService == null) return;
+
     final currentUser = AppwriteConfig.currentUser;
 
     if (currentUser != null) {
       final color = _getUserColor(currentUser.$id);
-      cursorService.subscribeToBoard(
+      _cursorService!.subscribeToBoard(
         widget.boardId,
         currentUser.$id,
         currentUser.name,
         color,
       );
 
-      cursorService.cursorStream.listen((cursors) {
+      _cursorSubscription = _cursorService!.cursorStream.listen((cursors) {
         if (mounted) {
           setState(() {
             _cursors.clear();
@@ -53,13 +59,15 @@ class _MultiplayerCursorsState extends ConsumerState<MultiplayerCursors> {
   }
 
   void _onPointerHover(PointerHoverEvent event) {
-    final cursorService = ref.read(cursorServiceProvider);
+    // Check if widget is still mounted before accessing refs
+    if (!mounted || _cursorService == null) return;
+
     final currentUser = AppwriteConfig.currentUser;
 
     if (currentUser != null) {
       final color = _getUserColor(currentUser.$id);
 
-      cursorService.updateCursorPosition(
+      _cursorService!.updateCursorPosition(
         currentUser.$id,
         currentUser.name,
         event.position.dx,
@@ -82,15 +90,19 @@ class _MultiplayerCursorsState extends ConsumerState<MultiplayerCursors> {
 
   @override
   void dispose() {
-    print('MultiplayerCursors disposing for board ${widget.boardId}');
-    final cursorService = ref.read(cursorServiceProvider);
-    cursorService.unsubscribe();
+    // Cancel the stream subscription before disposing
+    _cursorSubscription?.cancel();
+    _cursorSubscription = null;
+
+    // Unsubscribe from cursor service if it exists
+    _cursorService?.unsubscribe();
+    _cursorService = null;
+
     super.dispose();
   }
 
   @override
   void deactivate() {
-    print('MultiplayerCursors deactivating for board ${widget.boardId}');
     super.deactivate();
   }
 

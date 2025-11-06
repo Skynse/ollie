@@ -7,6 +7,7 @@ class Board {
   final List<String> columnIds;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final bool archived;
 
   Board({
     required this.id,
@@ -17,6 +18,7 @@ class Board {
     required this.columnIds,
     required this.createdAt,
     required this.updatedAt,
+    required this.archived,
   });
 
   Map<String, dynamic> toJson() {
@@ -63,6 +65,7 @@ class Board {
       updatedAt: json['\$updatedAt'] != null
           ? DateTime.parse(json['\$updatedAt'] as String)
           : DateTime.now(),
+      archived: json['archived'] as bool? ?? false,
     );
   }
 
@@ -75,6 +78,7 @@ class Board {
     List<String>? columnIds,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? archived,
   }) {
     return Board(
       id: id ?? this.id,
@@ -85,6 +89,7 @@ class Board {
       columnIds: columnIds ?? this.columnIds,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      archived: archived ?? this.archived,
     );
   }
 }

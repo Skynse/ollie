@@ -128,7 +128,6 @@ class AppwriteUserRepository implements UserRepository {
       if (docs.documents.isEmpty) return null;
       return User.fromJson(docs.documents.first.data);
     } catch (e) {
-      print(e);
       return null;
     }
   }

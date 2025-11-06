@@ -287,7 +287,6 @@ class SprintNotifier extends StateNotifier<Sprint?> {
         await _boardRepository.updateCard(updatedCard);
       } catch (e) {
         // Log error but don't fail the time log creation
-        print('Failed to update card totalLoggedHours: $e');
       }
 
       return createdLog;

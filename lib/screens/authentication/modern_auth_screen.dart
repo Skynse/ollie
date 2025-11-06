@@ -153,15 +153,11 @@ class _ModernAuthScreenState extends ConsumerState<ModernAuthScreen>
         // The server function you provided returns a JSON map: {'exists': true/false}
         return responseBody['exists'] as bool? ?? false;
       } else {
-        print(
-          'Error executing function [${response.status}]: ${response.responseBody}',
-        );
         return false;
       }
     } on AppwriteException catch (e) {
       // The 'function_not_found' error you received will be caught here.
       // Please double-check the function ID in your Appwrite project console.
-      print('Error checking user by email: $e');
       return false;
     }
   }

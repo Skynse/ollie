@@ -164,8 +164,6 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
           break;
       }
     } catch (e, s) {
-      print(e);
-      print(s);
       // Silently handle errors - could add logging here if needed
     }
   }
@@ -188,7 +186,6 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
     BoardState currentState,
   ) async {
     final columns = List<BoardColumn>.from(currentState.columns);
-    print('Handling column event');
     switch (event.type) {
       case RealtimeEventType.create:
         if (event.data != null && event.data!['boardId'] == _boardId) {
@@ -394,7 +391,6 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
     });
 
     if (sourceColumnId == null) {
-      print("Card not found in local state, cannot delete.");
       return; // Card not found
     }
 
@@ -416,7 +412,6 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
     } catch (e) {
       // On failure, roll back to the original state.
       state = AsyncValue.data(originalState);
-      print("Failed to delete card, rolling back. Error: $e");
     }
   }
 
@@ -434,7 +429,6 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
     final cardIndex = cardList.indexWhere((c) => c.id == updatedCard.id);
 
     if (cardIndex == -1) {
-      print("Card to update not found in local state.");
       return; // Card not found
     }
 
@@ -459,7 +453,6 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
     } catch (e) {
       // On failure, roll back to the original state.
       state = AsyncValue.data(originalState);
-      print("Failed to update card, rolling back. Error: $e");
     }
   }
 
@@ -639,6 +632,7 @@ class BoardNotifier extends StateNotifier<AsyncValue<BoardState>> {
       updatedAt: DateTime.now(),
       createdBy: createdBy,
       rank: newRank,
+      completed: false,
     );
 
     try {

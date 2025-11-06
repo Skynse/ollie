@@ -90,6 +90,7 @@ class BoardsNotifier extends StateNotifier<BoardsState> {
         columnIds: [],
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        archived: false,
       );
 
       final created = await _repository.createBoard(newBoard);

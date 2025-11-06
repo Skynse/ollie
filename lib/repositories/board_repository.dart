@@ -16,7 +16,6 @@ abstract class BoardRepository {
   Future<void> deleteBoard(String boardId);
   Future<void> addMember(String boardId, String userId);
   Future<void> removeMember(String boardId, String userId);
-
   // Column operations
   Future<BoardColumn> getColumn(String columnId);
   Future<List<BoardColumn>> getColumnsByBoard(String boardId);

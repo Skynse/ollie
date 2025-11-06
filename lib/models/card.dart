@@ -19,6 +19,7 @@ class Card {
   totalLoggedHours; // Total hours logged (denormalized for performance)
   final String? sprintId;
   final String rank;
+  final bool completed;
 
   Card({
     required this.id,
@@ -38,6 +39,7 @@ class Card {
     this.totalLoggedHours = 0.0,
     this.sprintId,
     required this.rank,
+    required this.completed,
   });
 
   Map<String, dynamic> toJson() {
@@ -56,6 +58,7 @@ class Card {
       'totalLoggedHours': totalLoggedHours,
       'sprintId': sprintId,
       'rank': rank,
+      'completed': completed,
     };
   }
 
@@ -94,6 +97,7 @@ class Card {
       totalLoggedHours: (json['totalLoggedHours'] as num?)?.toDouble() ?? 0.0,
       sprintId: json['sprintId'] as String?,
       rank: json['rank'] as String? ?? 'U',
+      completed: json['completed'] as bool? ?? false,
     );
   }
 
@@ -113,8 +117,10 @@ class Card {
       updatedAt: DateTime.now(),
       createdBy: '',
       estimatedHours: 0.0,
+      totalLoggedHours: 0.0,
       sprintId: '',
       rank: '',
+      completed: false,
     );
   }
 
@@ -136,6 +142,7 @@ class Card {
     double? totalLoggedHours,
     String? sprintId,
     String? rank,
+    bool? completed,
   }) {
     return Card(
       id: id ?? this.id,
@@ -155,6 +162,7 @@ class Card {
       totalLoggedHours: totalLoggedHours ?? this.totalLoggedHours,
       sprintId: sprintId ?? this.sprintId,
       rank: rank ?? this.rank,
+      completed: completed ?? this.completed,
     );
   }
 }

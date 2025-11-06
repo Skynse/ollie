@@ -27,149 +27,179 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
   @override
   Widget build(BuildContext context) {
     final priorityColor = _getPriorityColor(widget.card.priority);
+    final isCompleted = widget.card.completed;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
+      child: AnimatedOpacity(
+        opacity: isCompleted ? 0.6 : 1.0,
         duration: const Duration(milliseconds: 200),
-        margin: EdgeInsets.zero,
-        decoration: BoxDecoration(
-          color: context.surfaceColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: _isHovered
-                ? priorityColor.withOpacity(0.4)
-                : context.borderColor,
-            width: _isHovered ? 2 : 1,
-          ),
-          boxShadow: [
-            if (_isHovered)
-              BoxShadow(
-                color: priorityColor.withOpacity(0.12),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              )
-            else
-              ...context.shadowSmall,
-          ],
-        ),
-        child: InkWell(
-          onTap: widget.onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Stack(
-            children: [
-              // Priority left border indicator
-              if (widget.card.priority != Priority.low)
-                Positioned(
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: 4,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [priorityColor, priorityColor.withOpacity(0.6)],
-                      ),
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(11),
-                        bottomLeft: Radius.circular(11),
-                      ),
-                    ),
-                  ),
-                ),
-
-              // Card content
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  widget.card.priority != Priority.low ? 12 : 8,
-                  8,
-                  8,
-                  8,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Card title with priority icon
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            widget.card.title,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: context.textColor,
-                              height: 1.3,
-                              letterSpacing: -0.1,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (widget.card.priority == Priority.high)
-                          Padding(
-                            padding: const EdgeInsets.only(left: 4),
-                            child: Icon(
-                              Icons.priority_high,
-                              size: 14,
-                              color: priorityColor,
-                            ),
-                          ),
-                      ],
-                    ),
-
-                    // Card description (if exists)
-                    if (widget.card.description != null &&
-                        widget.card.description!.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        widget.card.description!,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: context.secondaryTextColor,
-                          height: 1.3,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-
-                    const SizedBox(height: 8),
-
-                    // Card metadata
-                    _buildMetadata(),
-                  ],
-                ),
-              ),
-
-              // Quick actions overlay (on hover)
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: EdgeInsets.zero,
+          decoration: BoxDecoration(
+            color: isCompleted
+                ? context.surfaceVariantColor
+                : context.surfaceColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _isHovered
+                  ? priorityColor.withOpacity(0.4)
+                  : context.borderColor,
+              width: _isHovered ? 2 : 1,
+            ),
+            boxShadow: [
               if (_isHovered)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: context.surfaceColor,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: context.shadowMedium,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _QuickActionButton(
-                          icon: Icons.edit,
-                          color: context.primaryColor,
-                          onTap: widget.onTap,
+                BoxShadow(
+                  color: priorityColor.withOpacity(0.12),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                )
+              else
+                ...context.shadowSmall,
+            ],
+          ),
+          child: InkWell(
+            onTap: widget.onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: Stack(
+              children: [
+                // Priority left border indicator
+                if (widget.card.priority != Priority.low)
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 4,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            priorityColor,
+                            priorityColor.withOpacity(0.6),
+                          ],
                         ),
-                      ],
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(11),
+                          bottomLeft: Radius.circular(11),
+                        ),
+                      ),
                     ),
                   ),
+
+                // Card content
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    widget.card.priority != Priority.low ? 12 : 8,
+                    8,
+                    8,
+                    8,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Card title with priority icon
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Completed checkbox indicator
+                          if (widget.card.completed)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 6, top: 1),
+                              child: Icon(
+                                Icons.check_circle,
+                                size: 16,
+                                color: context.successColor,
+                              ),
+                            ),
+                          Expanded(
+                            child: Text(
+                              widget.card.title,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: widget.card.completed
+                                    ? context.secondaryTextColor
+                                    : context.textColor,
+                                height: 1.3,
+                                letterSpacing: -0.1,
+                                decoration: widget.card.completed
+                                    ? TextDecoration.lineThrough
+                                    : TextDecoration.none,
+                                decorationThickness: 2,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (widget.card.priority == Priority.high &&
+                              !widget.card.completed)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 4),
+                              child: Icon(
+                                Icons.priority_high,
+                                size: 14,
+                                color: priorityColor,
+                              ),
+                            ),
+                        ],
+                      ),
+
+                      // Card description (if exists)
+                      if (widget.card.description != null &&
+                          widget.card.description!.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          widget.card.description!,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: context.secondaryTextColor,
+                            height: 1.3,
+                            decoration: widget.card.completed
+                                ? TextDecoration.lineThrough
+                                : TextDecoration.none,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+
+                      const SizedBox(height: 8),
+
+                      // Card metadata
+                      _buildMetadata(),
+                    ],
+                  ),
                 ),
-            ],
+
+                // Quick actions overlay (on hover)
+                if (_isHovered)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: context.surfaceColor,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: context.shadowMedium,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _QuickActionButton(
+                            icon: Icons.edit,
+                            color: context.primaryColor,
+                            onTap: widget.onTap,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

@@ -248,7 +248,6 @@ class AppwriteBoardRepository implements BoardRepository {
         data: {'columnId': targetColumnId, 'rank': newRank},
       );
     } catch (e) {
-      print('Failed to move card: $e');
       rethrow;
     }
   }

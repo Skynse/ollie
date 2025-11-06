@@ -100,7 +100,6 @@ final routerProvider = Provider<GoRouter>((ref) {
 
           // If missing parameters, redirect to login
           if (userId == null || secret == null) {
-            print('Missing parameters, redirecting to login');
             Future.microtask(() => context.go('/login'));
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
