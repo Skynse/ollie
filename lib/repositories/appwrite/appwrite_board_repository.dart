@@ -261,6 +261,7 @@ class AppwriteBoardRepository implements BoardRepository {
     required String newRank,
   }) async {
     try {
+      // Partial update - only change columnId and rank
       await databases.updateDocument(
         databaseId: databaseId,
         collectionId: cardsCollection,
