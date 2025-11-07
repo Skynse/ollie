@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ollie/components/ollie_ui/ollie_context_menu.dart';
@@ -22,8 +24,30 @@ class KanbanCard extends ConsumerStatefulWidget {
   ConsumerState<KanbanCard> createState() => _KanbanCardState();
 }
 
-class _KanbanCardState extends ConsumerState<KanbanCard> {
+class _KanbanCardState extends ConsumerState<KanbanCard>
+    with SingleTickerProviderStateMixin {
   bool _isDragging = false;
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _animation = Tween<double>(
+      begin: 0,
+      end: 2 * math.pi,
+    ).animate(_animationController);
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +77,12 @@ class _KanbanCardState extends ConsumerState<KanbanCard> {
             final updatedCard = widget.card.copyWith(
               completed: !widget.card.completed,
             );
+
+            if (widget.card.completed) {
+              _animationController.forward();
+            } else {
+              _animationController.reverse();
+            }
             await ref
                 .read(boardNotifierProvider(widget.boardId).notifier)
                 .updateCard(updatedCard: updatedCard);
@@ -117,7 +147,19 @@ class _KanbanCardState extends ConsumerState<KanbanCard> {
         ),
         childWhenDragging:
             const SizedBox.shrink(), // Hide original card when dragging
-        child: _buildCardContent(context, ref),
+        child: AnimatedBuilder(
+          animation: _animation,
+          builder: (context, child) {
+            return Transform(
+              alignment: FractionalOffset.center,
+              transform: Matrix4.identity()
+                ..setEntry(3, 2, 0.001) // Add perspective
+                ..rotateX(_animation.value), // Rotate around X-axis
+
+              child: _buildCardContent(context, ref),
+            );
+          },
+        ),
       ),
     );
   }
