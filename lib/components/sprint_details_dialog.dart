@@ -106,6 +106,9 @@ class _SprintDetailsDialogState extends ConsumerState<SprintDetailsDialog> {
                         );
 
                         if (result == true) {
+                          ref.invalidate(
+                            sprintBurndownComputedProvider(widget.sprintId),
+                          );
                           // Refresh burndown data
                           ref.invalidate(
                             sprintBurndownProvider(widget.sprintId),

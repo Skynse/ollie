@@ -65,6 +65,15 @@ final cardTimeLogsProvider = FutureProvider.family<List<TimeLog>, String>((
   return await repository.getTimeLogsByCard(cardId);
 });
 
+/// Provider for time logs by sprint
+final sprintTimeLogsProvider = FutureProvider.family<List<TimeLog>, String>((
+  ref,
+  sprintId,
+) async {
+  final repository = ref.read(sprintRepositoryProvider);
+  return await repository.getTimeLogsBySprint(sprintId);
+});
+
 /// Provider for active time log for current user
 final activeTimeLogProvider = FutureProvider.family<TimeLog?, String>((
   ref,
@@ -76,13 +85,33 @@ final activeTimeLogProvider = FutureProvider.family<TimeLog?, String>((
 
 /// Sprint state notifier for managing sprint operations
 class SprintNotifier extends StateNotifier<Sprint?> {
+  final Ref _ref;
   final SprintRepository _sprintRepository;
   final BoardRepository _boardRepository;
   final String _boardId;
 
-  SprintNotifier(this._sprintRepository, this._boardRepository, this._boardId)
-    : super(null) {
+  SprintNotifier(
+    this._ref,
+    this._sprintRepository,
+    this._boardRepository,
+    this._boardId,
+  ) : super(null) {
     _loadActiveSprint();
+  }
+
+  void _invalidateBoardSprintProviders() {
+    _ref.invalidate(boardSprintsProvider(_boardId));
+    _ref.invalidate(activeSprintProvider(_boardId));
+  }
+
+  void _invalidateTimeLogProviders({String? sprintId, String? cardId}) {
+    if (cardId != null) {
+      _ref.invalidate(cardTimeLogsProvider(cardId));
+    }
+    if (sprintId != null && sprintId.isNotEmpty) {
+      _ref.invalidate(sprintProvider(sprintId));
+      _ref.invalidate(sprintTimeLogsProvider(sprintId));
+    }
   }
 
   Future<void> _loadActiveSprint() async {
@@ -119,6 +148,7 @@ class SprintNotifier extends StateNotifier<Sprint?> {
       );
 
       final created = await _sprintRepository.createSprint(sprint);
+      _invalidateBoardSprintProviders();
       await _loadActiveSprint();
       return created;
     } catch (e) {
@@ -133,6 +163,8 @@ class SprintNotifier extends StateNotifier<Sprint?> {
       final updated = current.copyWith(status: SprintStatus.active);
       final result = await _sprintRepository.updateSprint(updated);
       state = result; // Immediately update state
+      _invalidateBoardSprintProviders();
+      _invalidateTimeLogProviders(sprintId: sprintId);
       await _loadActiveSprint(); // Also refresh from DB
     } catch (e) {
       // Handle error
@@ -146,6 +178,8 @@ class SprintNotifier extends StateNotifier<Sprint?> {
       final current = await _sprintRepository.getSprint(sprintId);
       final updated = current.copyWith(status: SprintStatus.completed);
       await _sprintRepository.updateSprint(updated);
+      _invalidateBoardSprintProviders();
+      _invalidateTimeLogProviders(sprintId: sprintId);
       await _loadActiveSprint();
     } catch (e) {
       // Handle error
@@ -159,6 +193,8 @@ class SprintNotifier extends StateNotifier<Sprint?> {
       final updatedCardIds = [...sprint.cardIds, cardId];
       final updated = sprint.copyWith(cardIds: updatedCardIds);
       await _sprintRepository.updateSprint(updated);
+      _invalidateBoardSprintProviders();
+      _invalidateTimeLogProviders(sprintId: sprintId, cardId: cardId);
       await _loadActiveSprint();
     } catch (e) {
       // Handle error
@@ -174,9 +210,39 @@ class SprintNotifier extends StateNotifier<Sprint?> {
           .toList();
       final updated = sprint.copyWith(cardIds: updatedCardIds);
       await _sprintRepository.updateSprint(updated);
+      _invalidateBoardSprintProviders();
+      _invalidateTimeLogProviders(sprintId: sprintId, cardId: cardId);
       await _loadActiveSprint();
     } catch (e) {
       // Handle error
+    }
+  }
+
+  /// Delete a sprint and update the UI immediately
+  Future<void> deleteSprint(String sprintId) async {
+    try {
+      await _sprintRepository.deleteSprint(sprintId);
+      if (state?.id == sprintId) {
+        state = null;
+      }
+      _invalidateBoardSprintProviders();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Update editable sprint details (name, goal, dates, targetHours)
+  Future<Sprint?> editSprint(Sprint updatedSprint) async {
+    try {
+      final result = await _sprintRepository.updateSprint(updatedSprint);
+      if (state?.id == updatedSprint.id) {
+        state = result;
+      }
+      _invalidateBoardSprintProviders();
+      _invalidateTimeLogProviders(sprintId: updatedSprint.id);
+      return result;
+    } catch (e) {
+      rethrow;
     }
   }
 
@@ -237,7 +303,12 @@ class SprintNotifier extends StateNotifier<Sprint?> {
         updatedAt: now,
       );
 
-      return await _sprintRepository.updateTimeLog(updated);
+      final stoppedLog = await _sprintRepository.updateTimeLog(updated);
+      _invalidateTimeLogProviders(
+        sprintId: stoppedLog.sprintId,
+        cardId: stoppedLog.cardId,
+      );
+      return stoppedLog;
     } catch (e) {
       rethrow;
     }
@@ -289,6 +360,7 @@ class SprintNotifier extends StateNotifier<Sprint?> {
         // Log error but don't fail the time log creation
       }
 
+      _invalidateTimeLogProviders(sprintId: sprintId, cardId: cardId);
       return createdLog;
     } catch (e) {
       rethrow;
@@ -304,5 +376,5 @@ final sprintNotifierProvider =
     ) {
       final sprintRepository = ref.read(sprintRepositoryProvider);
       final boardRepository = AppwriteConfig.createBoardRepository();
-      return SprintNotifier(sprintRepository, boardRepository, boardId);
+      return SprintNotifier(ref, sprintRepository, boardRepository, boardId);
     });

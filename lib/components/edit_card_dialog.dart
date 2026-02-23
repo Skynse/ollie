@@ -262,7 +262,7 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
             // Time Tracking
             _buildSectionTitle('Time Tracking'),
             const SizedBox(height: 8),
-            CardTimerWidget(card: widget.card),
+            CardTimerWidget(card: widget.card, boardId: widget.boardId),
           ],
         ),
       ),

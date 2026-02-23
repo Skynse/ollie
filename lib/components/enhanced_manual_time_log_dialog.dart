@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/time_log.dart';
+import '../providers/burndown_provider.dart';
 import '../providers/sprint_provider.dart';
 import 'ollie_ui/ollie_dialog.dart';
 import 'ollie_ui/ollie_button.dart';
@@ -12,6 +13,7 @@ import 'ollie_ui/theme_extensions.dart';
 /// Enhanced manual time log dialog with date picker and better UX
 class EnhancedManualTimeLogDialog extends ConsumerStatefulWidget {
   final String cardId;
+  final String boardId;
   final String userId;
   final String? sprintId;
   final TimeLog? existingLog;
@@ -19,6 +21,7 @@ class EnhancedManualTimeLogDialog extends ConsumerStatefulWidget {
   const EnhancedManualTimeLogDialog({
     super.key,
     required this.cardId,
+    required this.boardId,
     required this.userId,
     this.sprintId,
     this.existingLog,
@@ -176,10 +179,13 @@ class _EnhancedManualTimeLogDialogState
         );
 
         await ref.read(sprintRepositoryProvider).updateTimeLog(updatedLog);
+        ref.invalidate(cardTimeLogsProvider(widget.cardId));
 
         // Refresh sprint data
-        if (widget.sprintId != null) {
-          ref.invalidate(sprintNotifierProvider(widget.sprintId!));
+        ref.invalidate(sprintNotifierProvider(widget.boardId));
+        if (widget.sprintId != null && widget.sprintId!.isNotEmpty) {
+          ref.invalidate(sprintTimeLogsProvider(widget.sprintId!));
+          ref.invalidate(sprintBurndownComputedProvider(widget.sprintId!));
         }
 
         if (mounted) {
@@ -189,7 +195,7 @@ class _EnhancedManualTimeLogDialogState
       } else {
         // Create new log
         await ref
-            .read(sprintNotifierProvider(widget.sprintId ?? '').notifier)
+            .read(sprintNotifierProvider(widget.boardId).notifier)
             .logManualTime(
               cardId: widget.cardId,
               userId: widget.userId,
@@ -201,6 +207,10 @@ class _EnhancedManualTimeLogDialogState
               startTime: startDateTime,
               endTime: endDateTime,
             );
+        ref.invalidate(cardTimeLogsProvider(widget.cardId));
+        if (widget.sprintId != null && widget.sprintId!.isNotEmpty) {
+          ref.invalidate(sprintBurndownComputedProvider(widget.sprintId!));
+        }
 
         if (mounted) {
           Navigator.pop(context);

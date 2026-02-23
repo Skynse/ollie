@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/burndown_provider.dart';
 import '../providers/sprint_provider.dart';
 import 'ollie_ui/ollie_toast.dart';
 
 /// Dialog for manually entering time log entries
 class ManualTimeLogDialog extends ConsumerStatefulWidget {
   final String cardId;
+  final String boardId;
   final String userId;
   final String? sprintId;
 
   const ManualTimeLogDialog({
     super.key,
     required this.cardId,
+    required this.boardId,
     required this.userId,
     this.sprintId,
   });
@@ -53,7 +56,7 @@ class _ManualTimeLogDialogState extends ConsumerState<ManualTimeLogDialog> {
 
     try {
       await ref
-          .read(sprintNotifierProvider(widget.sprintId ?? '').notifier)
+          .read(sprintNotifierProvider(widget.boardId).notifier)
           .logManualTime(
             cardId: widget.cardId,
             userId: widget.userId,
@@ -63,6 +66,10 @@ class _ManualTimeLogDialogState extends ConsumerState<ManualTimeLogDialog> {
                 : _notesController.text.trim(),
             sprintId: widget.sprintId,
           );
+      ref.invalidate(cardTimeLogsProvider(widget.cardId));
+      if (widget.sprintId != null && widget.sprintId!.isNotEmpty) {
+        ref.invalidate(sprintBurndownComputedProvider(widget.sprintId!));
+      }
 
       if (mounted) {
         Navigator.of(context).pop();

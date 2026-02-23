@@ -509,23 +509,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   void _showSprintManagementDialog() {
     showDialog(
       context: context,
-      builder: (context) => SprintManagementDialog(
-        boardId: widget.boardId,
-        onStartSprint: (sprintId) async {
-          await ref
-              .read(sprintNotifierProvider(widget.boardId).notifier)
-              .startSprint(sprintId);
-        },
-        onCompleteSprint: (sprintId) async {
-          await ref
-              .read(sprintNotifierProvider(widget.boardId).notifier)
-              .completeSprint(sprintId);
-        },
-        onDeleteSprint: (sprintId) async {
-          final repository = ref.read(sprintRepositoryProvider);
-          await repository.deleteSprint(sprintId);
-        },
-      ),
+      builder: (context) => SprintManagementDialog(boardId: widget.boardId),
     );
   }
 

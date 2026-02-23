@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/card.dart' as model;
 import '../models/time_log.dart';
 import '../providers/sprint_provider.dart';
+import '../providers/burndown_provider.dart';
 import '../providers/user_provider.dart';
 import 'ollie_ui/ollie_toast.dart';
 import 'enhanced_manual_time_log_dialog.dart';
@@ -11,8 +12,9 @@ import 'ollie_ui/theme_extensions.dart';
 /// Widget for displaying logged time on a card (manual time logs only)
 class CardTimerWidget extends ConsumerWidget {
   final model.Card card;
+  final String boardId;
 
-  const CardTimerWidget({super.key, required this.card});
+  const CardTimerWidget({super.key, required this.card, required this.boardId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -48,28 +50,20 @@ class CardTimerWidget extends ConsumerWidget {
   }
 
   Widget _buildTimeLogsList(BuildContext context, WidgetRef ref, currentUser) {
-    // Fetch time logs for this card
-    return FutureBuilder<List<TimeLog>>(
-      future: ref.read(sprintRepositoryProvider).getTimeLogsByCard(card.id),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
+    final timeLogsAsync = ref.watch(cardTimeLogsProvider(card.id));
 
-        if (snapshot.hasError) {
-          return Text(
-            'Error loading time logs',
-            style: TextStyle(color: context.dangerColor),
-          );
-        }
-
-        final timeLogs = snapshot.data ?? [];
-
+    return timeLogsAsync.when(
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      error: (_, __) => Text(
+        'Error loading time logs',
+        style: TextStyle(color: context.dangerColor),
+      ),
+      data: (timeLogs) {
         if (timeLogs.isEmpty) {
           return Container(
             padding: const EdgeInsets.all(16),
@@ -235,6 +229,7 @@ class CardTimerWidget extends ConsumerWidget {
       context: context,
       builder: (context) => EnhancedManualTimeLogDialog(
         cardId: card.id,
+        boardId: boardId,
         userId: log.userId,
         sprintId: card.sprintId,
         existingLog: log,
@@ -271,9 +266,12 @@ class CardTimerWidget extends ConsumerWidget {
     if (confirmed == true && context.mounted) {
       try {
         await ref.read(sprintRepositoryProvider).deleteTimeLog(log.id);
+        ref.invalidate(cardTimeLogsProvider(card.id));
 
-        if (card.sprintId != null) {
-          ref.invalidate(sprintNotifierProvider(card.sprintId!));
+        ref.invalidate(sprintNotifierProvider(boardId));
+        if (card.sprintId != null && card.sprintId!.isNotEmpty) {
+          ref.invalidate(sprintTimeLogsProvider(card.sprintId!));
+          ref.invalidate(sprintBurndownComputedProvider(card.sprintId!));
         }
 
         if (context.mounted) {
@@ -340,6 +338,7 @@ class CardTimerWidget extends ConsumerWidget {
                   context: context,
                   builder: (context) => EnhancedManualTimeLogDialog(
                     cardId: card.id,
+                    boardId: boardId,
                     userId: currentUser.id,
                     sprintId: card.sprintId,
                   ),
@@ -406,8 +405,13 @@ class CardTimerWidget extends ConsumerWidget {
                       }
 
                       // Refresh the sprint data if card is in a sprint
-                      if (card.sprintId != null) {
-                        ref.invalidate(sprintNotifierProvider(card.sprintId!));
+                      ref.invalidate(cardTimeLogsProvider(card.id));
+                      ref.invalidate(sprintNotifierProvider(boardId));
+                      if (card.sprintId != null && card.sprintId!.isNotEmpty) {
+                        ref.invalidate(sprintTimeLogsProvider(card.sprintId!));
+                        ref.invalidate(
+                          sprintBurndownComputedProvider(card.sprintId!),
+                        );
                       }
 
                       if (context.mounted) {

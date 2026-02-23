@@ -23,6 +23,7 @@ class BurndownEditorDialog extends ConsumerStatefulWidget {
 class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
   final List<_EditableBurndownEntry> _entries = [];
   bool _isSaving = false;
+  bool _isLoadingData = true;
 
   @override
   void initState() {
@@ -37,13 +38,14 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
 
     // Convert to editable entries
     setState(() {
+      _isLoadingData = false;
       _entries.clear();
       for (var dataPoint in burndownAsync) {
         final actualHours = dataPoint.actualHours ?? dataPoint.remainingHours;
         _entries.add(
           _EditableBurndownEntry(
             date: dataPoint.date,
-            remainingHours: dataPoint.remainingHours ?? 0.0,
+            remainingHours: dataPoint.remainingHours,
             actualHours: actualHours,
             controller: TextEditingController(
               text: actualHours.toStringAsFixed(1),
@@ -60,18 +62,26 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
     try {
       final repository = ref.read(sprintRepositoryProvider);
 
-      // Create burndown snapshots for each entry
+      // Delete existing snapshots first to avoid duplicates
+      final existing = await repository.getBurndownSnapshotsBySprint(
+        widget.sprint.id,
+      );
+      for (final snapshot in existing) {
+        await repository.deleteBurndownSnapshot(snapshot.id);
+      }
+
+      // Create fresh burndown snapshots for each entry
       for (var entry in _entries) {
         final hours =
             double.tryParse(entry.controller.text) ?? entry.actualHours;
 
         final snapshot = BurndownSnapshot(
-          id: '', // Will be generated
+          id: '',
           sprintId: widget.sprint.id,
           date: entry.date,
           remainingHours: hours,
           completedHours: widget.sprint.targetHours - hours,
-          totalCards: 0, // Could be enhanced to track this
+          totalCards: 0,
           completedCards: 0,
           scopeChangeHours: 0,
           createdAt: DateTime.now(),
@@ -113,10 +123,10 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
               decoration: BoxDecoration(
                 color: Theme.of(
                   context,
-                ).colorScheme.primaryContainer.withOpacity(0.5),
+                ).colorScheme.primaryContainer.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
                 ),
               ),
               child: Row(
@@ -149,7 +159,7 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
                     colors: [
                       Theme.of(
                         context,
-                      ).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                      ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                       Theme.of(context).colorScheme.surfaceContainerHighest,
                     ],
                   ),
@@ -157,7 +167,7 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
                   border: Border.all(
                     color: Theme.of(
                       context,
-                    ).colorScheme.outline.withOpacity(0.3),
+                    ).colorScheme.outline.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
@@ -189,14 +199,21 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
 
             // Editable burndown list
             Expanded(
-              child: _entries.isEmpty
+              child: _isLoadingData
                   ? const Center(child: CircularProgressIndicator())
-                  : ListView.builder(
-                      itemCount: _entries.length,
-                      itemBuilder: (context, index) {
-                        return _buildBurndownEntry(_entries[index], index);
-                      },
-                    ),
+                  : _entries.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'No burndown data available.\nStart logging time against this sprint to generate chart data.',
+                            textAlign: TextAlign.center,
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: _entries.length,
+                          itemBuilder: (context, index) {
+                            return _buildBurndownEntry(_entries[index], index);
+                          },
+                        ),
             ),
           ],
         ),
@@ -254,20 +271,19 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
 
   Widget _buildBurndownEntry(_EditableBurndownEntry entry, int index) {
     final isToday = DateTime.now().difference(entry.date).inDays == 0;
-    final isPast = entry.date.isBefore(DateTime.now());
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isToday
-            ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
+            ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
             : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isToday
-              ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
-              : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
+              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
