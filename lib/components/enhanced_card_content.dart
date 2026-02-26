@@ -46,8 +46,8 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
             border: Border.all(
               color: _isHovered
                   ? priorityColor.withOpacity(0.4)
-                  : context.borderColor,
-              width: _isHovered ? 2 : 1,
+                  : Colors.transparent,
+              width: 2,
             ),
             boxShadow: [
               if (_isHovered)

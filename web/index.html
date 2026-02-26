@@ -90,6 +90,47 @@
                     console.warn("Version check failed:", e);
                 }
             };
+
+            const zoomStorageKey = "ollie_web_zoom";
+            const minZoom = 0.75;
+            const maxZoom = 2.5;
+            const zoomStep = 0.1;
+
+            const clampZoom = (value) =>
+                Math.min(maxZoom, Math.max(minZoom, value));
+
+            const applyZoom = (zoom) => {
+                document.body.style.zoom = String(zoom);
+            };
+
+            let zoomLevel = clampZoom(
+                Number(localStorage.getItem(zoomStorageKey)) || 1,
+            );
+            applyZoom(zoomLevel);
+
+            window.addEventListener(
+                "wheel",
+                (event) => {
+                    if (!event.ctrlKey) return;
+
+                    event.preventDefault();
+                    zoomLevel = clampZoom(
+                        zoomLevel + (event.deltaY < 0 ? zoomStep : -zoomStep),
+                    );
+                    localStorage.setItem(zoomStorageKey, String(zoomLevel));
+                    applyZoom(zoomLevel);
+                },
+                { passive: false },
+            );
+
+            window.addEventListener("keydown", (event) => {
+                if (!event.ctrlKey || event.key !== "0") return;
+                event.preventDefault();
+                zoomLevel = 1;
+                localStorage.setItem(zoomStorageKey, "1");
+                applyZoom(zoomLevel);
+            });
+
             window.addEventListener("load", checkVersion);
             setInterval(checkVersion, 30000);
         </script>

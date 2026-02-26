@@ -112,6 +112,10 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
           ? null
           : double.tryParse(_estimatedHoursController.text.trim());
 
+      await _saveSubtasks();
+
+      final completedCount = _subtasks.where((s) => s.isCompleted).length;
+
       // Update card via repository
       final updatedCard = widget.card.copyWith(
         title: _titleController.text.trim(),
@@ -123,14 +127,14 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
         estimatedHours: estimatedHours,
         sprintId: _selectedSprintId,
         assigneeIds: _selectedAssigneeIds,
+        subtaskCount: _subtasks.length,
+        completedSubtaskCount: completedCount,
         updatedAt: DateTime.now(),
       );
 
       await ref
           .read(boardNotifierProvider(widget.boardId).notifier)
           .updateCard(updatedCard: updatedCard);
-
-      await _saveSubtasks();
 
       // Update sprint cardIds if sprint changed
       if (_selectedSprintId != widget.card.sprintId) {
@@ -203,16 +207,6 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
       await repo.deleteChecklist(_checklistId!);
       _checklistId = null;
     }
-
-    // Update denormalized counts on the card
-    final completedCount = _subtasks.where((s) => s.isCompleted).length;
-    final updatedCard = widget.card.copyWith(
-      subtaskCount: _subtasks.length,
-      completedSubtaskCount: completedCount,
-    );
-    await ref
-        .read(boardNotifierProvider(widget.boardId).notifier)
-        .updateCard(updatedCard: updatedCard);
   }
 
   void _addSubtask() {

@@ -178,74 +178,76 @@ class _OllieButtonState extends State<OllieButton>
 
   @override
   Widget build(BuildContext context) {
+    final isDisabled = widget.disabled || widget.loading;
+
     return ScaleTransition(
       scale: _scaleAnimation,
-      child: GestureDetector(
-        onTapDown: widget.disabled || widget.loading
-            ? null
-            : (_) => _controller.forward(),
-        onTapUp: widget.disabled || widget.loading
-            ? null
-            : (_) => _controller.reverse(),
-        onTapCancel: widget.disabled || widget.loading
-            ? null
-            : () => _controller.reverse(),
-        onTap: widget.disabled || widget.loading ? null : widget.onPressed,
-        child: Builder(
-          builder: (context) {
-            final brightness = Theme.of(context).brightness;
-            return Container(
-              width: widget.width ?? 200,
-              height: widget.height ?? 50,
-              decoration: BoxDecoration(
-                color: _getBackgroundColor(context),
-                borderRadius: BorderRadius.circular(
-                  OllieThemeConstants.borderRadiusMedium,
+      child: MouseRegion(
+        cursor: isDisabled
+            ? SystemMouseCursors.basic
+            : SystemMouseCursors.click,
+        child: GestureDetector(
+          onTapDown: isDisabled ? null : (_) => _controller.forward(),
+          onTapUp: isDisabled ? null : (_) => _controller.reverse(),
+          onTapCancel: isDisabled ? null : () => _controller.reverse(),
+          onTap: isDisabled ? null : widget.onPressed,
+          child: Builder(
+            builder: (context) {
+              final brightness = Theme.of(context).brightness;
+              return Container(
+                width: widget.width ?? 200,
+                height: widget.height ?? 50,
+                decoration: BoxDecoration(
+                  color: _getBackgroundColor(context),
+                  borderRadius: BorderRadius.circular(
+                    OllieThemeConstants.borderRadiusMedium,
+                  ),
+                  border: _getBorder(context),
+                  boxShadow:
+                      widget.variant == OllieButtonVariant.text ||
+                          widget.disabled
+                      ? null
+                      : OllieThemeConstants.getShadow(brightness),
                 ),
-                border: _getBorder(context),
-                boxShadow:
-                    widget.variant == OllieButtonVariant.text || widget.disabled
-                    ? null
-                    : OllieThemeConstants.getShadow(brightness),
-              ),
-              child: Center(
-                child: widget.loading
-                    ? SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            _getTextColor(context),
-                          ),
-                        ),
-                      )
-                    : Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          if (widget.icon != null) ...[
-                            Icon(
-                              widget.icon,
-                              color: _getTextColor(context),
-                              size: 20,
+                child: Center(
+                  child: widget.loading
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              _getTextColor(context),
                             ),
-                            const SizedBox(width: 8),
+                          ),
+                        )
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (widget.icon != null) ...[
+                              Icon(
+                                widget.icon,
+                                color: _getTextColor(context),
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            Text(
+                              widget.text,
+                              style: TextStyle(
+                                color: _getTextColor(context),
+                                fontSize: OllieThemeConstants.fontSizeBody,
+                                fontWeight:
+                                    OllieThemeConstants.fontWeightSemiBold,
+                              ),
+                            ),
                           ],
-                          Text(
-                            widget.text,
-                            style: TextStyle(
-                              color: _getTextColor(context),
-                              fontSize: OllieThemeConstants.fontSizeBody,
-                              fontWeight:
-                                  OllieThemeConstants.fontWeightSemiBold,
-                            ),
-                          ),
-                        ],
-                      ),
-              ),
-            );
-          },
+                        ),
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
