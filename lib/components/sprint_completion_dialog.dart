@@ -5,6 +5,7 @@ import '../providers/sprint_provider.dart';
 import '../providers/burndown_provider.dart';
 import 'burndown_chart.dart';
 import 'burndown_editor_dialog.dart';
+import 'sprint_burndown_export_dialog.dart';
 import 'ollie_ui/ollie_dialog.dart';
 import 'ollie_ui/ollie_button.dart';
 import 'ollie_ui/ollie_toast.dart';
@@ -223,47 +224,81 @@ class _SprintCompletionDialogState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Burndown Chart',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurface,
+                      Expanded(
+                        child: Text(
+                          'Burndown Chart',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
                         ),
                       ),
-                      OutlinedButton.icon(
-                        onPressed: () async {
-                          final result = await showDialog<bool>(
-                            context: context,
-                            builder: (context) =>
-                                BurndownEditorDialog(sprint: sprint),
-                          );
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Wrap(
+                          alignment: WrapAlignment.end,
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: () async {
+                                final result = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) =>
+                                      BurndownEditorDialog(sprint: sprint),
+                                );
 
-                          if (result == true && mounted) {
-                            ref.invalidate(
-                              sprintBurndownComputedProvider(widget.sprintId),
-                            );
-                            // Refresh burndown data
-                            ref.invalidate(
-                              sprintBurndownProvider(widget.sprintId),
-                            );
-                            ref.invalidate(
-                              sprintBurndownStatsProvider(widget.sprintId),
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.edit, size: 14),
-                        label: const Text(
-                          'Edit Data',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
+                                if (result == true && mounted) {
+                                  ref.invalidate(
+                                    sprintBurndownComputedProvider(widget.sprintId),
+                                  );
+                                  // Refresh burndown data
+                                  ref.invalidate(
+                                    sprintBurndownProvider(widget.sprintId),
+                                  );
+                                  ref.invalidate(
+                                    sprintBurndownStatsProvider(widget.sprintId),
+                                  );
+                                }
+                              },
+                              icon: const Icon(Icons.edit, size: 14),
+                              label: const Text(
+                                'Edit Data',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                              ),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: () {
+                                showDialog<void>(
+                                  context: context,
+                                  builder: (context) =>
+                                      SprintBurndownExportDialog(sprint: sprint),
+                                );
+                              },
+                              icon: const Icon(
+                                Icons.table_chart_outlined,
+                                size: 14,
+                              ),
+                              label: const Text(
+                                'Export CSV',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],

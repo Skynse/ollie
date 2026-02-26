@@ -6,9 +6,12 @@ import 'package:ollie/components/ollie_ui/ollie_dialog.dart';
 import 'package:ollie/components/ollie_ui/ollie_textfield.dart';
 import 'package:ollie/components/ollie_ui/ollie_toast.dart';
 import '../models/card.dart' as model;
+import '../models/checklist.dart';
+import '../models/checklist_item.dart';
 import '../models/priority.dart';
 import '../models/sprint.dart';
 import '../providers/board_provider.dart';
+import '../providers/boards_provider.dart';
 import '../providers/sprint_provider.dart';
 import '../providers/user_provider.dart';
 import 'ollie_ui/theme_extensions.dart';
@@ -37,6 +40,12 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
   List<String> _selectedAssigneeIds = [];
   bool _isLoading = false;
 
+  // Subtasks
+  List<ChecklistItem> _subtasks = [];
+  String? _checklistId;
+  final _newSubtaskController = TextEditingController();
+  bool _subtasksLoading = true;
+
   @override
   void initState() {
     super.initState();
@@ -51,6 +60,22 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
     _selectedDueDate = widget.card.dueDate;
     _selectedSprintId = widget.card.sprintId;
     _selectedAssigneeIds = List.from(widget.card.assigneeIds);
+    _loadSubtasks();
+  }
+
+  Future<void> _loadSubtasks() async {
+    try {
+      final repo = ref.read(boardRepositoryProvider);
+      final checklists = await repo.getChecklistsByCard(widget.card.id);
+      if (mounted && checklists.isNotEmpty) {
+        _checklistId = checklists.first.id;
+        _subtasks = List.from(checklists.first.items);
+      }
+    } catch (_) {
+      // Non-fatal: subtasks just won't pre-populate
+    } finally {
+      if (mounted) setState(() => _subtasksLoading = false);
+    }
   }
 
   @override
@@ -58,6 +83,7 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
     _titleController.dispose();
     _descriptionController.dispose();
     _estimatedHoursController.dispose();
+    _newSubtaskController.dispose();
     super.dispose();
   }
 
@@ -104,6 +130,8 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
           .read(boardNotifierProvider(widget.boardId).notifier)
           .updateCard(updatedCard: updatedCard);
 
+      await _saveSubtasks();
+
       // Update sprint cardIds if sprint changed
       if (_selectedSprintId != widget.card.sprintId) {
         // Remove from old sprint if exists
@@ -146,6 +174,59 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  Future<void> _saveSubtasks() async {
+    final repo = ref.read(boardRepositoryProvider);
+    if (_checklistId == null && _subtasks.isEmpty) return;
+
+    if (_checklistId == null && _subtasks.isNotEmpty) {
+      final created = await repo.createChecklist(
+        Checklist(
+          id: '',
+          cardId: widget.card.id,
+          title: 'Subtasks',
+          items: _subtasks,
+        ),
+      );
+      _checklistId = created.id;
+    } else if (_checklistId != null && _subtasks.isNotEmpty) {
+      await repo.updateChecklist(
+        Checklist(
+          id: _checklistId!,
+          cardId: widget.card.id,
+          title: 'Subtasks',
+          items: _subtasks,
+        ),
+      );
+    } else if (_checklistId != null && _subtasks.isEmpty) {
+      await repo.deleteChecklist(_checklistId!);
+      _checklistId = null;
+    }
+
+    // Update denormalized counts on the card
+    final completedCount = _subtasks.where((s) => s.isCompleted).length;
+    final updatedCard = widget.card.copyWith(
+      subtaskCount: _subtasks.length,
+      completedSubtaskCount: completedCount,
+    );
+    await ref
+        .read(boardNotifierProvider(widget.boardId).notifier)
+        .updateCard(updatedCard: updatedCard);
+  }
+
+  void _addSubtask() {
+    final text = _newSubtaskController.text.trim();
+    if (text.isEmpty) return;
+    setState(() {
+      _subtasks.add(
+        ChecklistItem(
+          id: DateTime.now().microsecondsSinceEpoch.toString(),
+          text: text,
+        ),
+      );
+      _newSubtaskController.clear();
+    });
   }
 
   @override
@@ -259,6 +340,10 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
             _buildAssigneeSelector(),
             const SizedBox(height: 20),
 
+            // Subtasks
+            _buildSubtasksSection(),
+            const SizedBox(height: 20),
+
             // Time Tracking
             _buildSectionTitle('Time Tracking'),
             const SizedBox(height: 8),
@@ -266,6 +351,98 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSubtasksSection() {
+    final done = _subtasks.where((s) => s.isCompleted).length;
+    final total = _subtasks.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            _buildSectionTitle('Subtasks'),
+            if (total > 0) ...[
+              const SizedBox(width: 8),
+              Text(
+                '($done/$total)',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: done == total
+                      ? context.successColor
+                      : context.secondaryTextColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (_subtasksLoading)
+          const Center(child: CircularProgressIndicator())
+        else ...[
+          ...List.generate(_subtasks.length, (i) {
+            final item = _subtasks[i];
+            return Row(
+              children: [
+                Checkbox(
+                  value: item.isCompleted,
+                  onChanged: (checked) {
+                    setState(() {
+                      _subtasks[i] = item.copyWith(isCompleted: checked ?? false);
+                    });
+                  },
+                ),
+                Expanded(
+                  child: Text(
+                    item.text,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: item.isCompleted
+                          ? context.secondaryTextColor
+                          : context.textColor,
+                      decoration: item.isCompleted
+                          ? TextDecoration.lineThrough
+                          : TextDecoration.none,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.close,
+                    size: 16,
+                    color: context.secondaryTextColor,
+                  ),
+                  onPressed: () {
+                    setState(() => _subtasks.removeAt(i));
+                  },
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            );
+          }),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                child: OllieTextfield.simple(
+                  controller: _newSubtaskController,
+                  hint: 'Add a subtask...',
+                  onSubmitted: (_) => _addSubtask(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: Icon(Icons.add, color: context.primaryColor),
+                onPressed: _addSubtask,
+              ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 

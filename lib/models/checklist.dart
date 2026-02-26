@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'checklist_item.dart';
 
 class Checklist {
@@ -17,7 +19,7 @@ class Checklist {
     return {
       'cardId': cardId,
       'title': title,
-      'items': items.map((item) => item.toJson()).toList(),
+      'items': items.map((item) => jsonEncode(item.toJson())).toList(),
     };
   }
 
@@ -28,9 +30,12 @@ class Checklist {
       title: json['title'] as String,
       items:
           (json['items'] as List<dynamic>?)
-              ?.map(
-                (item) => ChecklistItem.fromJson(item as Map<String, dynamic>),
-              )
+              ?.map((item) {
+                final map = item is String
+                    ? jsonDecode(item) as Map<String, dynamic>
+                    : item as Map<String, dynamic>;
+                return ChecklistItem.fromJson(map);
+              })
               .toList() ??
           [],
     );

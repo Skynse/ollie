@@ -20,6 +20,8 @@ class Card {
   final String? sprintId;
   final String rank;
   final bool completed;
+  final int subtaskCount;
+  final int completedSubtaskCount;
 
   Card({
     required this.id,
@@ -40,6 +42,8 @@ class Card {
     this.sprintId,
     required this.rank,
     required this.completed,
+    this.subtaskCount = 0,
+    this.completedSubtaskCount = 0,
   });
 
   Map<String, dynamic> toJson() {
@@ -59,6 +63,8 @@ class Card {
       'sprintId': sprintId,
       'rank': rank,
       'completed': completed,
+      'subtaskCount': subtaskCount,
+      'completedSubtaskCount': completedSubtaskCount,
     };
   }
 
@@ -98,6 +104,8 @@ class Card {
       sprintId: json['sprintId'] as String?,
       rank: json['rank'] as String? ?? 'U',
       completed: json['completed'] as bool? ?? false,
+      subtaskCount: json['subtaskCount'] as int? ?? 0,
+      completedSubtaskCount: json['completedSubtaskCount'] as int? ?? 0,
     );
   }
 
@@ -143,6 +151,8 @@ class Card {
     String? sprintId,
     String? rank,
     bool? completed,
+    int? subtaskCount,
+    int? completedSubtaskCount,
   }) {
     return Card(
       id: id ?? this.id,
@@ -163,6 +173,9 @@ class Card {
       sprintId: sprintId ?? this.sprintId,
       rank: rank ?? this.rank,
       completed: completed ?? this.completed,
+      subtaskCount: subtaskCount ?? this.subtaskCount,
+      completedSubtaskCount:
+          completedSubtaskCount ?? this.completedSubtaskCount,
     );
   }
 }

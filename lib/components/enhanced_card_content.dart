@@ -221,6 +221,9 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
         // Comment count
         if (widget.card.commentCount > 0) _buildCommentCount(),
 
+        // Subtask progress
+        if (widget.card.subtaskCount > 0) _buildSubtaskProgress(),
+
         // Assignees
         if (widget.card.assigneeIds.isNotEmpty) _buildAssignees(),
       ],
@@ -306,6 +309,42 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
               fontSize: 10,
               fontWeight: FontWeight.w600,
               color: textColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubtaskProgress() {
+    final total = widget.card.subtaskCount;
+    final done = widget.card.completedSubtaskCount;
+    final isComplete = done == total;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: isComplete
+            ? context.successColor.withOpacity(0.12)
+            : context.surfaceVariantColor,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isComplete ? Icons.check_box : Icons.check_box_outline_blank,
+            size: 10,
+            color: isComplete ? context.successColor : context.secondaryTextColor,
+          ),
+          const SizedBox(width: 3),
+          Text(
+            '$done/$total',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color:
+                  isComplete ? context.successColor : context.secondaryTextColor,
             ),
           ),
         ],

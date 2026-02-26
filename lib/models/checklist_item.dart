@@ -15,6 +15,7 @@ class ChecklistItem {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'text': text,
       'isCompleted': isCompleted,
       'completedAt': completedAt?.toIso8601String(),
@@ -24,7 +25,7 @@ class ChecklistItem {
 
   factory ChecklistItem.fromJson(Map<String, dynamic> json) {
     return ChecklistItem(
-      id: json['id'] as String,
+      id: json['id'] as String? ?? '',
       text: json['text'] as String,
       isCompleted: json['isCompleted'] as bool? ?? false,
       completedAt: json['completedAt'] != null
