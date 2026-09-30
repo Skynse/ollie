@@ -1,7 +1,8 @@
 import 'dart:async';
-import 'package:appwrite/appwrite.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../repositories/appwrite/appwrite_config.dart';
+
+import 'local_change_bus.dart';
 
 /// Event types for real-time updates
 enum RealtimeEventType { create, update, delete }
@@ -19,50 +20,17 @@ class RealtimeEvent {
     required this.collection,
     this.data,
   });
-
-  factory RealtimeEvent.fromResponse(RealtimeMessage response) {
-    final events = response.events;
-    final payload = response.payload;
-
-    RealtimeEventType type;
-    if (events.any((e) => e.contains('.create'))) {
-      type = RealtimeEventType.create;
-    } else if (events.any((e) => e.contains('.delete'))) {
-      type = RealtimeEventType.delete;
-    } else {
-      type = RealtimeEventType.update;
-    }
-
-    // Extract collection from event path
-    String collection = '';
-    for (var event in events) {
-      if (event.contains('collections.')) {
-        final parts = event.split('.');
-        final collectionIndex = parts.indexOf('collections') + 1;
-        if (collectionIndex < parts.length) {
-          collection = parts[collectionIndex];
-        }
-      }
-    }
-
-    return RealtimeEvent(
-      type: type,
-      documentId: payload['\$id'] as String? ?? '',
-      collection: collection,
-      data: payload,
-    );
-  }
 }
 
-/// Service for managing Appwrite real-time subscriptions
+/// Service for managing local database change subscriptions.
 class RealtimeService {
-  final Realtime _realtime;
-  final Map<String, RealtimeSubscription> _subscriptions = {};
+  final Map<String, StreamSubscription<RealtimeEvent>> _subscriptions = {};
   final Map<String, StreamController<RealtimeEvent>> _controllers = {};
 
-  RealtimeService() : _realtime = Realtime(AppwriteConfig.client);
+  Stream<RealtimeEvent> _filteredStream(bool Function(RealtimeEvent) filter) {
+    return LocalChangeBus.instance.stream.where(filter);
+  }
 
-  /// Subscribe to a board's real-time updates (cards, columns, board changes)
   Stream<RealtimeEvent> subscribeToBoardUpdates(String boardId) {
     final key = 'board_$boardId';
 
@@ -73,33 +41,17 @@ class RealtimeService {
     final controller = StreamController<RealtimeEvent>.broadcast();
     _controllers[key] = controller;
 
-    final subscription = _realtime.subscribe([
-      'databases.${AppwriteConfig.databaseId}.collections.cards.documents',
-      'databases.${AppwriteConfig.databaseId}.collections.columns.documents',
-      'databases.${AppwriteConfig.databaseId}.collections.boards.documents.$boardId',
-    ]);
-
-    subscription.stream.listen(
-      (response) {
-        final event = RealtimeEvent.fromResponse(response);
-
-        // Only forward events relevant to this board
-        if (_isEventRelevantToBoard(event, boardId)) {
-          controller.add(event);
-        }
-      },
-      onError: (error) {
-
-        controller.addError(error);
-      },
+    final subscription = _filteredStream(
+      (event) => _isEventRelevantToBoard(event, boardId),
+    ).listen(
+      controller.add,
+      onError: controller.addError,
     );
 
     _subscriptions[key] = subscription;
-
     return controller.stream;
   }
 
-  /// Subscribe to specific card updates
   Stream<RealtimeEvent> subscribeToCard(String cardId) {
     final key = 'card_$cardId';
 
@@ -110,26 +62,17 @@ class RealtimeService {
     final controller = StreamController<RealtimeEvent>.broadcast();
     _controllers[key] = controller;
 
-    final subscription = _realtime.subscribe([
-      'databases.${AppwriteConfig.databaseId}.collections.cards.documents.$cardId',
-    ]);
-
-    subscription.stream.listen(
-      (response) {
-        final event = RealtimeEvent.fromResponse(response);
-        controller.add(event);
-      },
-      onError: (error) {
-        controller.addError(error);
-      },
+    final subscription = _filteredStream(
+      (event) => event.collection == 'cards' && event.documentId == cardId,
+    ).listen(
+      controller.add,
+      onError: controller.addError,
     );
 
     _subscriptions[key] = subscription;
-
     return controller.stream;
   }
 
-  /// Subscribe to column updates
   Stream<RealtimeEvent> subscribeToColumn(String columnId) {
     final key = 'column_$columnId';
 
@@ -140,85 +83,54 @@ class RealtimeService {
     final controller = StreamController<RealtimeEvent>.broadcast();
     _controllers[key] = controller;
 
-    final subscription = _realtime.subscribe([
-      'databases.${AppwriteConfig.databaseId}.collections.columns.documents.$columnId',
-      'databases.${AppwriteConfig.databaseId}.collections.cards.documents',
-    ]);
-
-    subscription.stream.listen(
-      (response) {
-        final event = RealtimeEvent.fromResponse(response);
-
-        // Forward column updates
-        if (event.collection == 'columns' && event.documentId == columnId) {
-          controller.add(event);
-        }
-        // Forward ALL card events - let the provider refetch to handle moves
-        else if (event.collection == 'cards') {
-          controller.add(event);
-        }
-      },
-      onError: (error) {
-        controller.addError(error);
-      },
+    final subscription = _filteredStream((event) {
+      if (event.collection == 'columns' && event.documentId == columnId) {
+        return true;
+      }
+      return event.collection == 'cards';
+    }).listen(
+      controller.add,
+      onError: controller.addError,
     );
 
     _subscriptions[key] = subscription;
-
     return controller.stream;
   }
 
-  /// Unsubscribe from board updates
-  void unsubscribeFromBoard(String boardId) {
-    final key = 'board_$boardId';
-    _unsubscribe(key);
-  }
+  void unsubscribeFromBoard(String boardId) => _unsubscribe('board_$boardId');
 
-  /// Unsubscribe from card updates
-  void unsubscribeFromCard(String cardId) {
-    final key = 'card_$cardId';
-    _unsubscribe(key);
-  }
+  void unsubscribeFromCard(String cardId) => _unsubscribe('card_$cardId');
 
-  /// Unsubscribe from column updates
-  void unsubscribeFromColumn(String columnId) {
-    final key = 'column_$columnId';
-    _unsubscribe(key);
-  }
+  void unsubscribeFromColumn(String columnId) =>
+      _unsubscribe('column_$columnId');
 
   void _unsubscribe(String key) {
-    _subscriptions[key]?.close();
+    _subscriptions[key]?.cancel();
     _subscriptions.remove(key);
     _controllers[key]?.close();
     _controllers.remove(key);
   }
 
-  /// Close all subscriptions
   void dispose() {
-    for (var subscription in _subscriptions.values) {
-      subscription.close();
+    for (final subscription in _subscriptions.values) {
+      subscription.cancel();
     }
-    for (var controller in _controllers.values) {
+    for (final controller in _controllers.values) {
       controller.close();
     }
     _subscriptions.clear();
     _controllers.clear();
   }
 
-  /// Check if an event is relevant to a specific board
   bool _isEventRelevantToBoard(RealtimeEvent event, String boardId) {
-    // Board updates
     if (event.collection == 'boards' && event.documentId == boardId) {
       return true;
     }
 
-    // Column updates for this board
     if (event.collection == 'columns' && event.data?['boardId'] == boardId) {
       return true;
     }
 
-    // Card updates - we'll need to check if the card belongs to a column in this board
-    // For now, we'll let all card events through and filter at the provider level
     if (event.collection == 'cards') {
       return true;
     }
@@ -227,7 +139,6 @@ class RealtimeService {
   }
 }
 
-/// Provider for realtime service
 final realtimeServiceProvider = Provider<RealtimeService>((ref) {
   final service = RealtimeService();
   ref.onDispose(() => service.dispose());

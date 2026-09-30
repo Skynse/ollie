@@ -4,7 +4,7 @@ import '../models/sprint.dart';
 import '../models/time_log.dart';
 import '../repositories/sprint_repository.dart';
 import '../repositories/board_repository.dart';
-import '../repositories/appwrite/appwrite_config.dart';
+import '../repositories/local/local_config.dart';
 
 /// Local timer state (only committed to DB when stopped)
 class LocalTimerState {
@@ -26,7 +26,7 @@ final localTimerProvider = StateProvider<LocalTimerState?>((ref) => null);
 
 /// Sprint repository provider
 final sprintRepositoryProvider = Provider<SprintRepository>((ref) {
-  return AppwriteConfig.createSprintRepository();
+  return LocalConfig.createSprintRepository();
 });
 
 /// Provider for all sprints in a board
@@ -375,6 +375,6 @@ final sprintNotifierProvider =
       boardId,
     ) {
       final sprintRepository = ref.read(sprintRepositoryProvider);
-      final boardRepository = AppwriteConfig.createBoardRepository();
+      final boardRepository = LocalConfig.createBoardRepository();
       return SprintNotifier(ref, sprintRepository, boardRepository, boardId);
     });

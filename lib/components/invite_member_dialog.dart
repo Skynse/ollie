@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ollie/components/ollie_ui/ollie_textfield.dart';
-import '../providers/boards_provider.dart';
-import '../providers/auth_provider.dart';
 import 'ollie_ui/ollie_dialog.dart';
 import 'ollie_ui/ollie_button.dart';
 import 'ollie_ui/theme_extensions.dart';
@@ -164,72 +162,9 @@ class _InviteMemberDialogState extends ConsumerState<InviteMemberDialog> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
-      _isLoading = true;
-      _errorMessage = null;
+      _isLoading = false;
+      _errorMessage = 'Member invites are not available in local mode.';
       _successMessage = null;
     });
-
-    try {
-      final email = _emailController.text.trim().toLowerCase();
-      final userRepository = ref.read(userRepositoryProvider);
-
-      // Check if user is trying to invite themselves
-      final currentUser = ref.read(authProvider).user;
-      if (currentUser?.email.toLowerCase() == email) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = 'You cannot invite yourself to the board';
-        });
-        return;
-      }
-
-      // Check if user exists in the system
-      final existingUser = await userRepository.getUserByEmail(email);
-
-      if (existingUser == null) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage =
-              'User with email "$email" not found. They need to create an account first.';
-        });
-        return;
-      }
-
-      // Check if user is already a member
-      final board = await ref
-          .read(boardRepositoryProvider)
-          .getBoard(widget.boardId);
-
-      if (board.memberIds.contains(existingUser.id)) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage =
-              '${existingUser.name} is already a member of this board';
-        });
-        return;
-      }
-
-      // User exists and isn't a member - add them to the board
-      await ref
-          .read(boardRepositoryProvider)
-          .addMember(widget.boardId, existingUser.id);
-
-      setState(() {
-        _isLoading = false;
-        _successMessage = '${existingUser.name} has been added to the board!';
-        _emailController.clear();
-      });
-
-      // Close dialog after 2 seconds
-      await Future.delayed(const Duration(seconds: 2));
-      if (mounted) {
-        Navigator.pop(context);
-      }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Failed to invite member: ${e.toString()}';
-      });
-    }
   }
 }

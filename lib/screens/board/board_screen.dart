@@ -254,25 +254,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
 
                 const SizedBox(height: 16),
 
-                // Team Section
-                _buildDrawerSection('Team'),
-                _buildDrawerTile(
-                  icon: Icons.people,
-                  title: 'Members',
-                  onTap: () {
-                    _showManageMembersDialog();
-                  },
-                ),
-                _buildDrawerTile(
-                  icon: Icons.person_add,
-                  title: 'Invite',
-                  onTap: () {
-                    _showInviteMemberDialog();
-                  },
-                ),
-
-                const SizedBox(height: 16),
-
                 // More Section
                 _buildDrawerSection('More'),
                 _buildDrawerTile(
@@ -813,22 +794,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-            ),
-          ),
-        // Invite button (hide on compact mobile)
-        if (!compact)
-          Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: IconButton(
-              onPressed: () => _showInviteMemberDialog(),
-              icon: const Icon(Icons.person_add, size: 20),
-              style: IconButton.styleFrom(
-                backgroundColor: Theme.of(context).cardColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              tooltip: 'Invite member',
             ),
           ),
       ],

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ollie/components/ollie_ui/theme_extensions.dart';
-import 'package:ollie/providers/auth_provider.dart';
 import 'package:ollie/providers/boards_provider.dart';
 import 'package:ollie/models/board.dart';
 import 'package:ollie/screens/home/widgets/home_sidebar.dart';
@@ -9,12 +8,10 @@ import 'package:ollie/screens/home/widgets/home_topbar.dart';
 import 'package:ollie/screens/home/widgets/board_card.dart';
 import 'package:ollie/screens/home/widgets/archived_board_card.dart';
 import 'package:ollie/screens/home/widgets/home_state_widgets.dart';
-import 'package:ollie/screens/home/widgets/user_menu_panel.dart';
 import 'package:ollie/screens/home/dialogs/create_board_dialog.dart';
 import '../../utils/responsive.dart';
 import '../../components/ollie_ui/ollie_toast.dart';
 
-/// Trello-like homepage with sidebar navigation
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
@@ -24,11 +21,10 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  String _selectedView = 'my-projects';
-  bool _isUserMenuOpen = false;
+  String _selectedView = 'projects';
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  String _sortBy = 'updated'; // 'name', 'created', 'updated'
+  String _sortBy = 'updated';
   bool _isGridView = true;
 
   @override
@@ -55,24 +51,9 @@ class _HomePageState extends ConsumerState<HomePage> {
     return sorted;
   }
 
-  int _getMyProjectsCount() {
+  int _getProjectsCount() {
     final boardsState = ref.watch(boardsProvider);
-    final authState = ref.watch(authProvider);
-    final userId = authState.user?.$id;
-
-    return boardsState.boards
-        .where((board) => board.createdBy == userId && !board.archived)
-        .length;
-  }
-
-  int _getSharedProjectsCount() {
-    final boardsState = ref.watch(boardsProvider);
-    final authState = ref.watch(authProvider);
-    final userId = authState.user?.$id;
-
-    return boardsState.boards
-        .where((board) => board.createdBy != userId && !board.archived)
-        .length;
+    return boardsState.boards.where((board) => !board.archived).length;
   }
 
   int _getArchivedProjectsCount() {
@@ -96,106 +77,36 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final currentUser = authState.user;
     final isMobile = context.isMobile;
 
     return Scaffold(
       key: _scaffoldKey,
-      drawer: isMobile
-          ? _buildMobileDrawer(currentUser, authState.isLoading)
-          : null,
-      body: Stack(
+      drawer: isMobile ? _buildMobileDrawer() : null,
+      body: Row(
         children: [
-          Row(
-            children: [
-              // Sidebar (hide on mobile)
-              if (!isMobile)
-                HomeSidebar(
-                  selectedView: _selectedView,
-                  onViewChanged: (view) => setState(() => _selectedView = view),
-                  user: currentUser,
-                  isLoadingAuth: authState.isLoading,
-                  myProjectsCount: _getMyProjectsCount(),
-                  sharedProjectsCount: _getSharedProjectsCount(),
-                  archivedProjectsCount: _getArchivedProjectsCount(),
-                  onUserMenuTap: () =>
-                      setState(() => _isUserMenuOpen = !_isUserMenuOpen),
-                ),
-
-              // Main content area
-              Expanded(child: _buildMainContent()),
-            ],
-          ),
-
-          // User menu overlay panel (desktop only)
-          if (_isUserMenuOpen && !isMobile)
-            UserMenuPanel(
-              user: currentUser,
-              onClose: () => setState(() => _isUserMenuOpen = false),
-              onLogout: () {
-                ref.read(authProvider.notifier).logout();
-                setState(() => _isUserMenuOpen = false);
-              },
+          if (!isMobile)
+            HomeSidebar(
+              selectedView: _selectedView,
+              onViewChanged: (view) => setState(() => _selectedView = view),
+              projectsCount: _getProjectsCount(),
+              archivedProjectsCount: _getArchivedProjectsCount(),
             ),
+          Expanded(child: _buildMainContent()),
         ],
       ),
     );
   }
 
-  Widget _buildMobileDrawer(dynamic user, bool isLoadingAuth) {
+  Widget _buildMobileDrawer() {
     return Drawer(
       child: HomeSidebar(
         selectedView: _selectedView,
         onViewChanged: (view) {
           setState(() => _selectedView = view);
-          Navigator.pop(context); // Close drawer
+          Navigator.pop(context);
         },
-        user: user,
-        isLoadingAuth: isLoadingAuth,
-        myProjectsCount: _getMyProjectsCount(),
-        sharedProjectsCount: _getSharedProjectsCount(),
+        projectsCount: _getProjectsCount(),
         archivedProjectsCount: _getArchivedProjectsCount(),
-        onUserMenuTap: () {
-          Navigator.pop(context); // Close drawer
-          _showMobileUserMenu();
-        },
-      ),
-    );
-  }
-
-  void _showMobileUserMenu() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(ref.read(authProvider).user?.name ?? 'User'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              ref.read(authProvider).user?.email ?? '',
-              style: TextStyle(
-                color: Theme.of(context).textTheme.bodyMedium?.color,
-              ),
-            ),
-            const SizedBox(height: 24),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Logout'),
-              onTap: () {
-                Navigator.pop(context);
-                ref.read(authProvider.notifier).logout();
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
       ),
     );
   }
@@ -212,7 +123,6 @@ class _HomePageState extends ConsumerState<HomePage> {
       ),
       child: Column(
         children: [
-          // Top bar
           HomeTopBar(
             selectedView: _selectedView,
             searchController: _searchController,
@@ -232,21 +142,17 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ? () => _scaffoldKey.currentState?.openDrawer()
                 : null,
           ),
-
-          // Content
           Expanded(
-            child: _selectedView == 'my-projects'
-                ? _buildMyProjectsView()
-                : _selectedView == 'shared-projects'
-                ? _buildSharedProjectsView()
-                : _buildArchivedProjectsView(),
+            child: _selectedView == 'archived'
+                ? _buildArchivedProjectsView()
+                : _buildProjectsView(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMyProjectsView() {
+  Widget _buildProjectsView() {
     final boardsState = ref.watch(boardsProvider);
 
     if (boardsState.isLoading) {
@@ -260,23 +166,17 @@ class _HomePageState extends ConsumerState<HomePage> {
       );
     }
 
-    final authState = ref.watch(authProvider);
-    final userId = authState.user?.$id;
+    var boards =
+        boardsState.boards.where((board) => !board.archived).toList();
 
-    // Filter to boards created by current user (exclude archived)
-    var myBoards = boardsState.boards
-        .where((board) => board.createdBy == userId && !board.archived)
-        .toList();
-
-    // Apply search filter
     if (_searchQuery.isNotEmpty) {
-      myBoards = myBoards.where((board) {
+      boards = boards.where((board) {
         return board.name.toLowerCase().contains(_searchQuery) ||
             (board.description?.toLowerCase().contains(_searchQuery) ?? false);
       }).toList();
     }
 
-    if (myBoards.isEmpty) {
+    if (boards.isEmpty) {
       return _searchQuery.isNotEmpty
           ? const NoSearchResultsState()
           : EmptyBoardsState(
@@ -284,49 +184,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             );
     }
 
-    final sortedBoards = _sortBoards(myBoards);
-    return _isGridView
-        ? _buildBoardsGrid(sortedBoards)
-        : _buildBoardsList(sortedBoards);
-  }
-
-  Widget _buildSharedProjectsView() {
-    final boardsState = ref.watch(boardsProvider);
-
-    if (boardsState.isLoading) {
-      return const SkeletonBoardsLoader();
-    }
-
-    if (boardsState.errorMessage != null) {
-      return BoardsErrorState(
-        message: boardsState.errorMessage!,
-        onRetry: () => ref.read(boardsProvider.notifier).fetchBoards(),
-      );
-    }
-
-    final authState = ref.watch(authProvider);
-    final userId = authState.user?.$id;
-
-    // Filter to boards where user is member but not creator (exclude archived)
-    var sharedBoards = boardsState.boards
-        .where((board) => board.createdBy != userId && !board.archived)
-        .toList();
-
-    // Apply search filter
-    if (_searchQuery.isNotEmpty) {
-      sharedBoards = sharedBoards.where((board) {
-        return board.name.toLowerCase().contains(_searchQuery) ||
-            (board.description?.toLowerCase().contains(_searchQuery) ?? false);
-      }).toList();
-    }
-
-    if (sharedBoards.isEmpty) {
-      return _searchQuery.isNotEmpty
-          ? const NoSearchResultsState()
-          : const EmptySharedBoardsState();
-    }
-
-    final sortedBoards = _sortBoards(sharedBoards);
+    final sortedBoards = _sortBoards(boards);
     return _isGridView
         ? _buildBoardsGrid(sortedBoards)
         : _buildBoardsList(sortedBoards);
@@ -346,12 +204,9 @@ class _HomePageState extends ConsumerState<HomePage> {
       );
     }
 
-    // Filter to archived boards
-    var archivedBoards = boardsState.boards
-        .where((board) => board.archived)
-        .toList();
+    var archivedBoards =
+        boardsState.boards.where((board) => board.archived).toList();
 
-    // Apply search filter
     if (_searchQuery.isNotEmpty) {
       archivedBoards = archivedBoards.where((board) {
         return board.name.toLowerCase().contains(_searchQuery) ||
@@ -454,10 +309,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _buildArchivedBoardsList(List<Board> boards) {
-    final isMobile = context.isMobile;
-
     return ListView.builder(
-      padding: EdgeInsets.all(isMobile ? 12 : 32),
+      padding: EdgeInsets.all(context.isMobile ? 12 : 32),
       itemCount: boards.length,
       itemBuilder: (context, index) {
         return ArchivedBoardListItem(

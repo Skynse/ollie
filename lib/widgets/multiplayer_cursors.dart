@@ -4,7 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/cursor_position.dart';
 import '../services/cursor_service.dart';
-import '../repositories/appwrite/appwrite_config.dart';
+import '../config/local_user.dart';
 
 class MultiplayerCursors extends ConsumerStatefulWidget {
   final String boardId;
@@ -36,45 +36,39 @@ class _MultiplayerCursorsState extends ConsumerState<MultiplayerCursors> {
   void _subscribeToCursors() {
     if (_cursorService == null) return;
 
-    final currentUser = AppwriteConfig.currentUser;
+    final currentUser = LocalUser.user;
+    final color = _getUserColor(currentUser.id);
 
-    if (currentUser != null) {
-      final color = _getUserColor(currentUser.$id);
-      _cursorService!.subscribeToBoard(
-        widget.boardId,
-        currentUser.$id,
-        currentUser.name,
-        color,
-      );
+    _cursorService!.subscribeToBoard(
+      widget.boardId,
+      currentUser.id,
+      currentUser.name,
+      color,
+    );
 
-      _cursorSubscription = _cursorService!.cursorStream.listen((cursors) {
-        if (mounted) {
-          setState(() {
-            _cursors.clear();
-            _cursors.addAll(cursors);
-          });
-        }
-      });
-    }
+    _cursorSubscription = _cursorService!.cursorStream.listen((cursors) {
+      if (mounted) {
+        setState(() {
+          _cursors.clear();
+          _cursors.addAll(cursors);
+        });
+      }
+    });
   }
 
   void _onPointerHover(PointerHoverEvent event) {
-    // Check if widget is still mounted before accessing refs
     if (!mounted || _cursorService == null) return;
 
-    final currentUser = AppwriteConfig.currentUser;
+    final currentUser = LocalUser.user;
+    final color = _getUserColor(currentUser.id);
 
-    if (currentUser != null) {
-      final color = _getUserColor(currentUser.$id);
-
-      _cursorService!.updateCursorPosition(
-        currentUser.$id,
-        currentUser.name,
-        event.position.dx,
-        event.position.dy,
-        color,
-      );
-    }
+    _cursorService!.updateCursorPosition(
+      currentUser.id,
+      currentUser.name,
+      event.position.dx,
+      event.position.dy,
+      color,
+    );
   }
 
   Color _getUserColor(String userId) {

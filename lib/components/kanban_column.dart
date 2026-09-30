@@ -5,7 +5,7 @@ import 'package:ollie/components/edit_column_dialog.dart';
 import '../models/board_column.dart';
 import '../models/card.dart' as model;
 import '../providers/board_provider.dart';
-import '../providers/auth_provider.dart';
+import '../config/local_user.dart';
 import '../utils/responsive.dart';
 import 'kanban_card.dart';
 import 'add_card_dialog.dart';
@@ -387,11 +387,6 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
   }
 
   void _showAddCardDialog(BuildContext context, WidgetRef ref) {
-    final authState = ref.read(authProvider);
-    final userId = authState.user?.$id;
-
-    if (userId == null) return;
-
     showDialog(
       context: context,
       builder: (context) => AddCardDialog(
@@ -403,9 +398,8 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
                 title: title,
                 description: description,
                 priority: priority,
-                createdBy: userId,
+                createdBy: LocalUser.id,
               );
-          // Real-time updates will handle refreshing the cards automatically
           return card != null;
         },
       ),

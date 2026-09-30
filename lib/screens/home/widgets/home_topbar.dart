@@ -52,7 +52,7 @@ class HomeTopBar extends StatelessWidget {
         children: [
           // Title
           Text(
-            selectedView == 'my-projects' ? 'My Projects' : 'Shared with Me',
+            selectedView == 'archived' ? 'Archived' : 'Projects',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w700,
@@ -268,7 +268,7 @@ class HomeTopBar extends StatelessWidget {
                 ),
               Expanded(
                 child: Text(
-                  selectedView == 'my-projects' ? 'My Projects' : 'Shared',
+                  selectedView == 'archived' ? 'Archived' : 'Projects',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,

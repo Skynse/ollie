@@ -1,22 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:ollie/config/local_user.dart';
 import 'package:ollie/models/board.dart';
-import 'package:ollie/repositories/appwrite/appwrite_config.dart';
+import 'package:ollie/repositories/local/local_config.dart';
 import 'package:ollie/repositories/board_repository.dart';
 import 'package:ollie/repositories/user_repository.dart';
-import 'auth_provider.dart';
 
-/// Repository provider
 final boardRepositoryProvider = Provider<BoardRepository>((ref) {
-  return AppwriteConfig.createBoardRepository();
+  return LocalConfig.createBoardRepository();
 });
 
-/// User repository provider
 final userRepositoryProvider = Provider<UserRepository>((ref) {
-  return AppwriteConfig.createUserRepository();
+  return LocalConfig.createUserRepository();
 });
 
-/// Boards state - holds the list of boards for current user
 class BoardsState {
   final List<Board> boards;
   final bool isLoading;
@@ -41,30 +38,24 @@ class BoardsState {
   }
 }
 
-/// Boards notifier - manages board list state
 class BoardsNotifier extends StateNotifier<BoardsState> {
   final BoardRepository _repository;
-  final String? _userId;
 
-  BoardsNotifier(this._repository, this._userId) : super(const BoardsState()) {
-    // Only fetch if we have a userId - happens ONCE when provider is created
-    if (_userId != null) {
-      fetchBoards();
-    }
+  BoardsNotifier(this._repository) : super(const BoardsState()) {
+    fetchBoards();
   }
 
-  /// Fetch boards for current user - called ONCE on init
   Future<void> fetchBoards() async {
     if (!mounted) return;
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
-      final boards = await _repository.getBoardsByUser(_userId!);
-      if (!mounted) return; // Check again after await
+      final boards = await _repository.getAllBoards();
+      if (!mounted) return;
 
       state = state.copyWith(boards: boards, isLoading: false);
     } catch (e) {
-      if (!mounted) return; // Check in catch block as well
+      if (!mounted) return;
       state = state.copyWith(
         isLoading: false,
         errorMessage: 'Failed to load boards: ${e.toString()}',
@@ -72,21 +63,18 @@ class BoardsNotifier extends StateNotifier<BoardsState> {
     }
   }
 
-  /// Create a new board - called ONLY on user button click
   Future<Board?> createBoard({
     required String name,
     String? description,
   }) async {
-    if (_userId == null) return null;
-
     state = state.copyWith(isLoading: true);
     try {
       final newBoard = Board(
-        id: '', // Appwrite generates this
+        id: '',
         name: name,
         description: description,
-        createdBy: _userId,
-        memberIds: [_userId],
+        createdBy: LocalUser.id,
+        memberIds: const [LocalUser.id],
         columnIds: [],
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -94,10 +82,7 @@ class BoardsNotifier extends StateNotifier<BoardsState> {
       );
 
       final created = await _repository.createBoard(newBoard);
-
-      // Refetch boards after creation (1 request)
       await fetchBoards();
-
       return created;
     } catch (e) {
       state = state.copyWith(
@@ -108,12 +93,11 @@ class BoardsNotifier extends StateNotifier<BoardsState> {
     }
   }
 
-  /// Delete a board - called ONLY on user action
   Future<void> deleteBoard(String boardId) async {
     state = state.copyWith(isLoading: true);
     try {
       await _repository.deleteBoard(boardId);
-      await fetchBoards(); // Refetch after deletion
+      await fetchBoards();
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -122,12 +106,11 @@ class BoardsNotifier extends StateNotifier<BoardsState> {
     }
   }
 
-  /// Archive a board - called ONLY on user action
   Future<void> archiveBoard(String boardId) async {
     state = state.copyWith(isLoading: true);
     try {
       await _repository.archiveBoard(boardId);
-      await fetchBoards(); // Refetch after archiving
+      await fetchBoards();
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -136,16 +119,15 @@ class BoardsNotifier extends StateNotifier<BoardsState> {
     }
   }
 
-  /// Unarchive a board - called ONLY on user action
   Future<void> unarchiveBoard(String boardId) async {
     state = state.copyWith(isLoading: true);
     try {
       await _repository.unarchiveBoard(boardId);
-      await fetchBoards(); // Refetch after unarchiving
+      await fetchBoards();
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Failed to unarchive board: ${e.toString()}',
+        errorMessage: 'Failed to archive board: ${e.toString()}',
       );
     }
   }
@@ -155,13 +137,9 @@ class BoardsNotifier extends StateNotifier<BoardsState> {
   }
 }
 
-/// Boards provider - depends on auth state to get userId
 final boardsProvider = StateNotifierProvider<BoardsNotifier, BoardsState>((
   ref,
 ) {
-  final authState = ref.watch(authProvider);
   final repository = ref.watch(boardRepositoryProvider);
-
-  // Only create notifier with userId if authenticated
-  return BoardsNotifier(repository, authState.user?.$id);
+  return BoardsNotifier(repository);
 });

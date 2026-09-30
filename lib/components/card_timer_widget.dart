@@ -21,10 +21,7 @@ class CardTimerWidget extends ConsumerWidget {
     final currentUserAsync = ref.watch(currentUserProvider);
 
     return currentUserAsync.when(
-      data: (currentUser) {
-        if (currentUser == null) return const SizedBox.shrink();
-        return _buildTimeTracking(context, ref, currentUser);
-      },
+      data: (currentUser) => _buildTimeTracking(context, ref, currentUser),
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
     );

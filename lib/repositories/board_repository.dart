@@ -10,6 +10,7 @@ import '../models/checklist.dart';
 abstract class BoardRepository {
   // Board operations
   Future<Board> getBoard(String boardId);
+  Future<List<Board>> getAllBoards();
   Future<List<Board>> getBoardsByUser(String userId);
   Future<Board> createBoard(Board board);
   Future<Board> updateBoard(Board board);
