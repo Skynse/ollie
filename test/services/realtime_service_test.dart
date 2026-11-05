@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ollie/services/local_change_bus.dart';
 import 'package:ollie/services/realtime_service.dart';
@@ -37,11 +35,16 @@ void main() {
       service.dispose();
     });
 
-    test('subscribeToBoardUpdates receives board events', () async {
-      final completer = Completer<RealtimeEvent>();
+    test('receives board events for the matching board only', () async {
+      final events = <RealtimeEvent>[];
+      final sub = service.subscribeToBoardUpdates('board-1').listen(events.add);
 
-      final sub = service.subscribeToBoardUpdates('board-1').listen(completer.complete);
-
+      LocalChangeBus.instance.emit(
+        type: RealtimeEventType.update,
+        collection: 'boards',
+        documentId: 'board-2',
+        data: {'name': 'Other'},
+      );
       LocalChangeBus.instance.emit(
         type: RealtimeEventType.update,
         collection: 'boards',
@@ -49,49 +52,37 @@ void main() {
         data: {'name': 'Updated'},
       );
 
-      final event = await completer.future.timeout(const Duration(seconds: 1));
-      expect(event.collection, 'boards');
-      expect(event.documentId, 'board-1');
+      await Future<void>.delayed(Duration.zero);
+      expect(events.length, 1);
+      expect(events.first.documentId, 'board-1');
 
       await sub.cancel();
       service.unsubscribeFromBoard('board-1');
     });
 
-    test('subscribeToCard receives card-specific events', () async {
-      final completer = Completer<RealtimeEvent>();
-
-      final sub = service.subscribeToCard('card-99').listen(completer.complete);
-
-      LocalChangeBus.instance.emit(
-        type: RealtimeEventType.update,
-        collection: 'cards',
-        documentId: 'card-99',
-        data: {'title': 'Moved'},
-      );
-
-      final event = await completer.future.timeout(const Duration(seconds: 1));
-      expect(event.documentId, 'card-99');
-
-      await sub.cancel();
-      service.unsubscribeFromCard('card-99');
-    });
-
-    test('filters out unrelated board card events by collection', () async {
+    test('filters card and column events by their boardId', () async {
       final events = <RealtimeEvent>[];
-      final sub = service.subscribeToCard('card-1').listen(events.add);
+      final sub = service.subscribeToBoardUpdates('board-1').listen(events.add);
 
       LocalChangeBus.instance.emit(
-        type: RealtimeEventType.update,
+        type: RealtimeEventType.create,
         collection: 'cards',
-        documentId: 'card-2',
-        data: {},
+        documentId: 'card-1',
+        data: {'boardId': 'board-2'},
+      );
+      LocalChangeBus.instance.emit(
+        type: RealtimeEventType.create,
+        collection: 'columns',
+        documentId: 'column-1',
+        data: {'boardId': 'board-1'},
       );
 
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-      expect(events, isEmpty);
+      await Future<void>.delayed(Duration.zero);
+      expect(events.length, 1);
+      expect(events.first.documentId, 'column-1');
 
       await sub.cancel();
-      service.unsubscribeFromCard('card-1');
+      service.unsubscribeFromBoard('board-1');
     });
   });
 }

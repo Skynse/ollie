@@ -9,10 +9,10 @@
 </script>
 
 <svelte:head>
-    <title>Ollie - Your Team's Kanban Board</title>
+    <title>Ollie - Local-first Kanban Board</title>
     <meta
         name="description"
-        content="Simple, collaborative kanban boards for agile teams. Real-time updates, multiplayer cursors, and sprint management."
+        content="A local-first kanban board with sprints, time tracking and burndown. Your work stays on your device."
     />
     <link rel="icon" type="image/png" href="/images/icon.png" />
 </svelte:head>
@@ -36,13 +36,13 @@
                         <h2>Ollie</h2>
                     </div>
                     <h1 class="hero-title">
-                        Team collaboration,<br />
-                        <span class="highlight-text">simplified</span>
+                        Your workflow,<br />
+                        <span class="highlight-text">on your device</span>
                     </h1>
                     <p class="hero-subtitle">
-                        Ollie brings your team together with real-time kanban
-                        boards, multiplayer cursors, and sprint tracking. Built
-                        for modern agile teams.
+                        Ollie is a focused, local-first kanban board with
+                        sprints, time tracking and burndown charts. No account,
+                        no server — your work stays on your device.
                     </p>
                     <div class="hero-cta">
                         <a
@@ -66,7 +66,7 @@
         <div class="container">
             <h2 class="section-title">See Ollie in action</h2>
             <p class="section-subtitle">
-                Everything you need to manage your team's work
+                Everything you need to manage your work
             </p>
 
             <div class="screenshots-grid">
@@ -74,19 +74,19 @@
                     <img src="/images/dash.png" alt="Sprint Dashboard" />
                     <h3>Project Dashboard</h3>
                     <p>
-                        Create and manage multiple boards, and invite team
-                        members to collaborate on projects.
+                        Create and manage multiple boards, columns and cards
+                        from one clean home screen.
                     </p>
                 </div>
                 <div class="screenshot-card">
                     <img src="/images/board.png" alt="Kanban Board" />
                     <h3>Kanban Board</h3>
-                    <p>Drag and drop tasks with real-time collaboration</p>
+                    <p>Drag and drop tasks with instant local updates</p>
                 </div>
                 <div class="screenshot-card">
                     <img src="/images/burndown.png" alt="Burndown Chart" />
                     <h3>Analytics</h3>
-                    <p>Visualize team velocity and sprint health</p>
+                    <p>Visualize sprint velocity and health</p>
                 </div>
             </div>
         </div>
@@ -96,7 +96,7 @@
     <section id="features" class="features">
         <div class="container">
             <h2 class="section-title">Everything you need</h2>
-            <p class="section-subtitle">Built for teams that ship fast</p>
+            <p class="section-subtitle">Built for focused, local work</p>
 
             <div class="features-grid">
                 <div class="feature-card">
@@ -109,11 +109,11 @@
                 </div>
 
                 <div class="feature-card">
-                    <div class="feature-icon">👥</div>
-                    <h3>Real-time Collaboration</h3>
+                    <div class="feature-icon">⏱️</div>
+                    <h3>Time Tracking</h3>
                     <p>
-                        See your teammates' cursors in real-time. Know who's
-                        working on what.
+                        Log time against cards, edit entries, and keep card
+                        totals in sync.
                     </p>
                 </div>
 
@@ -128,10 +128,10 @@
 
                 <div class="feature-card">
                     <div class="feature-icon">🔒</div>
-                    <h3>Secure & Private</h3>
+                    <h3>Private by Default</h3>
                     <p>
-                        Your data is encrypted and stored securely. GDPR
-                        compliant.
+                        Boards live in a local SQLite database on your device.
+                        No account and no server.
                     </p>
                 </div>
 
@@ -139,7 +139,7 @@
                     <div class="feature-icon">🚀</div>
                     <h3>Lightning Fast</h3>
                     <p>
-                        Built with Flutter and WebSockets for instant updates.
+                        Built with Flutter and local SQLite for instant updates.
                     </p>
                 </div>
 
@@ -159,12 +159,12 @@
         <div class="container">
             <div class="cta-content">
                 <h2>Ready to simplify your workflow?</h2>
-                <p>Join teams using Ollie to ship faster</p>
+                <p>Everything stays on your device</p>
                 <a
                     href="https://app.ollieboard.dev"
                     class="btn btn-primary btn-large"
                 >
-                    Get Started Free
+                    Launch App
                 </a>
             </div>
         </div>
@@ -179,7 +179,7 @@
                         <img src="/images/icon.png" alt="Ollie" />
                         <h3>Ollie</h3>
                     </div>
-                    <p>Simple kanban boards for agile teams</p>
+                    <p>Local-first kanban for focused work</p>
                 </div>
                 <div class="footer-links">
                     <div class="footer-column">
@@ -224,32 +224,6 @@
         max-width: 1200px;
         margin: 0 auto;
         padding: 0 2rem;
-    }
-
-    /* Hero Screenshot */
-    .screenshot-container {
-        position: relative;
-        border-radius: 24px;
-        overflow: hidden;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-    }
-
-    .screenshot {
-        width: 100%;
-        height: auto;
-        display: block;
-        border-radius: 24px;
-    }
-
-    .screenshot-glow {
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(
-            135deg,
-            rgba(59, 130, 246, 0.2) 0%,
-            rgba(236, 72, 153, 0.2) 100%
-        );
-        pointer-events: none;
     }
 
     /* Hero Section */
@@ -404,92 +378,6 @@
     .btn-large {
         padding: 1.125rem 2.5rem;
         font-size: 1.125rem;
-    }
-
-    /* Board Preview Animation */
-    .hero-visual {
-        position: relative;
-    }
-
-    .board-preview {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1.5rem;
-        padding: 2rem;
-        background: #3b82f6;
-        border-radius: 24px;
-        position: relative;
-    }
-
-    .board-card {
-        background: white;
-        border-radius: 12px;
-        padding: 1rem;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-        animation: slideUp 0.6s ease forwards;
-        animation-delay: var(--delay);
-        opacity: 0;
-    }
-
-    @keyframes slideUp {
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-    }
-
-    .card-header {
-        height: 12px;
-        background: #3b82f6;
-        border-radius: 6px;
-        margin-bottom: 0.75rem;
-    }
-
-    .card-line {
-        height: 8px;
-        background: #e9ecef;
-        border-radius: 4px;
-        margin-bottom: 0.5rem;
-    }
-
-    .card-line.short {
-        width: 60%;
-    }
-
-    .cursor {
-        position: absolute;
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        animation: float 3s ease-in-out infinite;
-    }
-
-    .cursor-1 {
-        background: #3b82f6;
-        top: 30%;
-        left: 20%;
-        animation-delay: 0s;
-    }
-
-    .cursor-2 {
-        background: #ec4899;
-        bottom: 40%;
-        right: 25%;
-        animation-delay: 1.5s;
-    }
-
-    @keyframes float {
-        0%,
-        100% {
-            transform: translate(0, 0);
-        }
-        50% {
-            transform: translate(10px, -10px);
-        }
     }
 
     /* Screenshots Section */
@@ -702,20 +590,12 @@
             gap: 3rem;
         }
 
-        .hero-visual {
-            order: -1;
-        }
-
         .hero-title {
             font-size: 2.5rem;
         }
 
         .hero-cta {
             flex-direction: column;
-        }
-
-        .board-preview {
-            grid-template-columns: 1fr;
         }
 
         .features-grid {

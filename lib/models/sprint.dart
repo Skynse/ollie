@@ -1,3 +1,5 @@
+import '../utils/copy_with.dart';
+
 enum SprintStatus {
   planning,
   active,
@@ -6,7 +8,10 @@ enum SprintStatus {
   String toJson() => name;
 
   static SprintStatus fromJson(String json) {
-    return SprintStatus.values.firstWhere((e) => e.name == json);
+    return SprintStatus.values.firstWhere(
+      (e) => e.name == json,
+      orElse: () => SprintStatus.planning,
+    );
   }
 }
 
@@ -19,6 +24,10 @@ class Sprint {
   final DateTime endDate;
   final double targetHours;
   final SprintStatus status;
+
+  /// Derived from `cards.sprint_id` when a sprint is read from the database.
+  /// It is never stored on the sprint row, which keeps card membership in one
+  /// place.
   final List<String> cardIds;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -32,13 +41,14 @@ class Sprint {
     required this.endDate,
     required this.targetHours,
     required this.status,
-    required this.cardIds,
+    this.cardIds = const [],
     required this.createdAt,
     required this.updatedAt,
   });
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'boardId': boardId,
       'name': name,
       'goal': goal,
@@ -46,7 +56,8 @@ class Sprint {
       'endDate': endDate.toIso8601String(),
       'targetHours': targetHours,
       'status': status.toJson(),
-      'cardIds': cardIds,
+      '\$createdAt': createdAt.toUtc().toIso8601String(),
+      '\$updatedAt': updatedAt.toUtc().toIso8601String(),
     };
   }
 
@@ -78,7 +89,7 @@ class Sprint {
     String? id,
     String? boardId,
     String? name,
-    String? goal,
+    Object? goal = unset,
     DateTime? startDate,
     DateTime? endDate,
     double? targetHours,
@@ -91,7 +102,7 @@ class Sprint {
       id: id ?? this.id,
       boardId: boardId ?? this.boardId,
       name: name ?? this.name,
-      goal: goal ?? this.goal,
+      goal: identical(goal, unset) ? this.goal : goal as String?,
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       targetHours: targetHours ?? this.targetHours,
@@ -102,8 +113,8 @@ class Sprint {
     );
   }
 
-  // Helper getters
   int get durationDays => endDate.difference(startDate).inDays;
+
   bool get isActive => status == SprintStatus.active;
   bool get isCompleted => status == SprintStatus.completed;
   bool get isPast => DateTime.now().isAfter(endDate);
@@ -116,9 +127,11 @@ class Sprint {
     return endDate.difference(now).inDays.toDouble();
   }
 
+  /// Fraction of the sprint's calendar that has elapsed.
   double get progress {
+    if (durationDays <= 0) return isCompleted ? 1 : 0;
     final total = durationDays.toDouble();
     final elapsed = total - daysRemaining;
-    return elapsed / total;
+    return (elapsed / total).clamp(0.0, 1.0);
   }
 }

@@ -19,8 +19,8 @@ class EmptyBoardsState extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  context.primaryColor.withOpacity(0.1),
-                  context.primaryColor.withOpacity(0.2),
+                  context.primaryColor.withValues(alpha: 0.1),
+                  context.primaryColor.withValues(alpha: 0.2),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -30,7 +30,7 @@ class EmptyBoardsState extends StatelessWidget {
             child: Icon(
               Icons.dashboard_outlined,
               size: 56,
-              color: context.primaryColor.withOpacity(0.6),
+              color: context.primaryColor.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: 24),
@@ -80,7 +80,7 @@ class NoSearchResultsState extends StatelessWidget {
           Icon(
             Icons.search_off,
             size: 64,
-            color: context.secondaryTextColor.withOpacity(0.3),
+            color: context.secondaryTextColor.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 16),
           Text(
@@ -116,13 +116,13 @@ class EmptySharedBoardsState extends StatelessWidget {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: context.primaryColor.withOpacity(0.1),
+              color: context.primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Icon(
               Icons.people_outline,
               size: 40,
-              color: context.primaryColor.withOpacity(0.4),
+              color: context.primaryColor.withValues(alpha: 0.4),
             ),
           ),
           const SizedBox(height: 16),
@@ -166,13 +166,13 @@ class BoardsErrorState extends StatelessWidget {
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: context.dangerColor.withOpacity(0.1),
+              color: context.dangerColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Icon(
               Icons.error_outline,
               size: 48,
-              color: context.dangerColor.withOpacity(0.6),
+              color: context.dangerColor.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: 24),
@@ -260,7 +260,9 @@ class _SkeletonBoardCardState extends State<SkeletonBoardCard>
               return Container(
                 height: 8,
                 decoration: BoxDecoration(
-                  color: context.borderColor.withOpacity(_animation.value),
+                  color: context.borderColor.withValues(
+                    alpha: _animation.value,
+                  ),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(15),
                     topRight: Radius.circular(15),
@@ -289,8 +291,8 @@ class _SkeletonBoardCardState extends State<SkeletonBoardCard>
                             height: 20,
                             width: double.infinity,
                             decoration: BoxDecoration(
-                              color: context.borderColor.withOpacity(
-                                _animation.value,
+                              color: context.borderColor.withValues(
+                                alpha: _animation.value,
                               ),
                               borderRadius: BorderRadius.circular(6),
                             ),
@@ -306,8 +308,8 @@ class _SkeletonBoardCardState extends State<SkeletonBoardCard>
                             height: 14,
                             width: double.infinity,
                             decoration: BoxDecoration(
-                              color: context.borderColor.withOpacity(
-                                _animation.value,
+                              color: context.borderColor.withValues(
+                                alpha: _animation.value,
                               ),
                               borderRadius: BorderRadius.circular(4),
                             ),
@@ -322,8 +324,8 @@ class _SkeletonBoardCardState extends State<SkeletonBoardCard>
                             height: 14,
                             width: 150,
                             decoration: BoxDecoration(
-                              color: context.borderColor.withOpacity(
-                                _animation.value,
+                              color: context.borderColor.withValues(
+                                alpha: _animation.value,
                               ),
                               borderRadius: BorderRadius.circular(4),
                             ),
@@ -341,8 +343,8 @@ class _SkeletonBoardCardState extends State<SkeletonBoardCard>
                         height: 28,
                         width: 60,
                         decoration: BoxDecoration(
-                          color: context.borderColor.withOpacity(
-                            _animation.value,
+                          color: context.borderColor.withValues(
+                            alpha: _animation.value,
                           ),
                           borderRadius: BorderRadius.circular(8),
                         ),

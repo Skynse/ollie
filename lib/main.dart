@@ -1,19 +1,80 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart';
-import 'screens/home/homepage.dart';
-import 'screens/board/board_screen.dart';
+
+import 'components/ollie_ui/theme.dart';
 import 'providers/theme_provider.dart';
 import 'repositories/local/local_config.dart';
-import 'components/ollie_ui/theme.dart';
-import 'package:flutter_web_plugins/url_strategy.dart';
+import 'screens/board/board_screen.dart';
+import 'screens/home/homepage.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  await LocalConfig.init();
   usePathUrlStrategy();
+
+  try {
+    await LocalConfig.init();
+  } catch (error, stack) {
+    // A local database failure must never leave the user with a blank page.
+    debugPrint('Failed to open the local database: $error\n$stack');
+    runApp(StartupErrorApp(error: error));
+    return;
+  }
+
   runApp(const ProviderScope(child: OllieApp()));
+}
+
+class StartupErrorApp extends StatelessWidget {
+  final Object error;
+
+  const StartupErrorApp({super.key, required this.error});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Ollie - Startup Error',
+      debugShowCheckedModeBanner: false,
+      theme: OllieTheme.lightTheme,
+      darkTheme: OllieTheme.darkTheme,
+      home: Scaffold(
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.storage_outlined, size: 56),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Ollie could not open its local database',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Your boards are stored on this device. Check that the app '
+                    'can write to its data directory, then try again.',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  SelectableText(
+                    error.toString(),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton(onPressed: main, child: const Text('Retry')),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class OllieApp extends ConsumerWidget {
@@ -33,10 +94,10 @@ class OllieApp extends ConsumerWidget {
         themeMode: themeMode,
         routerConfig: router,
       ),
-      loading: () => MaterialApp(
+      loading: () => const MaterialApp(
         home: Scaffold(body: Center(child: CircularProgressIndicator())),
       ),
-      error: (_, __) => MaterialApp.router(
+      error: (_, _) => MaterialApp.router(
         title: 'Ollie - Kanban Board',
         debugShowCheckedModeBanner: false,
         theme: OllieTheme.lightTheme,
@@ -60,5 +121,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
     ],
+    errorBuilder: (context, state) => Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Page not found', style: TextStyle(fontSize: 20)),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: () => context.go('/'),
+              child: const Text('Go to boards'),
+            ),
+          ],
+        ),
+      ),
+    ),
   );
 });

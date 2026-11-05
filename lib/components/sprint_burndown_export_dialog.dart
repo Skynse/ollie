@@ -93,7 +93,7 @@ class _SprintBurndownExportDialogState
       'record_type,exported_at,sprint_id,sprint_name,sprint_status,'
       'sprint_start_date,sprint_end_date,sprint_target_hours,date,'
       'remaining_hours,logged_hours_this_day,cumulative_logged_hours,'
-      'time_log_id,card_id,card_name,user_id,start_time,end_time,'
+      'time_log_id,card_id,card_name,start_time,end_time,'
       'duration_minutes,duration_hours,is_active,notes',
     );
 
@@ -115,7 +115,7 @@ class _SprintBurndownExportDialogState
         '"${sprint.startDate.toIso8601String()}","${sprint.endDate.toIso8601String()}",'
         '${sprint.targetHours},"${point.date.toIso8601String()}",'
         '${point.remainingHours},$loggedThisDay,$cumulativeLogged,'
-        '"","","","","","","","","",""',
+        '"","","","","","","","",""',
       );
     }
 
@@ -130,7 +130,7 @@ class _SprintBurndownExportDialogState
         '"${sprint.startDate.toIso8601String()}","${sprint.endDate.toIso8601String()}",'
         '${sprint.targetHours},"","","","",'
         '"${_escapeCsv(log.id)}","${_escapeCsv(log.cardId)}",'
-        '"${_escapeCsv(cardName)}","${_escapeCsv(log.userId)}",'
+        '"${_escapeCsv(cardName)}",'
         '"${log.startTime.toIso8601String()}","${log.endTime?.toIso8601String() ?? ''}",'
         '${log.durationMinutes},${log.durationHours},${log.isActive},'
         '"${_escapeCsv(log.notes ?? '')}"',
@@ -162,7 +162,9 @@ class _SprintBurndownExportDialogState
                 color: Theme.of(context).colorScheme.primaryContainer,
                 border: Border(
                   bottom: BorderSide(
-                    color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withValues(alpha: 0.3),
                   ),
                 ),
               ),
@@ -211,7 +213,9 @@ class _SprintBurndownExportDialogState
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surface,
                           border: Border.all(
-                            color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.outline.withValues(alpha: 0.3),
                           ),
                           borderRadius: BorderRadius.circular(8),
                         ),

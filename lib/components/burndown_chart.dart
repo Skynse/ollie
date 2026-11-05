@@ -187,7 +187,7 @@ class _BurndownChartState extends State<BurndownChart> {
             ),
             belowBarData: BarAreaData(
               show: true,
-              color: const Color(0xff3b82f6).withOpacity(0.08),
+              color: const Color(0xff3b82f6).withValues(alpha: 0.08),
             ),
           ),
       ],

@@ -1,15 +1,15 @@
 import 'dart:async';
 
-import '../services/realtime_service.dart';
+import 'realtime_service.dart';
 
-/// Broadcasts local database changes so UI layers can react like Appwrite realtime.
+/// Broadcasts local database changes so UI layers can update without polling.
 class LocalChangeBus {
   LocalChangeBus._();
 
   static final LocalChangeBus instance = LocalChangeBus._();
 
   final StreamController<RealtimeEvent> _controller =
-      StreamController<RealtimeEvent>.broadcast();
+      StreamController<RealtimeEvent>.broadcast(sync: true);
 
   Stream<RealtimeEvent> get stream => _controller.stream;
 

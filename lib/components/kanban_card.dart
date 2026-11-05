@@ -7,7 +7,6 @@ import 'package:ollie/providers/board_provider.dart';
 import '../models/card.dart' as model;
 import '../models/sprint.dart';
 import '../providers/sprint_provider.dart';
-import 'assign_member_dialog.dart';
 import 'edit_card_dialog.dart';
 import 'enhanced_card_content.dart';
 import 'ollie_ui/ollie_toast.dart';
@@ -57,14 +56,11 @@ class _KanbanCardState extends ConsumerState<KanbanCard>
           title: 'Edit Card',
           icon: Icons.edit_outlined,
           onTap: () {
-            // Using Future.delayed is good practice to show the dialog after the menu closes.
-            Future.delayed(Duration.zero, () {
-              showDialog(
-                context: context,
-                builder: (context) =>
-                    EditCardDialog(card: widget.card, boardId: widget.boardId),
-              );
-            });
+            showDialog(
+              context: context,
+              builder: (context) =>
+                  EditCardDialog(card: widget.card, boardId: widget.boardId),
+            );
           },
         ),
         // toggle complete, ? depending on if completed or not string changes
@@ -78,49 +74,61 @@ class _KanbanCardState extends ConsumerState<KanbanCard>
               completed: !widget.card.completed,
             );
 
-            if (widget.card.completed) {
+            if (updatedCard.completed) {
               _animationController.forward();
             } else {
               _animationController.reverse();
             }
-            await ref
-                .read(boardNotifierProvider(widget.boardId).notifier)
-                .updateCard(updatedCard: updatedCard);
-          },
-        ),
-        OllieMenuItem(
-          title: 'Change Members',
-          icon: Icons.group_outlined,
-          onTap: () {
-            Future.delayed(Duration.zero, () {
-              showDialog(
-                context: context,
-                builder: (context) => AssignMemberDialog(
-                  boardId: widget.boardId,
-                  card: widget.card,
-                  currentAssigneeIds: widget.card.assigneeIds,
-                ),
-              );
-            });
+            try {
+              await ref
+                  .read(boardNotifierProvider(widget.boardId).notifier)
+                  .updateCard(updatedCard: updatedCard);
+            } catch (e) {
+              if (context.mounted) {
+                OllieToast.error(context, 'Failed to update card: $e');
+              }
+            }
           },
         ),
         OllieMenuItem(
           title: 'Add to Sprint',
           icon: Icons.timer_outlined,
-          onTap: () {
-            Future.delayed(Duration.zero, () {
-              _showAddToSprintDialog(context, ref);
-            });
-          },
+          onTap: () => _showAddToSprintDialog(context, ref),
         ),
         OllieMenuItem(
           title: 'Delete Card',
           icon: Icons.delete_outline_rounded,
           onTap: () async {
-            final boardNotifier = ref.read(
-              boardNotifierProvider(widget.boardId).notifier,
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Delete Card?'),
+                content: Text(
+                  'Delete "${widget.card.title}"? This cannot be undone.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancel'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Delete'),
+                  ),
+                ],
+              ),
             );
-            await boardNotifier.deleteCard(widget.card.id);
+            if (confirmed == true) {
+              try {
+                await ref
+                    .read(boardNotifierProvider(widget.boardId).notifier)
+                    .deleteCard(widget.card.id);
+              } catch (e) {
+                if (context.mounted) {
+                  OllieToast.error(context, 'Failed to delete card: $e');
+                }
+              }
+            }
           },
         ),
       ],
@@ -221,22 +229,9 @@ class _KanbanCardState extends ConsumerState<KanbanCard>
                   onTap: () async {
                     Navigator.pop(context);
                     try {
-                      // Update card with sprintId
-                      var updatedCard = widget.card.copyWith(
-                        sprintId: sprint.id,
-                      );
                       await ref
-                          .read(boardNotifierProvider(widget.boardId).notifier)
-                          .updateCard(updatedCard: updatedCard);
-
-                      // Add card to sprint's cardIds list
-                      if (!sprint.cardIds.contains(widget.card.id)) {
-                        await ref
-                            .read(
-                              sprintNotifierProvider(widget.boardId).notifier,
-                            )
-                            .addCardToSprint(sprint.id, widget.card.id);
-                      }
+                          .read(sprintNotifierProvider(widget.boardId).notifier)
+                          .addCardToSprint(sprint.id, widget.card.id);
 
                       if (context.mounted) {
                         OllieToast.success(context, 'Added to ${sprint.name}');
@@ -265,7 +260,7 @@ class _KanbanCardState extends ConsumerState<KanbanCard>
       loading: () {
         OllieToast.info(context, 'Loading sprints...');
       },
-      error: (_, __) {
+      error: (_, _) {
         OllieToast.error(context, 'Failed to load sprints');
       },
     );

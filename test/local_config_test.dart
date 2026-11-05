@@ -13,7 +13,6 @@ void main() {
     await LocalConfig.init();
 
     expect(LocalConfig.createBoardRepository(), isNotNull);
-    expect(LocalConfig.createUserRepository(), isNotNull);
     expect(LocalConfig.createSprintRepository(), isNotNull);
   });
 }

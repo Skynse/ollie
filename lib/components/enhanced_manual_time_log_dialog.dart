@@ -14,7 +14,6 @@ import 'ollie_ui/theme_extensions.dart';
 class EnhancedManualTimeLogDialog extends ConsumerStatefulWidget {
   final String cardId;
   final String boardId;
-  final String userId;
   final String? sprintId;
   final TimeLog? existingLog;
 
@@ -22,7 +21,6 @@ class EnhancedManualTimeLogDialog extends ConsumerStatefulWidget {
     super.key,
     required this.cardId,
     required this.boardId,
-    required this.userId,
     this.sprintId,
     this.existingLog,
   });
@@ -168,11 +166,21 @@ class _EnhancedManualTimeLogDialogState
             )
           : startDateTime.add(Duration(minutes: totalMinutes));
 
+      var effectiveMinutes = totalMinutes;
+      if (_endTime != null) {
+        effectiveMinutes = endDateTime.difference(startDateTime).inMinutes;
+        if (effectiveMinutes <= 0) {
+          OllieToast.info(context, 'End time must be after start time');
+          return;
+        }
+      }
+
       if (widget.existingLog != null) {
         // Update existing log
         final updatedLog = widget.existingLog!.copyWith(
           startTime: startDateTime,
           endTime: endDateTime,
+          durationMinutes: effectiveMinutes,
           notes: _notesController.text.trim().isEmpty
               ? null
               : _notesController.text.trim(),
@@ -198,8 +206,7 @@ class _EnhancedManualTimeLogDialogState
             .read(sprintNotifierProvider(widget.boardId).notifier)
             .logManualTime(
               cardId: widget.cardId,
-              userId: widget.userId,
-              durationMinutes: totalMinutes,
+              durationMinutes: effectiveMinutes,
               notes: _notesController.text.trim().isEmpty
                   ? null
                   : _notesController.text.trim(),

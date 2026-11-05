@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/card.dart' as model;
 import '../models/time_log.dart';
+import '../providers/board_provider.dart';
 import '../providers/sprint_provider.dart';
 import '../providers/burndown_provider.dart';
-import '../providers/user_provider.dart';
 import 'ollie_ui/ollie_toast.dart';
 import 'enhanced_manual_time_log_dialog.dart';
 import 'ollie_ui/theme_extensions.dart';
@@ -18,22 +18,26 @@ class CardTimerWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentUserAsync = ref.watch(currentUserProvider);
-
-    return currentUserAsync.when(
-      data: (currentUser) => _buildTimeTracking(context, ref, currentUser),
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+    final liveCard = ref.watch(
+      boardNotifierProvider(boardId).select((asyncState) {
+        final state = asyncState.value;
+        if (state != null) {
+          for (final cards in state.columnCards.values) {
+            for (final candidate in cards) {
+              if (candidate.id == card.id) return candidate;
+            }
+          }
+        }
+        return card;
+      }),
     );
-  }
 
-  Widget _buildTimeTracking(BuildContext context, WidgetRef ref, currentUser) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTimeDisplay(context, ref, currentUser),
+        _buildTimeDisplay(context, ref, liveCard),
         const SizedBox(height: 12),
-        _buildTimeLogsList(context, ref, currentUser),
+        _buildTimeLogsList(context, ref),
       ],
     );
   }
@@ -46,7 +50,7 @@ class CardTimerWidget extends ConsumerWidget {
     return '${h}h ${m}m';
   }
 
-  Widget _buildTimeLogsList(BuildContext context, WidgetRef ref, currentUser) {
+  Widget _buildTimeLogsList(BuildContext context, WidgetRef ref) {
     final timeLogsAsync = ref.watch(cardTimeLogsProvider(card.id));
 
     return timeLogsAsync.when(
@@ -56,7 +60,7 @@ class CardTimerWidget extends ConsumerWidget {
           child: CircularProgressIndicator(),
         ),
       ),
-      error: (_, __) => Text(
+      error: (_, _) => Text(
         'Error loading time logs',
         style: TextStyle(color: context.dangerColor),
       ),
@@ -114,9 +118,8 @@ class CardTimerWidget extends ConsumerWidget {
     TimeLog log,
     bool isLast,
   ) {
-    final duration = log.endTime?.difference(log.startTime) ?? Duration.zero;
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes % 60;
+    final hours = log.durationMinutes ~/ 60;
+    final minutes = log.durationMinutes % 60;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -131,7 +134,7 @@ class CardTimerWidget extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: context.primaryColor.withOpacity(0.1),
+              color: context.primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
@@ -221,13 +224,11 @@ class CardTimerWidget extends ConsumerWidget {
   }
 
   void _editTimeLog(BuildContext context, WidgetRef ref, TimeLog log) {
-    // TODO: Show edit dialog with pre-filled data
     showDialog(
       context: context,
       builder: (context) => EnhancedManualTimeLogDialog(
         cardId: card.id,
         boardId: boardId,
-        userId: log.userId,
         sprintId: card.sprintId,
         existingLog: log,
       ),
@@ -282,14 +283,18 @@ class CardTimerWidget extends ConsumerWidget {
     }
   }
 
-  Widget _buildTimeDisplay(BuildContext context, WidgetRef ref, currentUser) {
+  Widget _buildTimeDisplay(
+    BuildContext context,
+    WidgetRef ref,
+    model.Card displayCard,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
           width: 1.5,
         ),
       ),
@@ -300,16 +305,16 @@ class CardTimerWidget extends ConsumerWidget {
           Icon(Icons.timer_outlined, size: 16, color: Colors.grey.shade600),
           const SizedBox(width: 6),
           Text(
-            _formatHours(card.totalLoggedHours),
+            _formatHours(displayCard.totalLoggedHours),
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
               color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
-          if (card.estimatedHours != null)
+          if (displayCard.estimatedHours != null)
             Text(
-              ' / ${_formatHours(card.estimatedHours!)}',
+              ' / ${_formatHours(displayCard.estimatedHours!)}',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -322,7 +327,7 @@ class CardTimerWidget extends ConsumerWidget {
           Container(
             width: 1,
             height: 20,
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
           ),
           const SizedBox(width: 8),
 
@@ -336,7 +341,6 @@ class CardTimerWidget extends ConsumerWidget {
                   builder: (context) => EnhancedManualTimeLogDialog(
                     cardId: card.id,
                     boardId: boardId,
-                    userId: currentUser.id,
                     sprintId: card.sprintId,
                   ),
                 );
@@ -358,7 +362,7 @@ class CardTimerWidget extends ConsumerWidget {
           ),
 
           // Clear all time logs button (only show if there are logs)
-          if (card.totalLoggedHours > 0) ...[
+          if (displayCard.totalLoggedHours > 0) ...[
             const SizedBox(width: 6),
             Material(
               color: Colors.transparent,
@@ -369,7 +373,7 @@ class CardTimerWidget extends ConsumerWidget {
                     builder: (context) => AlertDialog(
                       title: const Text('Clear All Time Logs?'),
                       content: Text(
-                        'This will permanently delete all ${_formatHours(card.totalLoggedHours)} of logged time for this card.',
+                        'This will permanently delete all ${_formatHours(displayCard.totalLoggedHours)} of logged time for this card.',
                       ),
                       actions: [
                         TextButton(
@@ -428,7 +432,7 @@ class CardTimerWidget extends ConsumerWidget {
                 child: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: context.dangerColor.withOpacity(0.1),
+                    color: context.dangerColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Icon(

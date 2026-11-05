@@ -38,7 +38,7 @@ class HomeSidebar extends StatelessWidget {
                     gradient: LinearGradient(
                       colors: [
                         context.primaryColor,
-                        context.primaryColor.withOpacity(0.7),
+                        context.primaryColor.withValues(alpha: 0.7),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -130,7 +130,7 @@ class _SidebarItem extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       child: Material(
         color: isSelected
-            ? context.primaryColor.withOpacity(0.1)
+            ? context.primaryColor.withValues(alpha: 0.1)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(8),
         child: InkWell(
@@ -153,7 +153,9 @@ class _SidebarItem extends StatelessWidget {
                     label,
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                       color: isSelected
                           ? context.primaryColor
                           : context.textColor,
@@ -168,7 +170,7 @@ class _SidebarItem extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? context.primaryColor.withOpacity(0.15)
+                          ? context.primaryColor.withValues(alpha: 0.15)
                           : context.surfaceColor,
                       borderRadius: BorderRadius.circular(12),
                     ),

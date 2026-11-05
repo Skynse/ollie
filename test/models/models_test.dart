@@ -1,140 +1,197 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ollie/config/local_user.dart';
 import 'package:ollie/models/board.dart';
 import 'package:ollie/models/card.dart';
 import 'package:ollie/models/priority.dart';
 import 'package:ollie/models/sprint.dart';
-import 'package:ollie/models/user.dart';
+import 'package:ollie/models/time_log.dart';
 
 void main() {
   group('Board', () {
     test('serializes and deserializes', () {
+      final now = DateTime.now();
       final board = Board(
         id: 'b1',
-        name: 'Sprint Board',
+        name: 'Board',
         description: 'Desc',
-        createdBy: LocalUser.id,
-        memberIds: const [LocalUser.id],
-        columnIds: const ['c1'],
-        createdAt: DateTime.parse('2025-01-01T00:00:00Z'),
-        updatedAt: DateTime.parse('2025-01-02T00:00:00Z'),
-        archived: false,
+        archived: true,
+        createdAt: now,
+        updatedAt: now,
       );
 
-      final json = {...board.toJson(), 'id': board.id, '\$createdAt': board.createdAt.toIso8601String(), '\$updatedAt': board.updatedAt.toIso8601String()};
-      final restored = Board.fromJson(json);
+      final json = board.toJson();
+      expect(json['archived'], isTrue);
+      expect(json['\$createdAt'], isNotNull);
 
-      expect(restored.id, board.id);
-      expect(restored.name, board.name);
-      expect(restored.memberIds, board.memberIds);
-      expect(restored.archived, false);
+      final parsed = Board.fromJson(json);
+      expect(parsed.id, 'b1');
+      expect(parsed.name, 'Board');
+      expect(parsed.archived, isTrue);
+      expect(parsed.description, 'Desc');
     });
 
-    test('copyWith updates fields', () {
+    test('copyWith keeps values unless explicitly changed', () {
+      final now = DateTime.now();
       final board = Board(
         id: 'b1',
-        name: 'Old',
-        createdBy: LocalUser.id,
-        memberIds: const [],
-        columnIds: const [],
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        name: 'Name',
+        description: 'Desc',
         archived: false,
+        createdAt: now,
+        updatedAt: now,
       );
 
-      final updated = board.copyWith(name: 'New', archived: true);
-      expect(updated.name, 'New');
-      expect(updated.archived, isTrue);
-      expect(updated.id, board.id);
+      expect(board.copyWith(name: 'Other').description, 'Desc');
+      expect(board.copyWith(description: null).description, isNull);
+      expect(board.copyWith(archived: true).archived, isTrue);
     });
   });
 
   group('Card', () {
+    Card card() => Card(
+      id: 'c1',
+      columnId: 'col1',
+      title: 'Card',
+      description: 'Desc',
+      priority: Priority.high,
+      dueDate: DateTime.now(),
+      estimatedHours: 4,
+      totalLoggedHours: 1.5,
+      sprintId: 's1',
+      rank: 'U',
+      completed: false,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
     test('serializes and deserializes', () {
-      final card = Card(
-        id: 'card1',
-        columnId: 'col1',
-        title: 'Fix bug',
-        position: 0,
-        assigneeIds: const [LocalUser.id],
-        labelIds: const ['l1'],
-        priority: Priority.high,
-        createdAt: DateTime.parse('2025-01-01T00:00:00Z'),
-        updatedAt: DateTime.parse('2025-01-02T00:00:00Z'),
-        createdBy: LocalUser.id,
-        rank: 'U',
-        completed: false,
+      final original = card();
+      final parsed = Card.fromJson(original.toJson());
+
+      expect(parsed.id, original.id);
+      expect(parsed.columnId, original.columnId);
+      expect(parsed.priority, Priority.high);
+      expect(parsed.sprintId, 's1');
+      expect(parsed.estimatedHours, 4);
+      expect(parsed.totalLoggedHours, 1.5);
+    });
+
+    test('copyWith can clear nullable fields', () {
+      final original = card();
+      final cleared = original.copyWith(
+        description: null,
+        dueDate: null,
+        estimatedHours: null,
+        sprintId: null,
       );
 
-      final json = {
-        ...card.toJson(),
-        'id': card.id,
-        '\$createdAt': card.createdAt.toIso8601String(),
-        '\$updatedAt': card.updatedAt.toIso8601String(),
-      };
-      final restored = Card.fromJson(json);
+      expect(cleared.description, isNull);
+      expect(cleared.dueDate, isNull);
+      expect(cleared.estimatedHours, isNull);
+      expect(cleared.sprintId, isNull);
+      expect(original.description, 'Desc');
+    });
 
-      expect(restored.title, 'Fix bug');
-      expect(restored.priority, Priority.high);
-      expect(restored.assigneeIds, [LocalUser.id]);
+    test('copyWith keeps nullable fields when omitted', () {
+      final original = card();
+      final updated = original.copyWith(title: 'New');
+
+      expect(updated.description, 'Desc');
+      expect(updated.sprintId, 's1');
+      expect(updated.dueDate, isNotNull);
     });
   });
 
   group('Sprint', () {
-    test('serializes and deserializes', () {
+    test('serializes and deserializes without storing cardIds', () {
+      final now = DateTime.now();
       final sprint = Sprint(
         id: 's1',
         boardId: 'b1',
-        name: 'Sprint 1',
-        goal: 'Ship MVP',
-        startDate: DateTime.parse('2025-01-01T00:00:00Z'),
-        endDate: DateTime.parse('2025-01-15T00:00:00Z'),
-        targetHours: 80,
+        name: 'Sprint',
+        goal: 'Ship it',
+        startDate: now,
+        endDate: now.add(const Duration(days: 10)),
+        targetHours: 40,
         status: SprintStatus.active,
         cardIds: const ['c1'],
-        createdAt: DateTime.parse('2025-01-01T00:00:00Z'),
-        updatedAt: DateTime.parse('2025-01-01T00:00:00Z'),
+        createdAt: now,
+        updatedAt: now,
       );
 
-      final json = {
-        ...sprint.toJson(),
-        'id': sprint.id,
-        '\$createdAt': sprint.createdAt.toIso8601String(),
-        '\$updatedAt': sprint.updatedAt.toIso8601String(),
-      };
-      final restored = Sprint.fromJson(json);
+      final json = sprint.toJson();
+      expect(json.containsKey('cardIds'), isFalse);
 
-      expect(restored.name, 'Sprint 1');
-      expect(restored.status, SprintStatus.active);
-      expect(restored.cardIds, ['c1']);
-      expect(restored.isActive, isTrue);
+      final parsed = Sprint.fromJson({
+        ...json,
+        'cardIds': ['c1'],
+      });
+      expect(parsed.status, SprintStatus.active);
+      expect(parsed.cardIds, ['c1']);
+      expect(parsed.copyWith(goal: null).goal, isNull);
+    });
+
+    test('unknown status falls back to planning', () {
+      expect(SprintStatus.fromJson('unknown'), SprintStatus.planning);
+    });
+
+    test('progress does not divide by zero', () {
+      final now = DateTime.now();
+      final sprint = Sprint(
+        id: 's1',
+        boardId: 'b1',
+        name: 'Sprint',
+        startDate: now,
+        endDate: now,
+        targetHours: 1,
+        status: SprintStatus.planning,
+        createdAt: now,
+        updatedAt: now,
+      );
+      expect(sprint.progress, 0);
+    });
+  });
+
+  group('TimeLog', () {
+    test('treats year-2099 end time as null', () {
+      final log = TimeLog.fromJson({
+        'id': 't1',
+        'cardId': 'c1',
+        'startTime': DateTime.now().toIso8601String(),
+        'endTime': DateTime(2099, 12, 31).toIso8601String(),
+        'durationMinutes': 0,
+        'isActive': true,
+      });
+
+      expect(log.endTime, isNull);
+      expect(log.isActive, isTrue);
+    });
+
+    test('formattedDuration shows hours and minutes', () {
+      final now = DateTime.now();
+      final log = TimeLog(
+        id: 't1',
+        cardId: 'c1',
+        startTime: now,
+        endTime: now,
+        durationMinutes: 90,
+        isActive: false,
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      expect(log.durationHours, 1.5);
+      expect(log.formattedDuration, '1h 30m');
+      expect(log.copyWith(notes: 'note').notes, 'note');
+      expect(log.copyWith(notes: null).notes, isNull);
     });
   });
 
   group('Priority', () {
     test('round-trips through JSON', () {
-      expect(Priority.fromJson('high'), Priority.high);
-      expect(Priority.fromJson('UNKNOWN'), Priority.low);
-      expect(Priority.medium.toJson(), 'medium');
-    });
-  });
-
-  group('User', () {
-    test('serializes and deserializes', () {
-      final user = User(id: 'u1', name: 'Alice', email: 'alice@test.com');
-      final json = Map<String, dynamic>.from({...user.toJson(), 'id': user.id});
-      final restored = User.fromJson(json);
-
-      expect(restored.name, 'Alice');
-      expect(restored.email, 'alice@test.com');
-    });
-  });
-
-  group('LocalUser', () {
-    test('provides stable local user', () {
-      expect(LocalUser.id, 'local');
-      expect(LocalUser.user.id, LocalUser.id);
-      expect(LocalUser.user.name, 'Me');
+      for (final priority in Priority.values) {
+        expect(Priority.fromJson(priority.toJson()), priority);
+      }
+      expect(Priority.fromJson('unknown'), Priority.low);
     });
   });
 }

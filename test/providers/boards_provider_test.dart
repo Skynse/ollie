@@ -13,9 +13,7 @@ void main() {
     setUp(() async {
       repo = await setUpTestDatabase();
       container = ProviderContainer(
-        overrides: [
-          boardRepositoryProvider.overrideWithValue(repo),
-        ],
+        overrides: [boardRepositoryProvider.overrideWithValue(repo)],
       );
       await waitForBoardsIdle(container, boardsProvider);
     });

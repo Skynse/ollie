@@ -10,7 +10,8 @@ class SprintBurndownComputedData {
   SprintBurndownComputedData({required this.dataPoints, required this.stats});
 }
 
-DateTime _dateOnly(DateTime value) => DateTime(value.year, value.month, value.day);
+DateTime _dateOnly(DateTime value) =>
+    DateTime(value.year, value.month, value.day);
 
 BurndownStats _buildStatsFromProgress({
   required Sprint sprint,
@@ -71,8 +72,9 @@ final sprintBurndownComputedProvider =
             .toList();
 
         final latestRemaining = sortedSnapshots.last.remainingHours;
-        final loggedHours =
-            (targetHours - latestRemaining).clamp(0.0, targetHours).toDouble();
+        final loggedHours = (targetHours - latestRemaining)
+            .clamp(0.0, targetHours)
+            .toDouble();
         final stats = _buildStatsFromProgress(
           sprint: sprint,
           targetHours: targetHours,
@@ -107,7 +109,8 @@ final sprintBurndownComputedProvider =
       final dailyLoggedHours = <DateTime, double>{};
       for (final log in completedLogs) {
         final logDate = _dateOnly(log.endTime ?? log.startTime);
-        dailyLoggedHours[logDate] = (dailyLoggedHours[logDate] ?? 0) + log.durationHours;
+        dailyLoggedHours[logDate] =
+            (dailyLoggedHours[logDate] ?? 0) + log.durationHours;
       }
 
       final startDay = _dateOnly(sprint.startDate);
@@ -119,8 +122,8 @@ final sprintBurndownComputedProvider =
         final latestLogDate = completedLogs.isEmpty
             ? sprint.endDate
             : completedLogs
-                .map((log) => log.endTime ?? log.startTime)
-                .reduce((a, b) => a.isAfter(b) ? a : b);
+                  .map((log) => log.endTime ?? log.startTime)
+                  .reduce((a, b) => a.isAfter(b) ? a : b);
         endCap = latestLogDate.isAfter(sprint.endDate)
             ? latestLogDate
             : sprint.endDate;
@@ -143,7 +146,9 @@ final sprintBurndownComputedProvider =
         var currentDay = startDay.add(const Duration(days: 1));
         while (!currentDay.isAfter(endDay)) {
           final loggedHours = dailyLoggedHours[currentDay] ?? 0;
-          remainingHours = (remainingHours - loggedHours).clamp(0.0, targetHours).toDouble();
+          remainingHours = (remainingHours - loggedHours)
+              .clamp(0.0, targetHours)
+              .toDouble();
           dataPoints.add(
             BurndownDataPoint(
               date: currentDay,
@@ -166,7 +171,7 @@ final sprintBurndownComputedProvider =
       );
 
       return SprintBurndownComputedData(dataPoints: dataPoints, stats: stats);
-    });
+    }, isAutoDispose: true);
 
 /// Provider for burndown chart data for a specific sprint
 final sprintBurndownProvider =
@@ -178,18 +183,16 @@ final sprintBurndownProvider =
         sprintBurndownComputedProvider(sprintId).future,
       );
       return burndown.dataPoints;
-    });
+    }, isAutoDispose: true);
 
 /// Provider for burndown summary statistics
-final sprintBurndownStatsProvider = FutureProvider.family<BurndownStats, String>((
-  ref,
-  sprintId,
-) async {
-  final burndown = await ref.watch(
-    sprintBurndownComputedProvider(sprintId).future,
-  );
-  return burndown.stats;
-});
+final sprintBurndownStatsProvider =
+    FutureProvider.family<BurndownStats, String>((ref, sprintId) async {
+      final burndown = await ref.watch(
+        sprintBurndownComputedProvider(sprintId).future,
+      );
+      return burndown.stats;
+    }, isAutoDispose: true);
 
 /// Burndown statistics
 class BurndownStats {

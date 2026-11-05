@@ -32,28 +32,40 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
   }
 
   Future<void> _loadBurndownData() async {
-    final burndownAsync = await ref.read(
-      sprintBurndownProvider(widget.sprint.id).future,
-    );
+    try {
+      final points = await ref.read(
+        sprintBurndownProvider(widget.sprint.id).future,
+      );
+      if (!mounted) return;
 
-    // Convert to editable entries
-    setState(() {
-      _isLoadingData = false;
-      _entries.clear();
-      for (var dataPoint in burndownAsync) {
-        final actualHours = dataPoint.actualHours ?? dataPoint.remainingHours;
-        _entries.add(
-          _EditableBurndownEntry(
-            date: dataPoint.date,
-            remainingHours: dataPoint.remainingHours,
-            actualHours: actualHours,
-            controller: TextEditingController(
-              text: actualHours.toStringAsFixed(1),
-            ),
-          ),
-        );
+      for (final entry in _entries) {
+        entry.controller.dispose();
       }
-    });
+
+      setState(() {
+        _isLoadingData = false;
+        _entries
+          ..clear()
+          ..addAll(
+            points.map((dataPoint) {
+              final actualHours =
+                  dataPoint.actualHours ?? dataPoint.remainingHours;
+              return _EditableBurndownEntry(
+                date: dataPoint.date,
+                remainingHours: dataPoint.remainingHours,
+                actualHours: actualHours,
+                controller: TextEditingController(
+                  text: actualHours.toStringAsFixed(1),
+                ),
+              );
+            }),
+          );
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingData = false);
+      OllieToast.error(context, 'Failed to load burndown data: $e');
+    }
   }
 
   Future<void> _saveSnapshots() async {
@@ -126,7 +138,9 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
                 ).colorScheme.primaryContainer.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outline.withValues(alpha: 0.3),
                 ),
               ),
               child: Row(
@@ -157,9 +171,8 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                      Theme.of(context).colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.5),
                       Theme.of(context).colorScheme.surfaceContainerHighest,
                     ],
                   ),
@@ -193,7 +206,7 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
                 ),
               ),
               loading: () => const SizedBox.shrink(),
-              error: (_, __) => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
             ),
             const SizedBox(height: 20),
 
@@ -202,18 +215,18 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
               child: _isLoadingData
                   ? const Center(child: CircularProgressIndicator())
                   : _entries.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'No burndown data available.\nStart logging time against this sprint to generate chart data.',
-                            textAlign: TextAlign.center,
-                          ),
-                        )
-                      : ListView.builder(
-                          itemCount: _entries.length,
-                          itemBuilder: (context, index) {
-                            return _buildBurndownEntry(_entries[index], index);
-                          },
-                        ),
+                  ? const Center(
+                      child: Text(
+                        'No burndown data available.\nStart logging time against this sprint to generate chart data.',
+                        textAlign: TextAlign.center,
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: _entries.length,
+                      itemBuilder: (context, index) {
+                        return _buildBurndownEntry(_entries[index], index);
+                      },
+                    ),
             ),
           ],
         ),
@@ -277,7 +290,9 @@ class _BurndownEditorDialogState extends ConsumerState<BurndownEditorDialog> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isToday
-            ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
+            ? Theme.of(
+                context,
+              ).colorScheme.primaryContainer.withValues(alpha: 0.3)
             : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(

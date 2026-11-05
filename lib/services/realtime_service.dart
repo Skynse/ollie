@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'local_change_bus.dart';
 
-/// Event types for real-time updates
+/// Event types for local database changes.
 enum RealtimeEventType { create, update, delete }
 
-/// Real-time event data
+/// Event emitted whenever a repository mutates local data.
 class RealtimeEvent {
   final RealtimeEventType type;
   final String documentId;
@@ -22,76 +22,22 @@ class RealtimeEvent {
   });
 }
 
-/// Service for managing local database change subscriptions.
+/// Filters the local change bus so each board only receives its own events.
 class RealtimeService {
   final Map<String, StreamSubscription<RealtimeEvent>> _subscriptions = {};
   final Map<String, StreamController<RealtimeEvent>> _controllers = {};
 
-  Stream<RealtimeEvent> _filteredStream(bool Function(RealtimeEvent) filter) {
-    return LocalChangeBus.instance.stream.where(filter);
-  }
-
   Stream<RealtimeEvent> subscribeToBoardUpdates(String boardId) {
     final key = 'board_$boardId';
+    final existing = _controllers[key];
+    if (existing != null && !existing.isClosed) return existing.stream;
 
-    if (_controllers.containsKey(key)) {
-      return _controllers[key]!.stream;
-    }
-
-    final controller = StreamController<RealtimeEvent>.broadcast();
+    final controller = StreamController<RealtimeEvent>.broadcast(sync: true);
     _controllers[key] = controller;
 
-    final subscription = _filteredStream(
-      (event) => _isEventRelevantToBoard(event, boardId),
-    ).listen(
-      controller.add,
-      onError: controller.addError,
-    );
-
-    _subscriptions[key] = subscription;
-    return controller.stream;
-  }
-
-  Stream<RealtimeEvent> subscribeToCard(String cardId) {
-    final key = 'card_$cardId';
-
-    if (_controllers.containsKey(key)) {
-      return _controllers[key]!.stream;
-    }
-
-    final controller = StreamController<RealtimeEvent>.broadcast();
-    _controllers[key] = controller;
-
-    final subscription = _filteredStream(
-      (event) => event.collection == 'cards' && event.documentId == cardId,
-    ).listen(
-      controller.add,
-      onError: controller.addError,
-    );
-
-    _subscriptions[key] = subscription;
-    return controller.stream;
-  }
-
-  Stream<RealtimeEvent> subscribeToColumn(String columnId) {
-    final key = 'column_$columnId';
-
-    if (_controllers.containsKey(key)) {
-      return _controllers[key]!.stream;
-    }
-
-    final controller = StreamController<RealtimeEvent>.broadcast();
-    _controllers[key] = controller;
-
-    final subscription = _filteredStream((event) {
-      if (event.collection == 'columns' && event.documentId == columnId) {
-        return true;
-      }
-      return event.collection == 'cards';
-    }).listen(
-      controller.add,
-      onError: controller.addError,
-    );
+    final subscription = LocalChangeBus.instance.stream
+        .where((event) => _isEventRelevantToBoard(event, boardId))
+        .listen(controller.add, onError: controller.addError);
 
     _subscriptions[key] = subscription;
     return controller.stream;
@@ -99,16 +45,9 @@ class RealtimeService {
 
   void unsubscribeFromBoard(String boardId) => _unsubscribe('board_$boardId');
 
-  void unsubscribeFromCard(String cardId) => _unsubscribe('card_$cardId');
-
-  void unsubscribeFromColumn(String columnId) =>
-      _unsubscribe('column_$columnId');
-
   void _unsubscribe(String key) {
-    _subscriptions[key]?.cancel();
-    _subscriptions.remove(key);
-    _controllers[key]?.close();
-    _controllers.remove(key);
+    _subscriptions.remove(key)?.cancel();
+    _controllers.remove(key)?.close();
   }
 
   void dispose() {
@@ -123,24 +62,20 @@ class RealtimeService {
   }
 
   bool _isEventRelevantToBoard(RealtimeEvent event, String boardId) {
-    if (event.collection == 'boards' && event.documentId == boardId) {
-      return true;
+    switch (event.collection) {
+      case 'boards':
+        return event.documentId == boardId;
+      case 'columns':
+      case 'cards':
+        return event.data?['boardId'] == boardId;
+      default:
+        return false;
     }
-
-    if (event.collection == 'columns' && event.data?['boardId'] == boardId) {
-      return true;
-    }
-
-    if (event.collection == 'cards') {
-      return true;
-    }
-
-    return false;
   }
 }
 
 final realtimeServiceProvider = Provider<RealtimeService>((ref) {
   final service = RealtimeService();
-  ref.onDispose(() => service.dispose());
+  ref.onDispose(service.dispose);
   return service;
 });

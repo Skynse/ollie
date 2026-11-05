@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/board.dart';
 import '../models/board_column.dart';
+import '../models/card.dart' as model;
 import '../providers/boards_provider.dart';
 import 'ollie_ui/ollie_toast.dart';
 
@@ -33,11 +34,17 @@ class _ExportBoardDialogState extends ConsumerState<ExportBoardDialog> {
     setState(() => _isExporting = true);
 
     try {
+      final repository = ref.read(boardRepositoryProvider);
+      final cardsByColumn = <String, List<model.Card>>{};
+      for (final column in widget.columns) {
+        cardsByColumn[column.id] = await repository.getCardsByColumn(column.id);
+      }
+
       String data;
       if (_selectedFormat == ExportFormat.json) {
-        data = await _generateJsonExport();
+        data = _generateJsonExport(cardsByColumn);
       } else {
-        data = await _generateCsvExport();
+        data = _generateCsvExport(cardsByColumn);
       }
 
       setState(() {
@@ -52,12 +59,13 @@ class _ExportBoardDialogState extends ConsumerState<ExportBoardDialog> {
     }
   }
 
-  Future<String> _generateJsonExport() async {
+  String _generateJsonExport(Map<String, List<model.Card>> cardsByColumn) {
     final Map<String, dynamic> exportData = {
       'board': {
         'id': widget.board.id,
         'name': widget.board.name,
         'description': widget.board.description,
+        'archived': widget.board.archived,
         'createdAt': widget.board.createdAt.toIso8601String(),
         'updatedAt': widget.board.updatedAt.toIso8601String(),
       },
@@ -68,18 +76,15 @@ class _ExportBoardDialogState extends ConsumerState<ExportBoardDialog> {
           'position': column.position,
           'color': column.color,
           'wipLimit': column.wipLimit,
-          'cardCount': column.cardIds.length,
+          'cardCount': cardsByColumn[column.id]?.length ?? 0,
         };
       }).toList(),
     };
 
     if (_includeCards) {
-      final List<Map<String, dynamic>> allCards = [];
+      final allCards = <Map<String, dynamic>>[];
       for (final column in widget.columns) {
-        final cards = await ref
-            .read(boardRepositoryProvider)
-            .getCardsByColumn(column.id);
-        for (final card in cards) {
+        for (final card in cardsByColumn[column.id] ?? const <model.Card>[]) {
           allCards.add({
             'id': card.id,
             'columnId': card.columnId,
@@ -87,10 +92,13 @@ class _ExportBoardDialogState extends ConsumerState<ExportBoardDialog> {
             'title': card.title,
             'description': card.description,
             'priority': card.priority.toString(),
-            'position': card.position,
-            'assigneeCount': card.assigneeIds.length,
-            'labelCount': card.labelIds.length,
-            'commentCount': card.commentCount,
+            'rank': card.rank,
+            'completed': card.completed,
+            'estimatedHours': card.estimatedHours,
+            'totalLoggedHours': card.totalLoggedHours,
+            'sprintId': card.sprintId,
+            'subtaskCount': card.subtaskCount,
+            'completedSubtaskCount': card.completedSubtaskCount,
             'dueDate': card.dueDate?.toIso8601String(),
             'createdAt': card.createdAt.toIso8601String(),
             'updatedAt': card.updatedAt.toIso8601String(),
@@ -103,50 +111,39 @@ class _ExportBoardDialogState extends ConsumerState<ExportBoardDialog> {
     return const JsonEncoder.withIndent('  ').convert(exportData);
   }
 
-  Future<String> _generateCsvExport() async {
+  String _generateCsvExport(Map<String, List<model.Card>> cardsByColumn) {
+    final buffer = StringBuffer();
     if (!_includeCards) {
-      // Export columns only
-      final buffer = StringBuffer();
       buffer.writeln('Column ID,Name,Position,Color,WIP Limit,Card Count');
-
       for (final column in widget.columns) {
         buffer.writeln(
           '"${column.id}","${column.name}",${column.position},${column.color},'
           '${column.wipLimit ?? ''},'
-          '${column.cardIds.length}',
+          '${cardsByColumn[column.id]?.length ?? 0}',
         );
       }
-
-      return buffer.toString();
-    } else {
-      // Export cards
-      final buffer = StringBuffer();
-      buffer.writeln(
-        'Card ID,Column,Title,Description,Priority,Position,'
-        'Assignees,Labels,Comments,Due Date,Created At,Updated At',
-      );
-
-      for (final column in widget.columns) {
-        final cards = await ref
-            .read(boardRepositoryProvider)
-            .getCardsByColumn(column.id);
-
-        for (final card in cards) {
-          buffer.writeln(
-            '"${card.id}","${column.name}","${_escapeCsv(card.title)}",'
-            '"${_escapeCsv(card.description ?? '')}",'
-            '"${card.priority.toString()}",${card.position},'
-            '${card.assigneeIds.length},${card.labelIds.length},'
-            '${card.commentCount},'
-            '"${card.dueDate?.toIso8601String() ?? ''}",'
-            '"${card.createdAt.toIso8601String()}",'
-            '"${card.updatedAt.toIso8601String()}"',
-          );
-        }
-      }
-
       return buffer.toString();
     }
+
+    buffer.writeln(
+      'Card ID,Column,Title,Description,Priority,Rank,Completed,'
+      'Estimated Hours,Logged Hours,Sprint ID,Due Date,Created At,Updated At',
+    );
+    for (final column in widget.columns) {
+      for (final card in cardsByColumn[column.id] ?? const <model.Card>[]) {
+        buffer.writeln(
+          '"${card.id}","${column.name}","${_escapeCsv(card.title)}",'
+          '"${_escapeCsv(card.description ?? '')}",'
+          '"${card.priority.toString()}","${card.rank}",${card.completed},'
+          '${card.estimatedHours ?? ''},${card.totalLoggedHours},'
+          '"${card.sprintId ?? ''}",'
+          '"${card.dueDate?.toIso8601String() ?? ''}",'
+          '"${card.createdAt.toIso8601String()}",'
+          '"${card.updatedAt.toIso8601String()}"',
+        );
+      }
+    }
+    return buffer.toString();
   }
 
   String _escapeCsv(String value) {
@@ -177,7 +174,7 @@ class _ExportBoardDialogState extends ConsumerState<ExportBoardDialog> {
                   bottom: BorderSide(
                     color: Theme.of(
                       context,
-                    ).colorScheme.outline.withOpacity(0.3),
+                    ).colorScheme.outline.withValues(alpha: 0.3),
                   ),
                 ),
               ),
@@ -330,7 +327,7 @@ class _ExportBoardDialogState extends ConsumerState<ExportBoardDialog> {
                           border: Border.all(
                             color: Theme.of(
                               context,
-                            ).colorScheme.outline.withOpacity(0.3),
+                            ).colorScheme.outline.withValues(alpha: 0.3),
                           ),
                         ),
                         child: SingleChildScrollView(

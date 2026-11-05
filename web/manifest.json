@@ -1,11 +1,11 @@
 {
-  "name": "ollie",
-  "short_name": "ollie",
+  "name": "Ollie",
+  "short_name": "Ollie",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#0175C2",
   "theme_color": "#0175C2",
-  "description": "Do a kickflip!",
+  "description": "Local-first kanban boards with sprints, time tracking and burndown.",
   "orientation": "portrait-primary",
   "prefer_related_applications": false,
   "icons": [

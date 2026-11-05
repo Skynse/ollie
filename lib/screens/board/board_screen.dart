@@ -4,14 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:ollie/components/ollie_ui/theme_extensions.dart';
 import '../../providers/board_provider.dart';
 import '../../providers/boards_provider.dart';
-import '../../providers/user_provider.dart';
 import '../../providers/sprint_provider.dart';
 import '../../models/board.dart';
 import '../../models/sprint.dart';
 import '../../components/components.dart';
 import '../../components/board_menu_overlay.dart';
 import '../../utils/responsive.dart';
-import '../../widgets/multiplayer_cursors.dart';
 import '../home/dialogs/archive_board_dialog.dart';
 
 /// Main kanban board screen showing columns and cards
@@ -26,9 +24,11 @@ class BoardScreen extends ConsumerStatefulWidget {
 
 class _BoardScreenState extends ConsumerState<BoardScreen> {
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey _menuButtonKey = GlobalKey();
 
   @override
   void dispose() {
+    BoardMenuOverlay.hide();
     _scrollController.dispose();
     super.dispose();
   }
@@ -37,7 +37,18 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final boardState = ref.watch(boardNotifierProvider(widget.boardId));
+    final provider = boardNotifierProvider(widget.boardId);
+    ref.listen<AsyncValue<BoardState>>(provider, (previous, next) {
+      final message = next.value?.errorMessage;
+      if (message == null || message == previous?.value?.errorMessage) return;
+      final messenger = ScaffoldMessenger.of(context);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        messenger.showSnackBar(SnackBar(content: Text(message)));
+        ref.read(provider.notifier).clearError();
+      });
+    });
+    final boardState = ref.watch(provider);
 
     return Scaffold(
       key: _scaffoldKey,
@@ -50,231 +61,237 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   }
 
   Widget _buildBoardDrawer() {
-    final boardState = ref.watch(boardNotifierProvider(widget.boardId));
-    final board = boardState.value?.board;
-    final activeSprint = ref.watch(sprintNotifierProvider(widget.boardId));
+    return Consumer(
+      builder: (context, ref, _) {
+        final boardState = ref.watch(boardNotifierProvider(widget.boardId));
+        final board = boardState.value?.board;
+        final activeSprint = ref.watch(sprintNotifierProvider(widget.boardId));
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Menu Header
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: context.surfaceColor,
-            border: Border(
-              bottom: BorderSide(color: context.borderColor, width: 1),
-            ),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Menu Header
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: context.surfaceColor,
+                border: Border(
+                  bottom: BorderSide(color: context.borderColor, width: 1),
+                ),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(12),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    board?.name ?? 'Board Settings',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: context.textColor,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      Text(
+                        board?.name ?? 'Board Settings',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: context.textColor,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.cancel),
+                        onPressed: () {
+                          BoardMenuOverlay.hide();
+                        },
+                      ),
+                    ],
                   ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.cancel),
-                    onPressed: () {
-                      BoardMenuOverlay.hide();
-                    },
+                  const SizedBox(height: 4),
+                  Text(
+                    'Board Management',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: context.secondaryTextColor,
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Board Management',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: context.secondaryTextColor,
+            ),
+
+            // Active Sprint Status Card
+            if (activeSprint != null)
+              Container(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: context.surfaceColor,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: context.borderColor),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: activeSprint.status == SprintStatus.active
+                                ? context.successColor.withValues(alpha: 0.1)
+                                : context.primaryColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: activeSprint.status == SprintStatus.active
+                                  ? context.successColor.withValues(alpha: 0.3)
+                                  : context.primaryColor.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Text(
+                            activeSprint.status == SprintStatus.active
+                                ? 'ACTIVE'
+                                : 'PLANNING',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: activeSprint.status == SprintStatus.active
+                                  ? context.successColor
+                                  : context.primaryColor,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      activeSprint.name,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: context.textColor,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          size: 14,
+                          color: context.secondaryTextColor,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${activeSprint.daysRemaining} days remaining',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.secondaryTextColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.assignment,
+                          size: 14,
+                          color: context.secondaryTextColor,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${activeSprint.cardIds.length} cards',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.secondaryTextColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
 
-        // Active Sprint Status Card
-        if (activeSprint != null)
-          Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: context.surfaceColor,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: context.borderColor),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+            // Menu Content
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Column(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: activeSprint.status == SprintStatus.active
-                            ? context.successColor.withOpacity(0.1)
-                            : context.primaryColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: activeSprint.status == SprintStatus.active
-                              ? context.successColor.withOpacity(0.3)
-                              : context.primaryColor.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Text(
-                        activeSprint.status == SprintStatus.active
-                            ? 'ACTIVE'
-                            : 'PLANNING',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: activeSprint.status == SprintStatus.active
-                              ? context.successColor
-                              : context.primaryColor,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
+                    // Sprints Section - Moved to top
+                    _buildDrawerSection('Sprint'),
+                    _buildDrawerTile(
+                      icon: Icons.view_list,
+                      title: 'Manage Sprints',
+                      onTap: () {
+                        _showSprintManagementDialog();
+                      },
+                    ),
+                    _buildDrawerTile(
+                      icon: Icons.add,
+                      title: 'Create Sprint',
+                      onTap: () async {
+                        await showDialog(
+                          context: context,
+                          builder: (context) =>
+                              CreateSprintDialog(boardId: widget.boardId),
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Board Section
+                    _buildDrawerSection('Board'),
+                    _buildDrawerTile(
+                      icon: Icons.edit,
+                      title: 'Edit Board',
+                      onTap: () {
+                        _showEditBoardDialog();
+                      },
+                    ),
+                    _buildDrawerTile(
+                      icon: Icons.view_column,
+                      title: 'Manage Columns',
+                      onTap: () {
+                        _showManageColumnsDialog();
+                      },
+                    ),
+                    _buildDrawerTile(
+                      icon: Icons.analytics,
+                      title: 'Analytics',
+                      onTap: () {
+                        _showBoardAnalyticsDialog();
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // More Section
+                    _buildDrawerSection('More'),
+                    _buildDrawerTile(
+                      icon: Icons.file_download,
+                      title: 'Export',
+                      onTap: () {
+                        _showExportBoardDialog();
+                      },
+                    ),
+                    _buildDrawerTile(
+                      icon: Icons.archive,
+                      title: 'Archive',
+                      onTap: () {
+                        _showArchiveBoardDialog();
+                      },
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  activeSprint.name,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: context.textColor,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_today,
-                      size: 14,
-                      color: context.secondaryTextColor,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${activeSprint.daysRemaining} days remaining',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.secondaryTextColor,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.assignment,
-                      size: 14,
-                      color: context.secondaryTextColor,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${activeSprint.cardIds.length} cards',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.secondaryTextColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
-          ),
-
-        // Menu Content
-        Flexible(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Column(
-              children: [
-                // Sprints Section - Moved to top
-                _buildDrawerSection('Sprint'),
-                _buildDrawerTile(
-                  icon: Icons.view_list,
-                  title: 'Manage Sprints',
-                  onTap: () {
-                    _showSprintManagementDialog();
-                  },
-                ),
-                _buildDrawerTile(
-                  icon: Icons.add,
-                  title: 'Create Sprint',
-                  onTap: () async {
-                    await showDialog(
-                      context: context,
-                      builder: (context) =>
-                          CreateSprintDialog(boardId: widget.boardId),
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 16),
-
-                // Board Section
-                _buildDrawerSection('Board'),
-                _buildDrawerTile(
-                  icon: Icons.edit,
-                  title: 'Edit Board',
-                  onTap: () {
-                    _showEditBoardDialog();
-                  },
-                ),
-                _buildDrawerTile(
-                  icon: Icons.view_column,
-                  title: 'Manage Columns',
-                  onTap: () {
-                    _showManageColumnsDialog();
-                  },
-                ),
-                _buildDrawerTile(
-                  icon: Icons.analytics,
-                  title: 'Analytics',
-                  onTap: () {
-                    _showBoardAnalyticsDialog();
-                  },
-                ),
-
-                const SizedBox(height: 16),
-
-                // More Section
-                _buildDrawerSection('More'),
-                _buildDrawerTile(
-                  icon: Icons.file_download,
-                  title: 'Export',
-                  onTap: () {
-                    _showExportBoardDialog();
-                  },
-                ),
-                _buildDrawerTile(
-                  icon: Icons.archive,
-                  title: 'Archive',
-                  onTap: () {
-                    _showArchiveBoardDialog();
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 
@@ -368,26 +385,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     );
   }
 
-  void _showBoardThemeDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Board Theme'),
-        content: const Text(
-          'Theme customization will allow you to change colors, '
-          'backgrounds, and visual styles for your board.\n\n'
-          'This feature is coming in a future update.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showArchiveBoardDialog() {
     final boardState = ref.read(boardNotifierProvider(widget.boardId));
     if (!boardState.hasValue) return;
@@ -420,56 +417,20 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     );
   }
 
-  void _showManageMembersDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => ManageMembersDialog(
-        boardId: widget.boardId,
-        onRemoveMember: (userId) async {
-          final repository = ref.read(boardRepositoryProvider);
-          await repository.removeMember(widget.boardId, userId);
-          // Smoothly refresh just the board data (not the entire page)
-          await ref
-              .read(boardNotifierProvider(widget.boardId).notifier)
-              .refreshBoard();
-        },
-        onInviteMore: () => _showInviteMemberDialog(),
-      ),
-    );
-  }
-
-  void _showRolesPermissionsDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Roles & Permissions'),
-        content: const Text(
-          'Roles & Permissions will allow you to:\n\n'
-          '• Assign different roles (Owner, Admin, Member, Viewer)\n'
-          '• Control who can edit cards and columns\n'
-          '• Manage board settings access\n'
-          '• Set custom permissions\n\n'
-          'This feature is coming in a future update.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showManageColumnsDialog() {
     final boardState = ref.read(boardNotifierProvider(widget.boardId));
     if (!boardState.hasValue) return;
     final columns = boardState.value!.columns;
+    final cardCounts = <String, int>{
+      for (final entry in boardState.value!.columnCards.entries)
+        entry.key: entry.value.length,
+    };
 
     showDialog(
       context: context,
       builder: (context) => ManageColumnsDialog(
         columns: columns,
+        cardCounts: cardCounts,
         onDeleteColumn: (columnId) async {
           await ref
               .read(boardNotifierProvider(widget.boardId).notifier)
@@ -518,69 +479,21 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     );
   }
 
-  void _showHelpDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Help & Support'),
-        content: const SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Board Management',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              SizedBox(height: 8),
-              Text('• Create and organize columns for your workflow'),
-              Text('• Add cards to track tasks and projects'),
-              Text('• Drag and drop cards between columns'),
-              Text('• Set WIP limits to manage workload'),
-              SizedBox(height: 16),
-              Text(
-                'Sprint Features',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              SizedBox(height: 8),
-              Text('• Create sprints to organize work in time-boxed periods'),
-              Text('• Assign cards to sprints'),
-              Text('• Track sprint progress and velocity'),
-              SizedBox(height: 16),
-              Text(
-                'Collaboration',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              SizedBox(height: 8),
-              Text('• Invite team members to your board'),
-              Text('• Assign cards to specific people'),
-              Text('• Comment and discuss on cards'),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
+  Widget _buildBoardView(BoardState state) {
+    return Column(
+      children: [
+        _buildHeader(state.board),
+        Expanded(child: _buildKanbanBoard(state)),
+      ],
     );
   }
 
-  Widget _buildBoardView(BoardState state) {
-    return MultiplayerCursors(
-      boardId: widget.boardId,
-      child: Column(
-        children: [
-          // Board header
-          _buildHeader(state.board),
-
-          // Kanban columns
-          Expanded(child: _buildKanbanBoard(state)),
-        ],
-      ),
-    );
+  void _goBack() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/');
+    }
   }
 
   Widget _buildHeader(Board board) {
@@ -606,7 +519,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       children: [
         // Back button
         IconButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: _goBack,
           icon: const Icon(Icons.arrow_back, size: 20),
           style: IconButton.styleFrom(
             backgroundColor: Theme.of(context).cardColor,
@@ -648,10 +561,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         _buildSprintSelector(),
         const SizedBox(width: 12),
 
-        // Members avatars
-        _buildMembersAvatars(board.memberIds),
-        const SizedBox(width: 8),
-
         // Board menu
         _buildMenuButton(),
       ],
@@ -667,7 +576,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
           children: [
             // Back button
             IconButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: _goBack,
               icon: const Icon(Icons.arrow_back, size: 20),
               style: IconButton.styleFrom(
                 backgroundColor: Theme.of(context).cardColor,
@@ -701,25 +610,22 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
 
         // Second row: Sprint selector and members
         const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(child: _buildSprintSelector()),
-            const SizedBox(width: 8),
-            _buildMembersAvatars(board.memberIds, compact: true),
-          ],
-        ),
+        Row(children: [Expanded(child: _buildSprintSelector())]),
       ],
     );
   }
 
   Widget _buildMenuButton() {
     return IconButton(
+      key: _menuButtonKey,
       onPressed: () {
-        // Get the button's position
-        final RenderBox button = context.findRenderObject() as RenderBox;
-        final RenderBox overlay =
-            Overlay.of(context).context.findRenderObject() as RenderBox;
-        final position = button.localToGlobal(Offset.zero, ancestor: overlay);
+        final button =
+            _menuButtonKey.currentContext?.findRenderObject() as RenderBox?;
+        final overlay =
+            Overlay.of(context).context.findRenderObject() as RenderBox?;
+        final position = button != null && overlay != null
+            ? button.localToGlobal(Offset.zero, ancestor: overlay)
+            : Offset.zero;
 
         // Show floating menu
         final screenWidth = MediaQuery.of(context).size.width;
@@ -741,74 +647,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
       ),
     );
-  }
-
-  Widget _buildMembersAvatars(List<String> memberIds, {bool compact = false}) {
-    final displayedIds = memberIds.take(compact ? 2 : 3).toList();
-    final remaining = memberIds.length - displayedIds.length;
-    final avatarSize = compact ? 12.0 : 16.0;
-
-    return Row(
-      children: [
-        ...displayedIds.map((memberId) {
-          return Consumer(
-            builder: (context, ref, child) {
-              final userAsync = ref.watch(userProvider(memberId));
-
-              return Padding(
-                padding: const EdgeInsets.only(left: 4),
-                child: userAsync.when(
-                  data: (user) => Tooltip(
-                    message: user.name,
-                    child: HoverAnimatedAvatar(user: user),
-                  ),
-                  loading: () => CircleAvatar(
-                    radius: avatarSize,
-                    backgroundColor: Colors.grey.shade200,
-                  ),
-                  error: (_, __) => CircleAvatar(
-                    radius: avatarSize,
-                    backgroundColor: Colors.red.shade100,
-                    child: Icon(
-                      Icons.error,
-                      size: avatarSize,
-                      color: Colors.red,
-                    ),
-                  ),
-                ),
-              );
-            },
-          );
-        }),
-        if (remaining > 0)
-          Padding(
-            padding: const EdgeInsets.only(left: 4),
-            child: CircleAvatar(
-              radius: avatarSize,
-              backgroundColor: Colors.grey.shade300,
-              child: Text(
-                '+$remaining',
-                style: TextStyle(
-                  fontSize: compact ? 8 : 10,
-                  color: Colors.grey.shade700,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  void _showInviteMemberDialog() async {
-    await showDialog(
-      context: context,
-      builder: (context) => InviteMemberDialog(boardId: widget.boardId),
-    );
-    // Smoothly refresh board data to show new members
-    await ref
-        .read(boardNotifierProvider(widget.boardId).notifier)
-        .refreshBoard();
   }
 
   Widget _buildSprintSelector() {
@@ -932,8 +770,10 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
               );
               // Sprint data is refreshed inside the dialog
             } else {
-              // Sprint selected - could show sprint details or start it
-              final sprint = sprints.firstWhere((s) => s.id == value);
+              // Sprint selected - start it if it is still in planning.
+              final matches = sprints.where((s) => s.id == value).toList();
+              if (matches.isEmpty) return;
+              final sprint = matches.first;
               if (sprint.status == SprintStatus.planning) {
                 // Ask if they want to start the sprint
                 final confirm = await showDialog<bool>(
@@ -954,9 +794,15 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                   ),
                 );
                 if (confirm == true && mounted) {
-                  await ref
-                      .read(sprintNotifierProvider(widget.boardId).notifier)
-                      .startSprint(sprint.id);
+                  try {
+                    await ref
+                        .read(sprintNotifierProvider(widget.boardId).notifier)
+                        .startSprint(sprint.id);
+                  } catch (e) {
+                    if (mounted) {
+                      OllieToast.error(context, 'Failed to start sprint: $e');
+                    }
+                  }
                 }
               }
             }
@@ -964,7 +810,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         );
       },
       loading: () => const CircularProgressIndicator(),
-      error: (_, __) => IconButton(
+      error: (_, _) => IconButton(
         onPressed: () {
           showDialog(
             context: context,
@@ -1079,10 +925,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          OllieButton.outline(
-            text: 'Go Back',
-            onPressed: () => Navigator.pop(context),
-          ),
+          OllieButton.outline(text: 'Go Back', onPressed: _goBack),
         ],
       ),
     );

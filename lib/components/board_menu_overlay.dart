@@ -53,7 +53,7 @@ class BoardMenuOverlay extends StatelessWidget {
           child: GestureDetector(
             onTap: onDismiss,
             behavior: HitTestBehavior.translucent,
-            child: Container(color: Colors.black.withOpacity(0.1)),
+            child: Container(color: Colors.black.withValues(alpha: 0.1)),
           ),
         ),
         // The actual menu
@@ -121,7 +121,7 @@ class _PositionedMenu extends StatelessWidget {
           elevation: 8,
           borderRadius: BorderRadius.circular(12),
           color: context.surfaceColor,
-          shadowColor: Colors.black.withOpacity(0.3),
+          shadowColor: Colors.black.withValues(alpha: 0.3),
           child: Container(
             width: menuWidth,
             constraints: BoxConstraints(

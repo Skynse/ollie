@@ -37,7 +37,7 @@ class _ArchivedBoardCardState extends State<ArchivedBoardCard> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: _isHovered
-                ? context.borderColor.withOpacity(0.5)
+                ? context.borderColor.withValues(alpha: 0.5)
                 : context.borderColor,
             width: 1,
           ),
@@ -56,7 +56,7 @@ class _ArchivedBoardCardState extends State<ArchivedBoardCard> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: context.surfaceVariantColor.withOpacity(0.5),
+                color: context.surfaceVariantColor.withValues(alpha: 0.5),
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(16),
                 ),
@@ -192,7 +192,7 @@ class _ArchivedBoardListItemState extends State<ArchivedBoardListItem> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: _isHovered
-                ? context.borderColor.withOpacity(0.5)
+                ? context.borderColor.withValues(alpha: 0.5)
                 : context.borderColor,
             width: 1,
           ),

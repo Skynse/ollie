@@ -1,126 +1,130 @@
-import 'dart:math';
+/// Thrown when two adjacent ranks have no representable value between them.
+///
+/// In practice this needs on the order of 200 successive inserts at the very
+/// top of one column; callers can recover by rebalancing the column.
+class RankSpaceExhausted implements Exception {
+  const RankSpaceExhausted();
 
+  @override
+  String toString() =>
+      'Ran out of room between card ranks. Rebalance the column and retry.';
+}
+
+/// Fixed-precision lexical ranks.
+///
+/// A rank is a 40-character base-36 fraction (implicit `0.` prefix). Fixed
+/// length means lexicographic string comparison is identical to numeric
+/// comparison, which removes the ordering bugs of variable-length ranks.
 class LexoRank {
-  static const _charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  static const _base = 36;
-  static const _minChar = '0';
-  static const _maxChar = 'Z';
+  static const String _charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  static const int _base = 36;
 
-  /// Returns a rank string that falls between [a] and [b].
-  /// If [a] is empty, returns a rank before [b].
-  /// If [b] is empty, returns a rank after [a].
-  /// If both are empty, returns the middle baseline 'U'.
+  /// 36^40 is about 1.3e62, leaving room for ~200 consecutive top inserts.
+  static const int precision = 40;
+
+  static final BigInt _max = BigInt.from(_base).pow(precision);
+
+  /// Returns a rank strictly between [a] and [b].
+  ///
+  /// Empty [a] means "before everything", empty [b] means "after everything".
+  /// Passing a value greater than or equal to [b] is a programming error.
   static String middle(String a, String b) {
-    // Handle empty strings
-    if (a.isEmpty && b.isEmpty) {
-      return 'U'; // Middle of alphabet (21st char)
+    final left = a.isEmpty ? BigInt.zero : valueOf(a);
+    final right = b.isEmpty ? _max : valueOf(b);
+    if (right <= left) {
+      throw ArgumentError('Rank $a must sort before $b');
     }
-
-    if (a.isEmpty) {
-      // Insert before b
-      return _before(b);
+    final mid = (left + right) ~/ BigInt.two;
+    if (mid <= left || mid >= right) {
+      throw const RankSpaceExhausted();
     }
-
-    if (b.isEmpty) {
-      // Insert after a
-      return _after(a);
-    }
-
-    // Both strings have values - find midpoint
-    return _between(a, b);
+    return _format(mid);
   }
 
-  /// Returns a rank before [s]
-  static String _before(String s) {
-    if (s.isEmpty) return 'U';
-
-    // If first char is not minimum, just decrement it
-    final firstChar = s[0];
-    if (firstChar != _minChar) {
-      final prevCharIndex = _charset.indexOf(firstChar) - 1;
-      return _charset[prevCharIndex] + s.substring(1);
+  /// Evenly distributes [count] ranks over the available space.
+  ///
+  /// Used for migrations and the explicit "rebalance" action.
+  static List<String> distribute(int count) {
+    if (count <= 0) return const [];
+    final result = <String>[];
+    for (var i = 1; i <= count; i++) {
+      final value = _max * BigInt.from(i) ~/ BigInt.from(count + 1);
+      result.add(_format(value));
     }
-
-    // First char is minimum, need to go one level deeper
-    if (s.length == 1) {
-      // Can't go before "0", so prepend "0" and use middle char
-      return '0U';
-    }
-
-    // Recurse on remaining string
-    return firstChar + _before(s.substring(1));
-  }
-
-  /// Returns a rank after [s]
-  static String _after(String s) {
-    if (s.isEmpty) return 'U';
-
-    // If last char is not maximum, just increment it
-    final lastChar = s[s.length - 1];
-    if (lastChar != _maxChar) {
-      final nextCharIndex = _charset.indexOf(lastChar) + 1;
-      return s.substring(0, s.length - 1) + _charset[nextCharIndex];
-    }
-
-    // Last char is maximum, append middle char
-    return '${s}U';
-  }
-
-  /// Returns a rank between [a] and [b]
-  static String _between(String a, String b) {
-    // Pad to same length for easier comparison
-    final maxLen = max(a.length, b.length);
-    final aa = a.padRight(maxLen, _minChar);
-    final bb = b.padRight(maxLen, _maxChar);
-
-    // Convert to numbers and find midpoint
-    final aNum = _toBase36(aa);
-    final bNum = _toBase36(bb);
-
-    // If they're adjacent or same, we need more precision
-    if (bNum - aNum <= BigInt.one) {
-      // Append middle character to [a] to create space
-      return '${a}U';
-    }
-
-    final midNum = (aNum + bNum) ~/ BigInt.from(2);
-    var result = _fromBase36(midNum);
-
-    // Ensure result has appropriate length (remove trailing zeros but keep reasonable length)
-    result = result.padLeft(maxLen, _minChar);
-
     return result;
   }
 
-  // Made public for rebalancing operations
-  static BigInt toBase36(String s) {
-    if (s.isEmpty) return BigInt.zero;
-
-    BigInt num = BigInt.zero;
-    for (var c in s.split('')) {
-      final index = _charset.indexOf(c.toUpperCase());
-      if (index == -1) {
-        throw ArgumentError('Invalid character in rank string: $c');
+  /// Numeric value of a rank, preserving the order of legacy variable-length
+  /// ranks by treating them as fractions (`'U'` == `'U' + zero padding`).
+  static BigInt valueOf(String rank) {
+    if (rank.isEmpty) return BigInt.zero;
+    final upper = rank.toUpperCase();
+    BigInt raw = BigInt.zero;
+    for (final char in upper.split('')) {
+      final digit = _charset.indexOf(char);
+      if (digit == -1) {
+        throw ArgumentError('Invalid character in rank string: $char');
       }
-      num = num * BigInt.from(_base) + BigInt.from(index);
+      raw = raw * BigInt.from(_base) + BigInt.from(digit);
     }
-    return num;
+    if (upper.length == precision) return raw;
+    if (upper.length < precision) {
+      return raw * BigInt.from(_base).pow(precision - upper.length);
+    }
+    return raw ~/ BigInt.from(_base).pow(upper.length - precision);
   }
 
-  static String fromBase36(BigInt num) {
-    if (num == BigInt.zero) return _minChar;
+  /// Compares two ranks in their natural card order.
+  static int compare(String a, String b) => valueOf(a).compareTo(valueOf(b));
 
-    var result = '';
-    var n = num;
-    while (n > BigInt.zero) {
-      final rem = (n % BigInt.from(_base)).toInt();
-      result = _charset[rem] + result;
-      n = n ~/ BigInt.from(_base);
+  static String _format(BigInt value) {
+    if (value < BigInt.zero || value >= _max) {
+      throw const RankSpaceExhausted();
+    }
+    final digits = List<String>.filled(precision, '0');
+    var remaining = value;
+    for (var i = precision - 1; i >= 0; i--) {
+      digits[i] = _charset[(remaining % BigInt.from(_base)).toInt()];
+      remaining ~/= BigInt.from(_base);
+    }
+    return digits.join();
+  }
+
+  // Raw base-36 helpers kept for tests and diagnostics.
+  static BigInt toBase36(String value) {
+    if (value.isEmpty) return BigInt.zero;
+    BigInt result = BigInt.zero;
+    for (final char in value.toUpperCase().split('')) {
+      final digit = _charset.indexOf(char);
+      if (digit == -1) {
+        throw ArgumentError('Invalid character in rank string: $char');
+      }
+      result = result * BigInt.from(_base) + BigInt.from(digit);
     }
     return result;
   }
 
-  // Keep private versions for internal use
-  static BigInt _toBase36(String s) => toBase36(s);
-  static String _fromBase36(BigInt num) => fromBase36(num);
+  static String fromBase36(BigInt value) {
+    if (value == BigInt.zero) return '0';
+    var n = value;
+    final buffer = StringBuffer();
+    while (n > BigInt.zero) {
+      final digit = (n % BigInt.from(_base)).toInt();
+      buffer.write(_charset[digit]);
+      n ~/= BigInt.from(_base);
+    }
+    return buffer.toString().split('').reversed.join();
+  }
+
+  /// The smallest representable rank. Useful in tests.
+  static String get minimum => _format(BigInt.zero);
+
+  /// The largest representable rank.
+  static String get maximum => _format(_max - BigInt.one);
+
+  /// Convenience for callers that need a rank guaranteed to sort after [a].
+  static String after(String a) => middle(a, '');
+
+  /// Convenience for callers that need a rank guaranteed to sort before [b].
+  static String before(String b) => middle('', b);
 }

@@ -3,7 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ollie/screens/home/widgets/home_sidebar.dart';
 
 void main() {
-  testWidgets('HomeSidebar shows Projects and Archived navigation', (tester) async {
+  testWidgets('HomeSidebar shows Projects and Archived navigation', (
+    tester,
+  ) async {
     var selectedView = 'projects';
 
     await tester.pumpWidget(

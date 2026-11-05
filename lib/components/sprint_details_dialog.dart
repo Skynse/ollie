@@ -116,7 +116,9 @@ class _SprintDetailsDialogState extends ConsumerState<SprintDetailsDialog> {
 
                               if (result == true) {
                                 ref.invalidate(
-                                  sprintBurndownComputedProvider(widget.sprintId),
+                                  sprintBurndownComputedProvider(
+                                    widget.sprintId,
+                                  ),
                                 );
                                 // Refresh burndown data
                                 ref.invalidate(
@@ -149,7 +151,10 @@ class _SprintDetailsDialogState extends ConsumerState<SprintDetailsDialog> {
                                     SprintBurndownExportDialog(sprint: sprint),
                               );
                             },
-                            icon: const Icon(Icons.table_chart_outlined, size: 14),
+                            icon: const Icon(
+                              Icons.table_chart_outlined,
+                              size: 14,
+                            ),
                             label: const Text(
                               'Export CSV',
                               style: TextStyle(fontSize: 12),
@@ -256,9 +261,11 @@ class _SprintDetailsDialogState extends ConsumerState<SprintDetailsDialog> {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
+                        color: statusColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: statusColor.withOpacity(0.2)),
+                        border: Border.all(
+                          color: statusColor.withValues(alpha: 0.2),
+                        ),
                       ),
                       child: Text(
                         statusText,
@@ -497,7 +504,7 @@ class _StatsCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Icon(icon, color: color, size: 16),

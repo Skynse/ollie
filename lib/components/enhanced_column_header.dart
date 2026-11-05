@@ -48,12 +48,15 @@ class _EnhancedColumnHeaderState extends ConsumerState<EnhancedColumnHeader> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            columnColor.withOpacity(0.08),
-            columnColor.withOpacity(0.03),
+            columnColor.withValues(alpha: 0.08),
+            columnColor.withValues(alpha: 0.03),
           ],
         ),
         border: Border(
-          bottom: BorderSide(color: columnColor.withOpacity(0.2), width: 2),
+          bottom: BorderSide(
+            color: columnColor.withValues(alpha: 0.2),
+            width: 2,
+          ),
         ),
       ),
       child: Column(
@@ -69,12 +72,12 @@ class _EnhancedColumnHeaderState extends ConsumerState<EnhancedColumnHeader> {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [columnColor, columnColor.withOpacity(0.7)],
+                    colors: [columnColor, columnColor.withValues(alpha: 0.7)],
                   ),
                   borderRadius: BorderRadius.circular(2),
                   boxShadow: [
                     BoxShadow(
-                      color: columnColor.withOpacity(0.3),
+                      color: columnColor.withValues(alpha: 0.3),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -197,7 +200,7 @@ class _EnhancedColumnHeaderState extends ConsumerState<EnhancedColumnHeader> {
       badgeColor = Colors.orange.shade50;
       textColor = Colors.orange.shade700;
     } else {
-      badgeColor = columnColor.withOpacity(0.15);
+      badgeColor = columnColor.withValues(alpha: 0.15);
       textColor = columnColor;
     }
 
@@ -211,7 +214,7 @@ class _EnhancedColumnHeaderState extends ConsumerState<EnhancedColumnHeader> {
               ? Colors.red.shade200
               : isNearLimit
               ? Colors.orange.shade200
-              : columnColor.withOpacity(0.3),
+              : columnColor.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -300,12 +303,15 @@ class _EnhancedColumnHeaderState extends ConsumerState<EnhancedColumnHeader> {
                   height: 6,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [indicatorColor, indicatorColor.withOpacity(0.7)],
+                      colors: [
+                        indicatorColor,
+                        indicatorColor.withValues(alpha: 0.7),
+                      ],
                     ),
                     borderRadius: BorderRadius.circular(4),
                     boxShadow: [
                       BoxShadow(
-                        color: indicatorColor.withOpacity(0.3),
+                        color: indicatorColor.withValues(alpha: 0.3),
                         blurRadius: 4,
                       ),
                     ],

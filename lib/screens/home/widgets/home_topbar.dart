@@ -44,7 +44,7 @@ class HomeTopBar extends StatelessWidget {
       height: 80,
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
       decoration: BoxDecoration(
-        color: context.surfaceColor.withOpacity(0.95),
+        color: context.surfaceColor.withValues(alpha: 0.95),
         border: Border(bottom: BorderSide(color: context.borderColor)),
         boxShadow: context.shadowSmall,
       ),
@@ -72,19 +72,21 @@ class HomeTopBar extends StatelessWidget {
                 decoration: InputDecoration(
                   hintText: 'Search boards...',
                   hintStyle: TextStyle(
-                    color: context.secondaryTextColor.withOpacity(0.6),
+                    color: context.secondaryTextColor.withValues(alpha: 0.6),
                     fontSize: 14,
                   ),
                   prefixIcon: Icon(
                     Icons.search,
-                    color: context.secondaryTextColor.withOpacity(0.6),
+                    color: context.secondaryTextColor.withValues(alpha: 0.6),
                     size: 20,
                   ),
                   suffixIcon: searchQuery.isNotEmpty
                       ? IconButton(
                           icon: Icon(
                             Icons.close,
-                            color: context.secondaryTextColor.withOpacity(0.6),
+                            color: context.secondaryTextColor.withValues(
+                              alpha: 0.6,
+                            ),
                             size: 18,
                           ),
                           onPressed: onSearchClear,
@@ -245,7 +247,7 @@ class HomeTopBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: context.surfaceColor.withOpacity(0.95),
+        color: context.surfaceColor.withValues(alpha: 0.95),
         border: Border(bottom: BorderSide(color: context.borderColor)),
         boxShadow: context.shadowSmall,
       ),
@@ -304,20 +306,20 @@ class HomeTopBar extends StatelessWidget {
                   decoration: InputDecoration(
                     hintText: 'Search...',
                     hintStyle: TextStyle(
-                      color: context.secondaryTextColor.withOpacity(0.6),
+                      color: context.secondaryTextColor.withValues(alpha: 0.6),
                       fontSize: 13,
                     ),
                     prefixIcon: Icon(
                       Icons.search,
-                      color: context.secondaryTextColor.withOpacity(0.6),
+                      color: context.secondaryTextColor.withValues(alpha: 0.6),
                       size: 18,
                     ),
                     suffixIcon: searchQuery.isNotEmpty
                         ? IconButton(
                             icon: Icon(
                               Icons.close,
-                              color: context.secondaryTextColor.withOpacity(
-                                0.6,
+                              color: context.secondaryTextColor.withValues(
+                                alpha: 0.6,
                               ),
                               size: 16,
                             ),

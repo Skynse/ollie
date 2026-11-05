@@ -7,6 +7,7 @@ import 'ollie_ui/theme_extensions.dart';
 
 class ManageColumnsDialog extends ConsumerStatefulWidget {
   final List<BoardColumn> columns;
+  final Map<String, int> cardCounts;
   final Future<void> Function(String columnId) onDeleteColumn;
   final Future<void> Function(BoardColumn column) onUpdateColumn;
   final Future<void> Function(List<String> columnIds) onReorderColumns;
@@ -14,6 +15,7 @@ class ManageColumnsDialog extends ConsumerStatefulWidget {
   const ManageColumnsDialog({
     super.key,
     required this.columns,
+    required this.cardCounts,
     required this.onDeleteColumn,
     required this.onUpdateColumn,
     required this.onReorderColumns,
@@ -71,7 +73,7 @@ class _ManageColumnsDialogState extends ConsumerState<ManageColumnsDialog> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: context.primaryColor.withOpacity(0.1),
+                color: context.primaryColor.withValues(alpha: 0.1),
                 border: Border(bottom: BorderSide(color: context.borderColor)),
               ),
               child: Row(
@@ -101,7 +103,7 @@ class _ManageColumnsDialogState extends ConsumerState<ManageColumnsDialog> {
             // Instructions
             Container(
               padding: const EdgeInsets.all(16),
-              color: context.primaryColor.withOpacity(0.05),
+              color: context.primaryColor.withValues(alpha: 0.05),
               child: Row(
                 children: [
                   Icon(Icons.info_outline, color: context.secondaryTextColor),
@@ -123,12 +125,13 @@ class _ManageColumnsDialogState extends ConsumerState<ManageColumnsDialog> {
                   : ReorderableListView.builder(
                       padding: const EdgeInsets.all(16),
                       itemCount: _columns.length,
-                      onReorder: _reorderColumn,
+                      onReorderItem: _reorderColumn,
                       itemBuilder: (context, index) {
                         final column = _columns[index];
                         return _ColumnTile(
                           key: ValueKey(column.id),
                           column: column,
+                          cardCount: widget.cardCounts[column.id] ?? 0,
                           onEdit: () => _editColumn(column),
                           onDelete: () => _confirmDeleteColumn(column),
                         );
@@ -194,13 +197,14 @@ class _ManageColumnsDialogState extends ConsumerState<ManageColumnsDialog> {
   }
 
   Future<void> _confirmDeleteColumn(BoardColumn column) async {
+    final cardCount = widget.cardCounts[column.id] ?? 0;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Column'),
         content: Text(
           'Are you sure you want to delete "${column.name}"?\n\n'
-          'This will also delete all ${column.cardIds.length} card(s) in this column.',
+          'This will also delete all $cardCount card(s) in this column.',
         ),
         actions: [
           TextButton(
@@ -236,12 +240,14 @@ class _ManageColumnsDialogState extends ConsumerState<ManageColumnsDialog> {
 
 class _ColumnTile extends StatelessWidget {
   final BoardColumn column;
+  final int cardCount;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _ColumnTile({
     super.key,
     required this.column,
+    required this.cardCount,
     required this.onEdit,
     required this.onDelete,
   });
@@ -275,8 +281,8 @@ class _ColumnTile extends StatelessWidget {
         ),
         subtitle: Text(
           column.wipLimit != null
-              ? '${column.cardIds.length} cards • WIP Limit: ${column.wipLimit}'
-              : '${column.cardIds.length} cards',
+              ? '$cardCount cards • WIP Limit: ${column.wipLimit}'
+              : '$cardCount cards',
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,

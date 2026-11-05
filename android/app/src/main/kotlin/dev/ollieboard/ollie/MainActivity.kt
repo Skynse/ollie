@@ -1,4 +1,4 @@
-package com.example.ollie
+package dev.ollieboard.ollie
 
 import io.flutter.embedding.android.FlutterActivity
 

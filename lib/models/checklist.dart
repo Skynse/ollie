@@ -29,14 +29,12 @@ class Checklist {
       cardId: json['cardId'] as String,
       title: json['title'] as String,
       items:
-          (json['items'] as List<dynamic>?)
-              ?.map((item) {
-                final map = item is String
-                    ? jsonDecode(item) as Map<String, dynamic>
-                    : item as Map<String, dynamic>;
-                return ChecklistItem.fromJson(map);
-              })
-              .toList() ??
+          (json['items'] as List<dynamic>?)?.map((item) {
+            final map = item is String
+                ? jsonDecode(item) as Map<String, dynamic>
+                : item as Map<String, dynamic>;
+            return ChecklistItem.fromJson(map);
+          }).toList() ??
           [],
     );
   }

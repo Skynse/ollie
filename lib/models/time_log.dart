@@ -1,7 +1,8 @@
+import '../utils/copy_with.dart';
+
 class TimeLog {
   final String id;
   final String cardId;
-  final String userId;
   final DateTime startTime;
   final DateTime? endTime;
   final int durationMinutes;
@@ -14,7 +15,6 @@ class TimeLog {
   TimeLog({
     required this.id,
     required this.cardId,
-    required this.userId,
     required this.startTime,
     this.endTime,
     required this.durationMinutes,
@@ -27,43 +27,40 @@ class TimeLog {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'cardId': cardId,
-      'userId': userId,
       'startTime': startTime.toIso8601String(),
-      // Use a placeholder far-future date if endTime is null (for active timers)
-      // This is a workaround if Appwrite requires endTime to be non-null
-      'endTime':
-          endTime?.toIso8601String() ??
-          DateTime(2099, 12, 31).toIso8601String(),
+      'endTime': endTime?.toIso8601String(),
       'durationMinutes': durationMinutes,
-      'notes': notes ?? '',
+      'notes': notes,
       'isActive': isActive,
-      'sprintId': sprintId ?? '',
+      'sprintId': sprintId,
+      '\$createdAt': createdAt.toUtc().toIso8601String(),
+      '\$updatedAt': updatedAt.toUtc().toIso8601String(),
     };
   }
 
   factory TimeLog.fromJson(Map<String, dynamic> json) {
     final endTimeStr = json['endTime'] as String?;
     DateTime? parsedEndTime;
-
-    if (endTimeStr != null) {
+    if (endTimeStr != null && endTimeStr.isNotEmpty) {
       final parsed = DateTime.parse(endTimeStr);
-      // Check if it's our placeholder date (year 2099) - treat as null
+      // Legacy Appwrite rows used year 2099 for "no end time".
       parsedEndTime = parsed.year == 2099 ? null : parsed;
     }
+
+    final notes = json['notes'] as String?;
+    final sprintId = json['sprintId'] as String?;
 
     return TimeLog(
       id: (json['id'] ?? json['\$id']) as String,
       cardId: json['cardId'] as String,
-      userId: json['userId'] as String,
       startTime: DateTime.parse(json['startTime'] as String),
       endTime: parsedEndTime,
-      durationMinutes: json['durationMinutes'] as int,
-      notes: (json['notes'] as String?) == '' ? null : json['notes'] as String?,
-      isActive: json['isActive'] as bool,
-      sprintId: (json['sprintId'] as String?) == ''
-          ? null
-          : json['sprintId'] as String?,
+      durationMinutes: (json['durationMinutes'] as num?)?.toInt() ?? 0,
+      notes: notes == null || notes.isEmpty ? null : notes,
+      isActive: json['isActive'] as bool? ?? false,
+      sprintId: sprintId == null || sprintId.isEmpty ? null : sprintId,
       createdAt: json['\$createdAt'] != null
           ? DateTime.parse(json['\$createdAt'] as String)
           : DateTime.now(),
@@ -76,32 +73,31 @@ class TimeLog {
   TimeLog copyWith({
     String? id,
     String? cardId,
-    String? userId,
     DateTime? startTime,
-    DateTime? endTime,
+    Object? endTime = unset,
     int? durationMinutes,
-    String? notes,
+    Object? notes = unset,
     bool? isActive,
-    String? sprintId,
+    Object? sprintId = unset,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
     return TimeLog(
       id: id ?? this.id,
       cardId: cardId ?? this.cardId,
-      userId: userId ?? this.userId,
       startTime: startTime ?? this.startTime,
-      endTime: endTime ?? this.endTime,
+      endTime: identical(endTime, unset) ? this.endTime : endTime as DateTime?,
       durationMinutes: durationMinutes ?? this.durationMinutes,
-      notes: notes ?? this.notes,
+      notes: identical(notes, unset) ? this.notes : notes as String?,
       isActive: isActive ?? this.isActive,
-      sprintId: sprintId ?? this.sprintId,
+      sprintId: identical(sprintId, unset)
+          ? this.sprintId
+          : sprintId as String?,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
-  // Helper getters
   double get durationHours => durationMinutes / 60.0;
 
   String get formattedDuration {

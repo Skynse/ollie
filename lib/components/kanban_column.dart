@@ -5,7 +5,6 @@ import 'package:ollie/components/edit_column_dialog.dart';
 import '../models/board_column.dart';
 import '../models/card.dart' as model;
 import '../providers/board_provider.dart';
-import '../config/local_user.dart';
 import '../utils/responsive.dart';
 import 'kanban_card.dart';
 import 'add_card_dialog.dart';
@@ -163,20 +162,20 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        context.primaryColor.withOpacity(0.1),
-                        context.primaryColor.withOpacity(0.05),
+                        context.primaryColor.withValues(alpha: 0.1),
+                        context.primaryColor.withValues(alpha: 0.05),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: context.primaryColor.withOpacity(0.5),
+                      color: context.primaryColor.withValues(alpha: 0.5),
                       width: 2,
                     ),
                   )
                 : BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: context.borderColor.withOpacity(0.3),
+                      color: context.borderColor.withValues(alpha: 0.3),
                       width: 1,
                       style: BorderStyle.solid,
                     ),
@@ -290,13 +289,13 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          context.primaryColor.withOpacity(0.1),
-                          context.primaryColor.withOpacity(0.05),
+                          context.primaryColor.withValues(alpha: 0.1),
+                          context.primaryColor.withValues(alpha: 0.05),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: context.primaryColor.withOpacity(0.5),
+                        color: context.primaryColor.withValues(alpha: 0.5),
                         width: 2,
                       ),
                     )
@@ -315,14 +314,6 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
         ),
       ],
     );
-  }
-
-  void _onDragEnter() {
-    _animationController.forward();
-  }
-
-  void _onDragLeave() {
-    _animationController.reverse();
   }
 
   Future<void> _editColumn(BoardColumn column) async {
@@ -398,7 +389,6 @@ class _KanbanColumnState extends ConsumerState<KanbanColumn>
                 title: title,
                 description: description,
                 priority: priority,
-                createdBy: LocalUser.id,
               );
           return card != null;
         },

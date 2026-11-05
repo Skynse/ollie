@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/card.dart' as model;
 import '../models/priority.dart';
-import '../providers/user_provider.dart';
 import 'ollie_ui/theme_extensions.dart';
 
 /// Enhanced card content widget with better visual design
@@ -45,14 +44,14 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: _isHovered
-                  ? priorityColor.withOpacity(0.4)
+                  ? priorityColor.withValues(alpha: 0.4)
                   : Colors.transparent,
               width: 2,
             ),
             boxShadow: [
               if (_isHovered)
                 BoxShadow(
-                  color: priorityColor.withOpacity(0.12),
+                  color: priorityColor.withValues(alpha: 0.12),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 )
@@ -79,7 +78,7 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
                           end: Alignment.bottomCenter,
                           colors: [
                             priorityColor,
-                            priorityColor.withOpacity(0.6),
+                            priorityColor.withValues(alpha: 0.6),
                           ],
                         ),
                         borderRadius: const BorderRadius.only(
@@ -218,14 +217,8 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
         // Due date chip
         if (widget.card.dueDate != null) _buildDueDateChip(),
 
-        // Comment count
-        if (widget.card.commentCount > 0) _buildCommentCount(),
-
         // Subtask progress
         if (widget.card.subtaskCount > 0) _buildSubtaskProgress(),
-
-        // Assignees
-        if (widget.card.assigneeIds.isNotEmpty) _buildAssignees(),
       ],
     );
   }
@@ -237,9 +230,12 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: priorityColor.withOpacity(0.12),
+        color: priorityColor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: priorityColor.withOpacity(0.3), width: 1),
+        border: Border.all(
+          color: priorityColor.withValues(alpha: 0.3),
+          width: 1,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -262,8 +258,10 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
   Widget _buildDueDateChip() {
     final now = DateTime.now();
     final dueDate = widget.card.dueDate!;
-    final isOverdue = dueDate.isBefore(now);
-    final daysUntilDue = dueDate.difference(now).inDays;
+    final today = DateTime(now.year, now.month, now.day);
+    final dueDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    final isOverdue = dueDay.isBefore(today);
+    final daysUntilDue = dueDay.difference(today).inDays;
     final isApproaching = daysUntilDue <= 2 && daysUntilDue >= 0;
 
     Color chipColor;
@@ -325,7 +323,7 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
         color: isComplete
-            ? context.successColor.withOpacity(0.12)
+            ? context.successColor.withValues(alpha: 0.12)
             : context.surfaceVariantColor,
         borderRadius: BorderRadius.circular(4),
       ),
@@ -335,7 +333,9 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
           Icon(
             isComplete ? Icons.check_box : Icons.check_box_outline_blank,
             size: 10,
-            color: isComplete ? context.successColor : context.secondaryTextColor,
+            color: isComplete
+                ? context.successColor
+                : context.secondaryTextColor,
           ),
           const SizedBox(width: 3),
           Text(
@@ -343,131 +343,13 @@ class _EnhancedCardContentState extends ConsumerState<EnhancedCardContent> {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
-              color:
-                  isComplete ? context.successColor : context.secondaryTextColor,
+              color: isComplete
+                  ? context.successColor
+                  : context.secondaryTextColor,
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildCommentCount() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      decoration: BoxDecoration(
-        color: context.surfaceVariantColor,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.chat_bubble_outline,
-            size: 10,
-            color: context.secondaryTextColor,
-          ),
-          const SizedBox(width: 3),
-          Text(
-            '${widget.card.commentCount}',
-            style: TextStyle(
-              fontSize: 10,
-              color: context.secondaryTextColor,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAssignees() {
-    final displayedIds = widget.card.assigneeIds.take(3).toList();
-    final remaining = widget.card.assigneeIds.length - displayedIds.length;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ...displayedIds.asMap().entries.map((entry) {
-          final index = entry.key;
-          final assigneeId = entry.value;
-          final userAsync = ref.watch(userProvider(assigneeId));
-
-          return Transform.translate(
-            offset: Offset(index * -8.0, 0),
-            child: userAsync.when(
-              data: (user) => Tooltip(
-                message: user.name,
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: context.surfaceColor, width: 1.5),
-                  ),
-                  child: CircleAvatar(
-                    radius: 10,
-                    backgroundColor: context.primaryColor.withOpacity(0.2),
-                    child: Text(
-                      user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                      style: TextStyle(
-                        fontSize: 8,
-                        color: context.primaryColor,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              loading: () => Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: context.surfaceColor, width: 1.5),
-                ),
-                child: CircleAvatar(
-                  radius: 10,
-                  backgroundColor: context.borderColor,
-                ),
-              ),
-              error: (_, __) => Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: context.surfaceColor, width: 1.5),
-                ),
-                child: CircleAvatar(
-                  radius: 10,
-                  backgroundColor: context.dangerColor.withOpacity(0.2),
-                  child: Icon(
-                    Icons.error,
-                    size: 10,
-                    color: context.dangerColor,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }),
-        if (remaining > 0)
-          Transform.translate(
-            offset: Offset(displayedIds.length * -6.0, 0),
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: context.surfaceColor, width: 1.5),
-              ),
-              child: CircleAvatar(
-                radius: 10,
-                backgroundColor: context.surfaceVariantColor,
-                child: Text(
-                  '+$remaining',
-                  style: TextStyle(
-                    fontSize: 7,
-                    color: context.secondaryTextColor,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-          ),
-      ],
     );
   }
 

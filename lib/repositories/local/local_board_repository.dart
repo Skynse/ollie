@@ -1,18 +1,17 @@
 import 'dart:convert';
 
+import 'package:sqflite/sqflite.dart';
+import 'package:uuid/uuid.dart';
+
+import '../../database/database_helper.dart';
+import '../../database/json_helpers.dart';
 import '../../models/board.dart';
 import '../../models/board_column.dart';
 import '../../models/card.dart';
-import '../../models/label.dart';
-import '../../models/comment.dart';
 import '../../models/checklist.dart';
-import '../../database/database_helper.dart';
-import '../../database/json_helpers.dart';
 import '../../services/local_change_bus.dart';
 import '../../services/realtime_service.dart';
 import '../board_repository.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:uuid/uuid.dart';
 
 class LocalBoardRepository implements BoardRepository {
   LocalBoardRepository({DatabaseHelper? databaseHelper})
@@ -37,58 +36,35 @@ class LocalBoardRepository implements BoardRepository {
     );
   }
 
-  Board _boardFromRow(Map<String, dynamic> row, List<String> memberIds) {
+  Board _boardFromRow(Map<String, dynamic> row) {
     return Board.fromJson({
       ...rowWithId(row),
-      'createdBy': row['created_by'],
-      'members': memberIds,
       'archived': (row['archived'] as int? ?? 0) == 1,
       '\$createdAt': row['created_at'],
       '\$updatedAt': row['updated_at'],
     });
   }
 
-  Future<List<String>> _memberIds(Database db, String boardId) async {
-    final rows = await db.query(
-      'board_members',
-      columns: ['user_id'],
-      where: 'board_id = ?',
-      whereArgs: [boardId],
-    );
-    return rows.map((r) => r['user_id'] as String).toList();
+  BoardColumn _columnFromRow(Map<String, dynamic> row) {
+    return BoardColumn.fromJson({
+      'id': row['id'],
+      'boardId': row['board_id'],
+      'name': row['name'],
+      'position': row['position'],
+      'color': row['color'],
+      'wipLimit': row['wip_limit'],
+    });
   }
 
-  Future<void> _setMembers(
-    Database db,
-    String boardId,
-    List<String> memberIds,
-  ) async {
-    await db.delete(
-      'board_members',
-      where: 'board_id = ?',
-      whereArgs: [boardId],
-    );
-    for (final memberId in memberIds.toSet()) {
-      await db.insert('board_members', {
-        'board_id': boardId,
-        'user_id': memberId,
-      });
-    }
-  }
-
-  Map<String, dynamic> _cardRow(Card card, String id) {
+  Map<String, dynamic> _cardRow(Card card, String id, {String? now}) {
+    final timestamp = now ?? nowIso();
     return {
       'id': id,
       'column_id': card.columnId,
       'title': card.title,
       'description': card.description,
-      'position': card.position,
-      'assignee_ids': encodeStringList(card.assigneeIds),
-      'label_ids': encodeStringList(card.labelIds),
       'priority': card.priority.toJson(),
       'due_date': card.dueDate?.toIso8601String(),
-      'comment_count': card.commentCount,
-      'created_by': card.createdBy,
       'estimated_hours': card.estimatedHours,
       'total_logged_hours': card.totalLoggedHours,
       'sprint_id': card.sprintId,
@@ -97,7 +73,7 @@ class LocalBoardRepository implements BoardRepository {
       'subtask_count': card.subtaskCount,
       'completed_subtask_count': card.completedSubtaskCount,
       'created_at': card.createdAt.toUtc().toIso8601String(),
-      'updated_at': card.updatedAt.toUtc().toIso8601String(),
+      'updated_at': timestamp,
     };
   }
 
@@ -107,13 +83,8 @@ class LocalBoardRepository implements BoardRepository {
       'columnId': row['column_id'],
       'title': row['title'],
       'description': row['description'],
-      'position': row['position'],
-      'assigneeIds': decodeStringList(row['assignee_ids']),
-      'labelIds': decodeStringList(row['label_ids']),
       'priority': row['priority'],
       'dueDate': row['due_date'],
-      'commentCount': row['comment_count'],
-      'createdBy': row['created_by'],
       'estimatedHours': row['estimated_hours'],
       'totalLoggedHours': row['total_logged_hours'],
       'sprintId': row['sprint_id'],
@@ -126,6 +97,31 @@ class LocalBoardRepository implements BoardRepository {
     });
   }
 
+  Future<String?> _boardIdForColumn(Database db, String columnId) async {
+    final rows = await db.query(
+      'columns',
+      columns: ['board_id'],
+      where: 'id = ?',
+      whereArgs: [columnId],
+      limit: 1,
+    );
+    return rows.isEmpty ? null : rows.first['board_id'] as String;
+  }
+
+  Future<String?> _boardIdForCard(Database db, String cardId) async {
+    final rows = await db.rawQuery(
+      'SELECT columns.board_id FROM cards '
+      'INNER JOIN columns ON cards.column_id = columns.id '
+      'WHERE cards.id = ? LIMIT 1',
+      [cardId],
+    );
+    return rows.isEmpty ? null : rows.first['board_id'] as String;
+  }
+
+  Map<String, dynamic> _cardEventData(Card card, String? boardId) {
+    return {...card.toJson(), 'boardId': boardId};
+  }
+
   @override
   Future<Board> getBoard(String boardId) async {
     final db = await _db;
@@ -136,26 +132,14 @@ class LocalBoardRepository implements BoardRepository {
       limit: 1,
     );
     if (rows.isEmpty) throw Exception('Board not found');
-    final members = await _memberIds(db, boardId);
-    return _boardFromRow(rows.first, members);
+    return _boardFromRow(rows.first);
   }
 
   @override
   Future<List<Board>> getAllBoards() async {
     final db = await _db;
     final rows = await db.query('boards', orderBy: 'updated_at DESC');
-
-    final boards = <Board>[];
-    for (final row in rows) {
-      final members = await _memberIds(db, row['id'] as String);
-      boards.add(_boardFromRow(row, members));
-    }
-    return boards;
-  }
-
-  @override
-  Future<List<Board>> getBoardsByUser(String userId) async {
-    return getAllBoards();
+    return rows.map(_boardFromRow).toList();
   }
 
   @override
@@ -168,22 +152,13 @@ class LocalBoardRepository implements BoardRepository {
       'id': id,
       'name': board.name,
       'description': board.description,
-      'created_by': board.createdBy,
-      'column_ids': encodeStringList(board.columnIds),
       'archived': board.archived ? 1 : 0,
       'created_at': now,
       'updated_at': now,
     });
 
-    await _setMembers(db, id, board.memberIds);
-
     final created = await getBoard(id);
-    _emit(
-      RealtimeEventType.create,
-      'boards',
-      id,
-      {...created.toJson(), 'id': id},
-    );
+    _emit(RealtimeEventType.create, 'boards', id, created.toJson());
     return created;
   }
 
@@ -195,23 +170,15 @@ class LocalBoardRepository implements BoardRepository {
       {
         'name': board.name,
         'description': board.description,
-        'created_by': board.createdBy,
-        'column_ids': encodeStringList(board.columnIds),
         'archived': board.archived ? 1 : 0,
         'updated_at': nowIso(),
       },
       where: 'id = ?',
       whereArgs: [board.id],
     );
-    await _setMembers(db, board.id, board.memberIds);
 
     final updated = await getBoard(board.id);
-    _emit(
-      RealtimeEventType.update,
-      'boards',
-      board.id,
-      {...updated.toJson(), 'id': board.id},
-    );
+    _emit(RealtimeEventType.update, 'boards', board.id, updated.toJson());
     return updated;
   }
 
@@ -235,25 +202,6 @@ class LocalBoardRepository implements BoardRepository {
   }
 
   @override
-  Future<void> addMember(String boardId, String userId) async {
-    final board = await getBoard(boardId);
-    if (board.memberIds.contains(userId)) return;
-    await updateBoard(
-      board.copyWith(memberIds: [...board.memberIds, userId]),
-    );
-  }
-
-  @override
-  Future<void> removeMember(String boardId, String userId) async {
-    final board = await getBoard(boardId);
-    await updateBoard(
-      board.copyWith(
-        memberIds: board.memberIds.where((id) => id != userId).toList(),
-      ),
-    );
-  }
-
-  @override
   Future<BoardColumn> getColumn(String columnId) async {
     final db = await _db;
     final rows = await db.query(
@@ -263,16 +211,7 @@ class LocalBoardRepository implements BoardRepository {
       limit: 1,
     );
     if (rows.isEmpty) throw Exception('Column not found');
-    final row = rows.first;
-    return BoardColumn.fromJson({
-      'id': row['id'],
-      'boardId': row['board_id'],
-      'name': row['name'],
-      'position': row['position'],
-      'color': row['color'],
-      'wipLimit': row['wip_limit'],
-      'cardIds': decodeStringList(row['card_ids']),
-    });
+    return _columnFromRow(rows.first);
   }
 
   @override
@@ -284,19 +223,7 @@ class LocalBoardRepository implements BoardRepository {
       whereArgs: [boardId],
       orderBy: 'position ASC',
     );
-    return rows
-        .map(
-          (row) => BoardColumn.fromJson({
-            'id': row['id'],
-            'boardId': row['board_id'],
-            'name': row['name'],
-            'position': row['position'],
-            'color': row['color'],
-            'wipLimit': row['wip_limit'],
-            'cardIds': decodeStringList(row['card_ids']),
-          }),
-        )
-        .toList();
+    return rows.map(_columnFromRow).toList();
   }
 
   @override
@@ -310,16 +237,10 @@ class LocalBoardRepository implements BoardRepository {
       'position': column.position,
       'color': column.color,
       'wip_limit': column.wipLimit,
-      'card_ids': encodeStringList(column.cardIds),
     });
 
     final created = await getColumn(id);
-    _emit(
-      RealtimeEventType.create,
-      'columns',
-      id,
-      created.toJson()..['id'] = id,
-    );
+    _emit(RealtimeEventType.create, 'columns', id, created.toJson());
     return created;
   }
 
@@ -334,32 +255,29 @@ class LocalBoardRepository implements BoardRepository {
         'position': column.position,
         'color': column.color,
         'wip_limit': column.wipLimit,
-        'card_ids': encodeStringList(column.cardIds),
       },
       where: 'id = ?',
       whereArgs: [column.id],
     );
 
     final updated = await getColumn(column.id);
-    _emit(
-      RealtimeEventType.update,
-      'columns',
-      column.id,
-      {...updated.toJson(), 'id': column.id},
-    );
+    _emit(RealtimeEventType.update, 'columns', column.id, updated.toJson());
     return updated;
   }
 
   @override
   Future<void> deleteColumn(String columnId) async {
     final db = await _db;
+    final boardId = await _boardIdForColumn(db, columnId);
     await db.delete('columns', where: 'id = ?', whereArgs: [columnId]);
-    _emit(RealtimeEventType.delete, 'columns', columnId, null);
+    _emit(RealtimeEventType.delete, 'columns', columnId, {'boardId': boardId});
   }
 
   @override
   Future<void> reorderColumns(String boardId, List<String> columnIds) async {
     final db = await _db;
+    // Move out of the way first so unique position constraints (if added
+    // later) cannot collide mid-update.
     for (var i = 0; i < columnIds.length; i++) {
       await db.update(
         'columns',
@@ -376,12 +294,7 @@ class LocalBoardRepository implements BoardRepository {
         whereArgs: [columnIds[i]],
       );
       final column = await getColumn(columnIds[i]);
-      _emit(
-        RealtimeEventType.update,
-        'columns',
-        columnIds[i],
-        {...column.toJson(), 'id': columnIds[i]},
-      );
+      _emit(RealtimeEventType.update, 'columns', columnIds[i], column.toJson());
     }
   }
 
@@ -407,7 +320,19 @@ class LocalBoardRepository implements BoardRepository {
       whereArgs: [columnId],
       orderBy: 'rank ASC',
     );
-    return rows.map((row) => _cardFromRow(row)).toList();
+    return rows.map(_cardFromRow).toList();
+  }
+
+  @override
+  Future<List<Card>> getCardsByBoard(String boardId) async {
+    final db = await _db;
+    final rows = await db.rawQuery(
+      'SELECT cards.* FROM cards '
+      'INNER JOIN columns ON cards.column_id = columns.id '
+      'WHERE columns.board_id = ? ORDER BY cards.rank ASC',
+      [boardId],
+    );
+    return rows.map(_cardFromRow).toList();
   }
 
   @override
@@ -417,7 +342,13 @@ class LocalBoardRepository implements BoardRepository {
     await db.insert('cards', _cardRow(card, id));
 
     final created = await getCard(id);
-    _emit(RealtimeEventType.create, 'cards', id, created.toJson()..['id'] = id);
+    final boardId = await _boardIdForColumn(db, created.columnId);
+    _emit(
+      RealtimeEventType.create,
+      'cards',
+      id,
+      _cardEventData(created, boardId),
+    );
     return created;
   }
 
@@ -426,20 +357,18 @@ class LocalBoardRepository implements BoardRepository {
     final db = await _db;
     await db.update(
       'cards',
-      {
-        ..._cardRow(card, card.id),
-        'updated_at': nowIso(),
-      },
+      _cardRow(card, card.id, now: nowIso()),
       where: 'id = ?',
       whereArgs: [card.id],
     );
 
     final updated = await getCard(card.id);
+    final boardId = await _boardIdForColumn(db, updated.columnId);
     _emit(
       RealtimeEventType.update,
       'cards',
       card.id,
-      {...updated.toJson(), 'id': card.id},
+      _cardEventData(updated, boardId),
     );
     return updated;
   }
@@ -447,206 +376,33 @@ class LocalBoardRepository implements BoardRepository {
   @override
   Future<void> deleteCard(String cardId) async {
     final db = await _db;
+    final boardId = await _boardIdForCard(db, cardId);
     await db.delete('cards', where: 'id = ?', whereArgs: [cardId]);
-    _emit(RealtimeEventType.delete, 'cards', cardId, null);
+    _emit(RealtimeEventType.delete, 'cards', cardId, {'boardId': boardId});
   }
 
   @override
   Future<void> moveCard({
     required String cardId,
-    required String sourceColumnId,
     required String targetColumnId,
     required String newRank,
   }) async {
     final db = await _db;
     await db.update(
       'cards',
-      {
-        'column_id': targetColumnId,
-        'rank': newRank,
-        'updated_at': nowIso(),
-      },
+      {'column_id': targetColumnId, 'rank': newRank, 'updated_at': nowIso()},
       where: 'id = ?',
       whereArgs: [cardId],
     );
 
     final updated = await getCard(cardId);
+    final boardId = await _boardIdForColumn(db, targetColumnId);
     _emit(
       RealtimeEventType.update,
       'cards',
       cardId,
-      {...updated.toJson(), 'id': cardId},
+      _cardEventData(updated, boardId),
     );
-  }
-
-  @override
-  Future<void> reorderCards(String columnId, List<String> cardIds) async {
-    final db = await _db;
-    for (var i = 0; i < cardIds.length; i++) {
-      await db.update(
-        'cards',
-        {'position': i, 'updated_at': nowIso()},
-        where: 'id = ?',
-        whereArgs: [cardIds[i]],
-      );
-    }
-  }
-
-  @override
-  Future<Label> getLabel(String labelId) async {
-    final db = await _db;
-    final rows = await db.query(
-      'labels',
-      where: 'id = ?',
-      whereArgs: [labelId],
-      limit: 1,
-    );
-    if (rows.isEmpty) throw Exception('Label not found');
-    final row = rows.first;
-    return Label.fromJson({
-      'id': row['id'],
-      'boardId': row['board_id'],
-      'name': row['name'],
-      'color': row['color'],
-    });
-  }
-
-  @override
-  Future<List<Label>> getLabelsByBoard(String boardId) async {
-    final db = await _db;
-    final rows = await db.query(
-      'labels',
-      where: 'board_id = ?',
-      whereArgs: [boardId],
-    );
-    return rows
-        .map(
-          (row) => Label.fromJson({
-            'id': row['id'],
-            'boardId': row['board_id'],
-            'name': row['name'],
-            'color': row['color'],
-          }),
-        )
-        .toList();
-  }
-
-  @override
-  Future<Label> createLabel(Label label) async {
-    final db = await _db;
-    final id = label.id.isEmpty ? _uuid.v4() : label.id;
-    await db.insert('labels', {
-      'id': id,
-      'board_id': label.boardId,
-      'name': label.name,
-      'color': label.color,
-    });
-    return getLabel(id);
-  }
-
-  @override
-  Future<Label> updateLabel(Label label) async {
-    final db = await _db;
-    await db.update(
-      'labels',
-      {
-        'board_id': label.boardId,
-        'name': label.name,
-        'color': label.color,
-      },
-      where: 'id = ?',
-      whereArgs: [label.id],
-    );
-    return getLabel(label.id);
-  }
-
-  @override
-  Future<void> deleteLabel(String labelId) async {
-    final db = await _db;
-    await db.delete('labels', where: 'id = ?', whereArgs: [labelId]);
-  }
-
-  @override
-  Future<Comment> getComment(String commentId) async {
-    final db = await _db;
-    final rows = await db.query(
-      'comments',
-      where: 'id = ?',
-      whereArgs: [commentId],
-      limit: 1,
-    );
-    if (rows.isEmpty) throw Exception('Comment not found');
-    final row = rows.first;
-    return Comment.fromJson({
-      'id': row['id'],
-      'cardId': row['card_id'],
-      'userId': row['user_id'],
-      'content': row['content'],
-      '\$createdAt': row['created_at'],
-      '\$updatedAt': row['updated_at'],
-    });
-  }
-
-  @override
-  Future<List<Comment>> getCommentsByCard(String cardId) async {
-    final db = await _db;
-    final rows = await db.query(
-      'comments',
-      where: 'card_id = ?',
-      whereArgs: [cardId],
-      orderBy: 'created_at DESC',
-    );
-    return rows
-        .map(
-          (row) => Comment.fromJson({
-            'id': row['id'],
-            'cardId': row['card_id'],
-            'userId': row['user_id'],
-            'content': row['content'],
-            '\$createdAt': row['created_at'],
-            '\$updatedAt': row['updated_at'],
-          }),
-        )
-        .toList();
-  }
-
-  @override
-  Future<Comment> createComment(Comment comment) async {
-    final db = await _db;
-    final id = comment.id.isEmpty ? _uuid.v4() : comment.id;
-    final now = nowIso();
-    await db.insert('comments', {
-      'id': id,
-      'card_id': comment.cardId,
-      'user_id': comment.userId,
-      'content': comment.content,
-      'created_at': now,
-      'updated_at': null,
-    });
-    return getComment(id);
-  }
-
-  @override
-  Future<Comment> updateComment(Comment comment) async {
-    final db = await _db;
-    await db.update(
-      'comments',
-      {
-        'card_id': comment.cardId,
-        'user_id': comment.userId,
-        'content': comment.content,
-        'updated_at': nowIso(),
-      },
-      where: 'id = ?',
-      whereArgs: [comment.id],
-    );
-    return getComment(comment.id);
-  }
-
-  @override
-  Future<void> deleteComment(String commentId) async {
-    final db = await _db;
-    await db.delete('comments', where: 'id = ?', whereArgs: [commentId]);
   }
 
   @override
@@ -659,13 +415,7 @@ class LocalBoardRepository implements BoardRepository {
       limit: 1,
     );
     if (rows.isEmpty) throw Exception('Checklist not found');
-    final row = rows.first;
-    return Checklist.fromJson({
-      'id': row['id'],
-      'cardId': row['card_id'],
-      'title': row['title'],
-      'items': jsonDecode(row['items'] as String),
-    });
+    return _checklistFromRow(rows.first);
   }
 
   @override
@@ -676,16 +426,16 @@ class LocalBoardRepository implements BoardRepository {
       where: 'card_id = ?',
       whereArgs: [cardId],
     );
-    return rows
-        .map(
-          (row) => Checklist.fromJson({
-            'id': row['id'],
-            'cardId': row['card_id'],
-            'title': row['title'],
-            'items': jsonDecode(row['items'] as String),
-          }),
-        )
-        .toList();
+    return rows.map(_checklistFromRow).toList();
+  }
+
+  Checklist _checklistFromRow(Map<String, dynamic> row) {
+    return Checklist.fromJson({
+      'id': row['id'],
+      'cardId': row['card_id'],
+      'title': row['title'],
+      'items': jsonDecode(row['items'] as String),
+    });
   }
 
   @override

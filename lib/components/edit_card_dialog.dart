@@ -13,7 +13,6 @@ import '../models/sprint.dart';
 import '../providers/board_provider.dart';
 import '../providers/boards_provider.dart';
 import '../providers/sprint_provider.dart';
-import '../providers/user_provider.dart';
 import 'ollie_ui/theme_extensions.dart';
 import 'card_timer_widget.dart';
 
@@ -37,7 +36,6 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
   late Priority _selectedPriority;
   DateTime? _selectedDueDate;
   String? _selectedSprintId;
-  List<String> _selectedAssigneeIds = [];
   bool _isLoading = false;
 
   // Subtasks
@@ -59,7 +57,6 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
     _selectedPriority = widget.card.priority;
     _selectedDueDate = widget.card.dueDate;
     _selectedSprintId = widget.card.sprintId;
-    _selectedAssigneeIds = List.from(widget.card.assigneeIds);
     _loadSubtasks();
   }
 
@@ -126,7 +123,6 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
         dueDate: _selectedDueDate,
         estimatedHours: estimatedHours,
         sprintId: _selectedSprintId,
-        assigneeIds: _selectedAssigneeIds,
         subtaskCount: _subtasks.length,
         completedSubtaskCount: completedCount,
         updatedAt: DateTime.now(),
@@ -136,32 +132,24 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
           .read(boardNotifierProvider(widget.boardId).notifier)
           .updateCard(updatedCard: updatedCard);
 
-      // Update sprint cardIds if sprint changed
+      // Membership lives in cards.sprint_id. Time logs deliberately stay
+      // attached to the sprint they were logged in; never delete history when
+      // a card moves between sprints.
       if (_selectedSprintId != widget.card.sprintId) {
-        // Remove from old sprint if exists
+        final sprintNotifier = ref.read(
+          sprintNotifierProvider(widget.boardId).notifier,
+        );
         if (widget.card.sprintId != null) {
-          await ref
-              .read(sprintNotifierProvider(widget.boardId).notifier)
-              .removeCardFromSprint(widget.card.sprintId!, widget.card.id);
-
-          final timeLogs = await ref
-              .read(sprintRepositoryProvider)
-              .getTimeLogsByCard(widget.card.id);
-
-          // 2. Filter for logs from the old sprint and delete them.
-          for (final log in timeLogs) {
-            if (log.sprintId == widget.card.sprintId) {
-              await ref.read(sprintRepositoryProvider).deleteTimeLog(log.id);
-            }
-          }
+          await sprintNotifier.removeCardFromSprint(
+            widget.card.sprintId!,
+            widget.card.id,
+          );
         }
-
-        ref.invalidate(sprintNotifierProvider(widget.boardId));
-        // Add to new sprint
         if (_selectedSprintId != null) {
-          await ref
-              .read(sprintNotifierProvider(widget.boardId).notifier)
-              .addCardToSprint(_selectedSprintId!, widget.card.id);
+          await sprintNotifier.addCardToSprint(
+            _selectedSprintId!,
+            widget.card.id,
+          );
         }
       }
 
@@ -328,12 +316,6 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
             ),
             const SizedBox(height: 20),
 
-            // Assignees
-            _buildSectionTitle('Assignees'),
-            const SizedBox(height: 8),
-            _buildAssigneeSelector(),
-            const SizedBox(height: 20),
-
             // Subtasks
             _buildSubtasksSection(),
             const SizedBox(height: 20),
@@ -385,7 +367,9 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
                   value: item.isCompleted,
                   onChanged: (checked) {
                     setState(() {
-                      _subtasks[i] = item.copyWith(isCompleted: checked ?? false);
+                      _subtasks[i] = item.copyWith(
+                        isCompleted: checked ?? false,
+                      );
                     });
                   },
                 ),
@@ -599,64 +583,8 @@ class _EditCardDialogState extends ConsumerState<EditCardDialog> {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) => Text(
+      error: (_, _) => Text(
         'Failed to load sprints',
-        style: TextStyle(color: context.dangerColor),
-      ),
-    );
-  }
-
-  Widget _buildAssigneeSelector() {
-    final boardState = ref.watch(boardNotifierProvider(widget.boardId));
-
-    return boardState.when(
-      data: (state) {
-        final members = state.board.memberIds;
-
-        return Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: members.map((memberId) {
-            final isSelected = _selectedAssigneeIds.contains(memberId);
-            final userAsync = ref.watch(userProvider(memberId));
-
-            return userAsync.when(
-              data: (user) => FilterChip(
-                label: Text(user.name),
-                selected: isSelected,
-                onSelected: (selected) {
-                  setState(() {
-                    if (selected) {
-                      _selectedAssigneeIds.add(memberId);
-                    } else {
-                      _selectedAssigneeIds.remove(memberId);
-                    }
-                  });
-                },
-                avatar: CircleAvatar(
-                  backgroundColor: isSelected
-                      ? context.primaryColor
-                      : context.borderColor,
-                  child: Text(
-                    user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isSelected
-                          ? context.surfaceColor
-                          : context.secondaryTextColor,
-                    ),
-                  ),
-                ),
-              ),
-              loading: () => const Chip(label: Text('Loading...')),
-              error: (_, __) => const Chip(label: Text('Error')),
-            );
-          }).toList(),
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) => Text(
-        'Failed to load members',
         style: TextStyle(color: context.dangerColor),
       ),
     );

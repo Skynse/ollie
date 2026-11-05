@@ -88,7 +88,11 @@ class _SprintManagementDialogState
               color: context.primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(Icons.bolt_rounded, color: context.primaryColor, size: 18),
+            child: Icon(
+              Icons.bolt_rounded,
+              color: context.primaryColor,
+              size: 18,
+            ),
           ),
           const SizedBox(width: 12),
           const Text(
@@ -118,9 +122,13 @@ class _SprintManagementDialogState
         if (a.status == SprintStatus.active) return -1;
         if (b.status == SprintStatus.active) return 1;
         if (a.status == SprintStatus.planning &&
-            b.status == SprintStatus.completed) { return -1; }
+            b.status == SprintStatus.completed) {
+          return -1;
+        }
         if (b.status == SprintStatus.planning &&
-            a.status == SprintStatus.completed) { return 1; }
+            a.status == SprintStatus.completed) {
+          return 1;
+        }
         return b.startDate.compareTo(a.startDate);
       });
 
@@ -160,7 +168,11 @@ class _SprintManagementDialogState
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.bolt_outlined, size: 44, color: context.secondaryTextColor),
+            Icon(
+              Icons.bolt_outlined,
+              size: 44,
+              color: context.secondaryTextColor,
+            ),
             const SizedBox(height: 12),
             Text(
               'No sprints yet',
@@ -224,8 +236,7 @@ class _SprintManagementDialogState
   Future<void> _confirmDelete(Sprint sprint) async {
     final confirmed = await _showConfirmDialog(
       title: 'Delete Sprint',
-      message:
-          'Delete "${sprint.name}"?\n\nThis action cannot be undone.',
+      message: 'Delete "${sprint.name}"?\n\nThis action cannot be undone.',
       confirmLabel: 'Delete',
       confirmColor: Colors.red,
     );
@@ -338,8 +349,7 @@ class _SprintTile extends StatelessWidget {
     }
   }
 
-  String _formatDate(DateTime d) =>
-      '${d.month}/${d.day}/${d.year}';
+  String _formatDate(DateTime d) => '${d.month}/${d.day}/${d.year}';
 
   @override
   Widget build(BuildContext context) {
@@ -351,7 +361,9 @@ class _SprintTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.surfaceColor,
         border: Border.all(
-          color: isActiveSprint ? color.withValues(alpha: 0.4) : context.borderColor,
+          color: isActiveSprint
+              ? color.withValues(alpha: 0.4)
+              : context.borderColor,
           width: isActiveSprint ? 1.5 : 1,
         ),
         borderRadius: BorderRadius.circular(10),
@@ -386,7 +398,9 @@ class _SprintTile extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: color.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: color.withValues(alpha: 0.25)),
+                        border: Border.all(
+                          color: color.withValues(alpha: 0.25),
+                        ),
                       ),
                       child: Text(
                         _statusLabel(),
@@ -432,11 +446,13 @@ class _SprintTile extends StatelessWidget {
                     ),
                     _MetaChip(
                       icon: Icons.credit_card_rounded,
-                      label: '${sprint.cardIds.length} card${sprint.cardIds.length == 1 ? '' : 's'}',
+                      label:
+                          '${sprint.cardIds.length} card${sprint.cardIds.length == 1 ? '' : 's'}',
                     ),
                     _MetaChip(
                       icon: Icons.flag_rounded,
-                      label: '${sprint.targetHours.toStringAsFixed(sprint.targetHours % 1 == 0 ? 0 : 1)}h target',
+                      label:
+                          '${sprint.targetHours.toStringAsFixed(sprint.targetHours % 1 == 0 ? 0 : 1)}h target',
                     ),
                   ],
                 ),
@@ -460,7 +476,10 @@ class _SprintTile extends StatelessWidget {
                       TextButton.icon(
                         onPressed: onViewDetails,
                         icon: const Icon(Icons.show_chart_rounded, size: 15),
-                        label: const Text('Details', style: TextStyle(fontSize: 12)),
+                        label: const Text(
+                          'Details',
+                          style: TextStyle(fontSize: 12),
+                        ),
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,

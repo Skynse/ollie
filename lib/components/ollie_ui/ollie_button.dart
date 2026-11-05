@@ -88,10 +88,10 @@ class OllieButton extends StatefulWidget {
   }) : variant = OllieButtonVariant.primary;
 
   @override
-  _OllieButtonState createState() => _OllieButtonState();
+  OllieButtonState createState() => OllieButtonState();
 }
 
-class _OllieButtonState extends State<OllieButton>
+class OllieButtonState extends State<OllieButton>
     with TickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;

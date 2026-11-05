@@ -97,12 +97,12 @@ class OllieThemeConstants {
 
   static List<BoxShadow> lightShadowSmall = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.08),
+      color: Colors.black.withValues(alpha: 0.08),
       offset: const Offset(2, 2),
       blurRadius: 6,
     ),
     BoxShadow(
-      color: Colors.white.withOpacity(0.8),
+      color: Colors.white.withValues(alpha: 0.8),
       offset: const Offset(-2, -2),
       blurRadius: 6,
     ),
@@ -110,12 +110,12 @@ class OllieThemeConstants {
 
   static List<BoxShadow> lightShadowMedium = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.10),
+      color: Colors.black.withValues(alpha: 0.10),
       offset: const Offset(4, 4),
       blurRadius: 12,
     ),
     BoxShadow(
-      color: Colors.white.withOpacity(0.7),
+      color: Colors.white.withValues(alpha: 0.7),
       offset: const Offset(-4, -4),
       blurRadius: 12,
     ),
@@ -123,7 +123,7 @@ class OllieThemeConstants {
 
   static List<BoxShadow> darkShadowSmall = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.4),
+      color: Colors.black.withValues(alpha: 0.4),
       blurRadius: 8,
       offset: const Offset(0, 2),
     ),
@@ -131,7 +131,7 @@ class OllieThemeConstants {
 
   static List<BoxShadow> darkShadowMedium = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.5),
+      color: Colors.black.withValues(alpha: 0.5),
       blurRadius: 12,
       offset: const Offset(0, 4),
     ),

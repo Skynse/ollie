@@ -21,7 +21,9 @@ class ThemeModeNotifier extends AsyncNotifier<ThemeMode> {
 
       if (themeModeString != null) {
         return ThemeMode.values.firstWhere(
-          (mode) => mode.toString() == themeModeString,
+          (mode) =>
+              mode.name == themeModeString ||
+              mode.toString() == themeModeString,
           orElse: () => ThemeMode.system,
         );
       }
@@ -36,7 +38,7 @@ class ThemeModeNotifier extends AsyncNotifier<ThemeMode> {
   Future<void> _saveThemeMode(ThemeMode mode) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_themeModeKey, mode.toString());
+      await prefs.setString(_themeModeKey, mode.name);
     } catch (e) {
       debugPrint('Failed to save theme mode: $e');
     }

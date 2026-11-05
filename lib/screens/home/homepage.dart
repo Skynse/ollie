@@ -166,8 +166,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       );
     }
 
-    var boards =
-        boardsState.boards.where((board) => !board.archived).toList();
+    var boards = boardsState.boards.where((board) => !board.archived).toList();
 
     if (_searchQuery.isNotEmpty) {
       boards = boards.where((board) {
@@ -204,8 +203,9 @@ class _HomePageState extends ConsumerState<HomePage> {
       );
     }
 
-    var archivedBoards =
-        boardsState.boards.where((board) => board.archived).toList();
+    var archivedBoards = boardsState.boards
+        .where((board) => board.archived)
+        .toList();
 
     if (_searchQuery.isNotEmpty) {
       archivedBoards = archivedBoards.where((board) {
@@ -234,7 +234,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           Icon(
             Icons.archive_outlined,
             size: 80,
-            color: context.secondaryTextColor.withOpacity(0.5),
+            color: context.secondaryTextColor.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(

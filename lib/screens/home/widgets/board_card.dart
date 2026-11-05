@@ -74,14 +74,14 @@ class _BoardCardState extends State<BoardCard>
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: _isHovered
-                  ? _boardColor.withOpacity(0.3)
+                  ? _boardColor.withValues(alpha: 0.3)
                   : context.borderColor,
               width: _isHovered ? 2 : 1,
             ),
             boxShadow: [
               BoxShadow(
                 color: _isHovered
-                    ? _boardColor.withOpacity(0.15)
+                    ? _boardColor.withValues(alpha: 0.15)
                     : context.shadowSmall.first.color,
                 blurRadius: _isHovered ? 20 : 8,
                 offset: Offset(0, _isHovered ? 8 : 4),
@@ -101,7 +101,10 @@ class _BoardCardState extends State<BoardCard>
                     height: 8,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [_boardColor, _boardColor.withOpacity(0.7)],
+                        colors: [
+                          _boardColor,
+                          _boardColor.withValues(alpha: 0.7),
+                        ],
                       ),
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(15),
@@ -163,7 +166,7 @@ class _BoardCardState extends State<BoardCard>
                                     Icons.update,
                                     size: 12,
                                     color: context.secondaryTextColor
-                                        .withOpacity(0.6),
+                                        .withValues(alpha: 0.6),
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
@@ -176,38 +179,9 @@ class _BoardCardState extends State<BoardCard>
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              // Member count and arrow
+                              // Open board
                               Row(
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _boardColor.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.people_outline,
-                                          size: 16,
-                                          color: _boardColor,
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          '${widget.board.memberIds.length}',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                            color: _boardColor,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
                                   const Spacer(),
                                   if (_isHovered)
                                     Icon(
@@ -275,14 +249,14 @@ class _BoardListItemState extends State<BoardListItem> {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: _isHovered
-                  ? _boardColor.withOpacity(0.3)
+                  ? _boardColor.withValues(alpha: 0.3)
                   : context.borderColor,
               width: _isHovered ? 2 : 1,
             ),
             boxShadow: [
               BoxShadow(
                 color: _isHovered
-                    ? _boardColor.withOpacity(0.1)
+                    ? _boardColor.withValues(alpha: 0.1)
                     : context.shadowSmall.first.color,
                 blurRadius: _isHovered ? 12 : 4,
                 offset: Offset(0, _isHovered ? 4 : 2),
@@ -304,7 +278,10 @@ class _BoardListItemState extends State<BoardListItem> {
                       height: 60,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [_boardColor, _boardColor.withOpacity(0.6)],
+                          colors: [
+                            _boardColor,
+                            _boardColor.withValues(alpha: 0.6),
+                          ],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                         ),
@@ -362,41 +339,6 @@ class _BoardListItemState extends State<BoardListItem> {
                         ],
                       ),
                     ),
-
-                    const SizedBox(width: 16),
-
-                    // Member count badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _boardColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.people_outline,
-                            size: 18,
-                            color: _boardColor,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${widget.board.memberIds.length}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: _boardColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(width: 12),
 
                     // Arrow icon
                     if (_isHovered)

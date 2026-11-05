@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/board_column.dart';
+import '../providers/board_provider.dart';
 
 class BoardAnalyticsDialog extends ConsumerStatefulWidget {
   final String boardId;
@@ -20,6 +21,12 @@ class BoardAnalyticsDialog extends ConsumerStatefulWidget {
 class _BoardAnalyticsDialogState extends ConsumerState<BoardAnalyticsDialog> {
   @override
   Widget build(BuildContext context) {
+    final boardState = ref.watch(boardNotifierProvider(widget.boardId)).value;
+    final cardCounts = <String, int>{};
+    boardState?.columnCards.forEach((columnId, cards) {
+      cardCounts[columnId] = cards.length;
+    });
+
     return Dialog(
       child: Container(
         width: 800,
@@ -69,15 +76,15 @@ class _BoardAnalyticsDialogState extends ConsumerState<BoardAnalyticsDialog> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Overview cards
-                    _buildOverviewSection(ref),
+                    _buildOverviewSection(cardCounts),
                     const SizedBox(height: 24),
 
                     // Column breakdown
-                    _buildColumnBreakdown(),
+                    _buildColumnBreakdown(cardCounts),
                     const SizedBox(height: 24),
 
                     // Card distribution
-                    _buildCardDistribution(ref),
+                    _buildCardDistribution(cardCounts),
                   ],
                 ),
               ),
@@ -88,13 +95,13 @@ class _BoardAnalyticsDialogState extends ConsumerState<BoardAnalyticsDialog> {
     );
   }
 
-  Widget _buildOverviewSection(WidgetRef ref) {
+  Widget _buildOverviewSection(Map<String, int> cardCounts) {
     int totalCards = 0;
     int totalWipLimit = 0;
     int columnsWithWipLimit = 0;
 
     for (final column in widget.columns) {
-      totalCards += column.cardIds.length;
+      totalCards += (cardCounts[column.id] ?? 0);
       if (column.wipLimit != null) {
         totalWipLimit += column.wipLimit!;
         columnsWithWipLimit++;
@@ -156,7 +163,7 @@ class _BoardAnalyticsDialogState extends ConsumerState<BoardAnalyticsDialog> {
     );
   }
 
-  Widget _buildColumnBreakdown() {
+  Widget _buildColumnBreakdown(Map<String, int> cardCounts) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -167,7 +174,7 @@ class _BoardAnalyticsDialogState extends ConsumerState<BoardAnalyticsDialog> {
         const SizedBox(height: 12),
         ...widget.columns.map((column) {
           final utilizationPercent = column.wipLimit != null
-              ? (column.cardIds.length / column.wipLimit! * 100)
+              ? ((cardCounts[column.id] ?? 0) / column.wipLimit! * 100)
                     .clamp(0, 100)
                     .toInt()
               : null;
@@ -241,7 +248,7 @@ class _BoardAnalyticsDialogState extends ConsumerState<BoardAnalyticsDialog> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '${column.cardIds.length} cards',
+                        '${(cardCounts[column.id] ?? 0)} cards',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -268,11 +275,11 @@ class _BoardAnalyticsDialogState extends ConsumerState<BoardAnalyticsDialog> {
     );
   }
 
-  Widget _buildCardDistribution(WidgetRef ref) {
+  Widget _buildCardDistribution(Map<String, int> cardCounts) {
     if (widget.columns.isEmpty) return const SizedBox.shrink();
 
     final maxCards = widget.columns
-        .map((c) => c.cardIds.length)
+        .map((column) => cardCounts[column.id] ?? 0)
         .reduce((a, b) => a > b ? a : b);
 
     return Column(
@@ -290,7 +297,7 @@ class _BoardAnalyticsDialogState extends ConsumerState<BoardAnalyticsDialog> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: widget.columns.map((column) {
                 final height = maxCards > 0
-                    ? (column.cardIds.length / maxCards * 150).clamp(
+                    ? ((cardCounts[column.id] ?? 0) / maxCards * 150).clamp(
                         10.0,
                         150.0,
                       )
@@ -302,7 +309,7 @@ class _BoardAnalyticsDialogState extends ConsumerState<BoardAnalyticsDialog> {
                     child: Column(
                       children: [
                         Text(
-                          column.cardIds.length.toString(),
+                          (cardCounts[column.id] ?? 0).toString(),
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -372,7 +379,7 @@ class _MetricCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(icon, color: color, size: 24),

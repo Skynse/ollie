@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Colors;
+
+import '../utils/copy_with.dart';
 
 class BoardColumn {
   final String id;
@@ -7,7 +9,6 @@ class BoardColumn {
   final int position;
   final int color;
   final int? wipLimit;
-  final List<String> cardIds;
 
   BoardColumn({
     required this.id,
@@ -16,17 +17,16 @@ class BoardColumn {
     required this.position,
     required this.color,
     this.wipLimit,
-    required this.cardIds,
   });
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'boardId': boardId,
       'name': name,
       'position': position,
       'color': color,
       'wipLimit': wipLimit,
-      'cardIds': cardIds,
     };
   }
 
@@ -38,11 +38,6 @@ class BoardColumn {
       position: json['position'] as int? ?? 0,
       color: json['color'] as int? ?? Colors.grey.toARGB32(),
       wipLimit: json['wipLimit'] as int?,
-      cardIds:
-          (json['cardIds'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          [],
     );
   }
 
@@ -52,8 +47,7 @@ class BoardColumn {
     String? name,
     int? position,
     int? color,
-    int? wipLimit,
-    List<String>? cardIds,
+    Object? wipLimit = unset,
   }) {
     return BoardColumn(
       id: id ?? this.id,
@@ -61,8 +55,7 @@ class BoardColumn {
       name: name ?? this.name,
       position: position ?? this.position,
       color: color ?? this.color,
-      wipLimit: wipLimit ?? this.wipLimit,
-      cardIds: cardIds ?? this.cardIds,
+      wipLimit: identical(wipLimit, unset) ? this.wipLimit : wipLimit as int?,
     );
   }
 }

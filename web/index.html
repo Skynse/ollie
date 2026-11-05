@@ -18,18 +18,18 @@
 
         <meta charset="UTF-8" />
         <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
-        <meta name="description" content="Do a kickflip" />
+        <meta name="description" content="Local-first kanban boards with sprints, time tracking and burndown." />
 
         <!-- iOS meta tags & icons -->
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-        <meta name="apple-mobile-web-app-title" content="ollie" />
+        <meta name="apple-mobile-web-app-title" content="Ollie" />
         <link rel="apple-touch-icon" href="icons/Icon-192.png" />
 
         <!-- Favicon -->
         <link rel="icon" type="image/png" href="favicon.png" />
 
-        <title>ollie</title>
+        <title>Ollie</title>
         <link rel="manifest" href="manifest.json" />
     </head>
     <body>
@@ -70,10 +70,8 @@
                         !contentType.includes("application/json")
                     ) {
                         console.warn(
-                            "Version check returned non-JSON response, clearing cache",
+                            "Version check returned non-JSON; skipping update",
                         );
-                        await clearBrowserStorage();
-                        location.reload(true);
                         return;
                     }
 
@@ -84,7 +82,7 @@
                     } else if (currentVersion !== latestVersion) {
                         await clearBrowserStorage();
                         localStorage.setItem("app_version", latestVersion);
-                        location.reload(true);
+                        location.reload();
                     }
                 } catch (e) {
                     console.warn("Version check failed:", e);

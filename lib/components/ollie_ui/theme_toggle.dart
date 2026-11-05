@@ -137,7 +137,7 @@ class ThemeModeSelector extends ConsumerWidget {
             ),
             decoration: BoxDecoration(
               color: isSelected
-                  ? primaryColor.withOpacity(0.1)
+                  ? primaryColor.withValues(alpha: 0.1)
                   : Colors.transparent,
               border: Border.all(
                 color: isSelected ? primaryColor : borderColor,
